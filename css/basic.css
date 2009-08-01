@@ -1,0 +1,30 @@
+/* Body */
+body {
+	font-family:      "Times New Roman", serif;
+}
+
+/* Errors */
+.error {
+	color:            red;
+	font-style:       italic;
+}
+
+/* Tables */
+table {
+	font-family:      "Arial", sans-serif;
+	border-color:     black;
+	border-collapse:  collapse;
+}
+table.transparent {
+	font-family:      "Times New Roman", serif;
+	border-color:     transparent;
+	border-collapse:  collapse;
+}
+th {
+	border-color:     black;
+	padding:          0.2em;
+}
+td {
+	border-color:     black;
+	padding:          0.2em;
+}

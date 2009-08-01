@@ -1,0 +1,275 @@
+/* Body */
+body {
+	font-family:      "Times New Roman", serif;
+	background-color: #ddf;
+	font-size:        small;
+}
+
+/* Errors */
+.error {
+	color:            red;
+	font-style:       italic;
+}
+
+/* Different button types */
+.title {
+	font-size:        x-large;
+}
+.subtitle {
+	font-size:        large;
+}
+.text {
+	font-family:      "Arial", sans-serif;
+	font-weight:      normal;
+	fill:             black;
+}
+.home {
+	color:            blue;
+}
+.logout {
+	color:            red;
+}
+.prevnext {
+}
+.selected {
+	color:            blue;
+}
+.sort {
+	color:            purple;
+}
+.bsort {
+	color:            #090;
+}
+.edit {
+	color:            blue;
+}
+.view {
+	color:            green;
+}
+.cn {
+	color:            #CC6600;
+}
+.msg {
+	color:            #990099;
+}
+.tt {
+	color:            #990099;
+}
+.report {
+	color:            #990099;
+}
+
+.delete {
+	color:            red;
+}
+.add {
+	color:            green;
+}
+
+/* Text sizes */
+.small_text {
+	font-size:        x-small;
+}
+.large_text {
+	font-size:        medium;
+}
+
+/* Standard button sizes */
+.small {
+	font-family:      "Arial", sans-serif;
+	font-weight:      normal;
+	fill:             black;
+	font-size:        x-small;
+}
+.medium {
+	font-family:      "Arial", sans-serif;
+	font-weight:      normal;
+	fill:             black;
+	font-size:        small;
+}
+.large {
+	font-family:      "Arial", sans-serif;
+	font-weight:      normal;
+	fill:             black;
+	font-size:        large;
+}
+
+td.logo {
+	text-align:       left;
+	vertical-align:   top;
+}
+
+td.title {
+	vertical-align:   top;
+	text-align:       center;
+}
+
+td.home {
+	vertical-align:   top;
+	text-align:       right;
+}
+
+/* Tables */
+table {
+	font-family:      "Arial", sans-serif;
+	color:            black;
+	background-color: #fff;
+	border:           solid 1px black;
+	border-collapse:  collapse;
+	/*-moz-border-radius: 15px;*/
+	border-spacing:   0px;
+}
+th {
+/*	border:           solid 1px black;*/
+	/*-moz-border-radius-topleft: 15px;*/
+	background-color: #ccf;
+	padding:          0.1em;
+}
+
+.th {
+	background-color: #ccf;
+	fill:             #ccf;
+	stroke:           black;
+	stroke-width:     1;
+}
+.std {
+	background-color: #fff;
+	fill:             #fff;
+	stroke:           black;
+	stroke-width:     1;
+}
+.alt {
+	background-color: #ccc;
+	fill:             #ccc;
+	stroke:           black;
+	stroke-width:     1;
+}
+.almost-std {
+	background-color: #ffb;
+}
+.almost-alt {
+	background-color: #ff9;
+}
+.late-std {
+	background-color: #fcc;
+}
+.late-alt {
+	background-color: #faa;
+}
+
+/*.hidden {
+	background-color: #fdf;
+}*/
+th.hidden {
+	background-color: #f9f;
+}
+.hidden-std {
+	background-color: #fdf;
+}
+.hidden-alt {
+	background-color: #fbf;
+}
+
+/*.unmarked {
+	background-color: #dfd;
+}*/
+th.unmarked {
+	background-color: #9f9;
+}
+.unmarked-std {
+	background-color: #cfc;
+}
+.unmarked-alt {
+	background-color: #afa;
+}
+td {
+	border-color:     black;
+	padding:          0.1em;
+}
+.transparent {
+	font-family:      "Times New Roman", serif;
+	border:           none transparent;
+	/*border-collapse:  collapse;
+	border-color:     transparent;*/
+	background-color: transparent;
+}
+
+/* Hyperlinks */
+a {
+	color:            #009;
+	text-decoration:  none;
+}
+a:hover {
+	color:            #11f;
+	text-decoration:  underline;
+}
+a.hidden {
+	color:            #909;
+}
+a.hidden:hover {
+	color:            #d0d;
+}
+a.unmarked {
+	color:            #070;
+}
+a.unmarked:hover {
+	color:            #0b0;
+}
+a.late {
+	color:            #900;
+}
+a.late:hover {
+	color:            #d00;
+}
+	
+/* Psuedo-button hyperlinks */
+.button {
+	font-family:      "Arial", sans-serif;
+	background-color: #eef;
+	color:            black;
+	text-decoration:  none;
+	border:           solid 1px #bbf;
+	border-radius: 8px;
+	-moz-border-radius: 8px;
+	-webkit-border-radius: 8px;
+	-khtml-border-radius: 8px;
+	padding-left:     0.3em;
+	padding-right:    0.3em;
+}
+a.button {
+	color:            black;
+}
+a.button:hover{
+	color:            black;
+	background-color: #bbf;
+	border:           solid 1px #aaf;
+	text-decoration:  none;
+}
+
+.disabled-button {
+	font-family:      "Arial", sans-serif;
+	background-color: #fff;
+	color:            #999;
+	text-decoration:  none;
+	border:           solid 1px #eef;
+	border-radius: 8px;
+	-moz-border-radius: 8px;
+	-webkit-border-radius: 8px;
+	-khtml-border-radius: 8px;
+	padding-left:     0.3em;
+	padding-right:    0.3em;
+}
+
+/* Casenote colors */
+.cn-level0 { color: red }
+.cn-level1 { color: #009900 }
+.cn-level2 { color: #006666 }
+.cn-level3 { color: #000099 }
+.cn-level4 { color: #990099 }
+.cn-level5 { color: #CC6600 }
+a.cn-level0 { color: red }
+a.cn-level1 { color: #009900 }
+a.cn-level2 { color: #006666 }
+a.cn-level3 { color: #000099 }
+a.cn-level4 { color: #990099 }
+a.cn-level5 { color: #CC6600 }

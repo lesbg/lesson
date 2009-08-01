@@ -1,0 +1,32 @@
+/* Body */
+body {
+	background-color: #fdf;
+}
+
+.home {
+	color:            purple;
+}
+
+/* Tables */
+table {
+	background-color: #eef;
+}
+
+th {
+	background-color: #f9f;
+}
+.std {
+	background-color: #fdf;
+}
+.alt {
+	background-color: #fbf;
+}
+
+
+/* Hyperlinks */
+a {
+	color:            #909;
+}
+a:hover {
+	color:            #d0d;
+}

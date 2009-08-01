@@ -1,0 +1,16 @@
+<?php
+	/*****************************************************************
+	 * index.php (redirect) (c) 2005 Jonathan Dieter 
+	 *
+	 * Tell everyone that LESSON has moved
+	 *****************************************************************/
+
+	$title = "LESSON is down";
+	$noJS = True;
+	$noHeaderLinks = True;      
+	
+	include "header.php";                                        // Show header
+	echo "<p align=\"center\">LESSON is down for repairs.  It will be up again soon.</p>";
+	
+	include "footer.php";
+?>
