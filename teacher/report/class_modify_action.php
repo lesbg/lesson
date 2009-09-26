@@ -1,4 +1,6 @@
 <?php
+	//FIX CLASS STUFF
+	
 	/*****************************************************************
 	 * teacher/report/class_modify_action.php  (c) 2008 Jonathan Dieter
 	 *

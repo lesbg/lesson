@@ -12,12 +12,12 @@
 	$nextLink         = dbfuncInt2String($_GET['next']);              // Link to next page
 	
 	/* Check whether subject is open for report editing */
-	$query =	"SELECT class_term.CTCommentType, class.DepartmentIndex, " .
-				"       class_term.HODCommentType, class_term.PrincipalCommentType, " .
-				"       class_term.CanDoReport, department.ProofreaderUsername " .
-				"       FROM class_term, class, department " .
-				"WHERE class_term.ClassIndex      = $classindex " .
-				"AND   class_term.TermIndex       = $termindex " .
+	$query =	"SELECT classterm.CTCommentType, class.DepartmentIndex, " .
+				"       classterm.HODCommentType, classterm.PrincipalCommentType, " .
+				"       classterm.CanDoReport, department.ProofreaderUsername " .
+				"       FROM classterm, class, department " .
+				"WHERE classterm.ClassIndex      = class.ClassIndex " .
+				"AND   classterm.TermIndex       = $termindex " .
 				"AND   class.ClassIndex           = $classindex " .
 				"AND   department.DepartmentIndex = class.DepartmentIndex ";
 	$res =& $db->query($query);
@@ -110,16 +110,16 @@
 		echo "      <p align='center'>Saving changes...";
 
 		if($_POST['action'] == "Yes, I'm finished") {
-			$query =	"SELECT classterm.ClassTermIndex, user.Gender, user.FirstName, user.Surname, " .
-						"       classterm.CTComment, classterm.HODComment, " .
-						"       classterm.CTCommentDone, classterm.HODCommentDone, " .
-						"       classterm.PrincipalComment, classterm.PrincipalCommentDone, " .
-						"       classterm.PrincipalUsername, classterm.HODUsername, " .
-						"       classterm.ReportDone " .
-						"       FROM user, classlist, classterm " .
-						"WHERE classterm.ClassListIndex = classlist.ClassListIndex " .
-						"AND   classlist.ClassIndex     = $classindex " .
-						"AND   classterm.TermIndex      = $termindex " .
+			$query =	"SELECT classlist.ClassTermIndex, user.Gender, user.FirstName, user.Surname, " .
+						"       classlist.CTComment, classlist.HODComment, " .
+						"       classlist.CTCommentDone, classlist.HODCommentDone, " .
+						"       classlist.PrincipalComment, classlist.PrincipalCommentDone, " .
+						"       classlist.PrincipalUsername, classlist.HODUsername, " .
+						"       classlist.ReportDone " .
+						"       FROM user, classterm, classlist, classlist " .
+						"WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
+						"AND   classterm.ClassIndex     = $classindex " .
+						"AND   classlist.TermIndex      = $termindex " .
 						"AND   classlist.Username       = user.Username ";
 			$res =&  $db->query($query);
 			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
@@ -136,7 +136,7 @@
 				}
 				if($is_ct and $ct_comment_type != $COMMENT_TYPE_NONE and !$row['CTCommentDone']) {
 					if($row['CTComment'] != "NULL" or $ct_comment_type != $COMMENT_TYPE_MANDATORY) {
-						$query =	"UPDATE classterm SET CTCommentDone=1 " .
+						$query =	"UPDATE classlist SET CTCommentDone=1 " .
 									"WHERE ClassTermIndex = {$row['ClassTermIndex']}";
 						$nres =& $db->query($query);
 						if(DB::isError($nres)) die($nres->getDebugInfo());
@@ -147,7 +147,7 @@
 				}
 				if($is_hod and $hod_comment_type != $COMMENT_TYPE_NONE and !$row['HODCommentDone']) {
 					if($row['HODComment'] != "NULL" or $hod_comment_type != $COMMENT_TYPE_MANDATORY) {
-						$query =	"UPDATE classterm SET HODCommentDone=1 " .
+						$query =	"UPDATE classlist SET HODCommentDone=1 " .
 									"WHERE ClassTermIndex = {$row['ClassTermIndex']}";
 						$nres =& $db->query($query);
 						if(DB::isError($nres)) die($nres->getDebugInfo());
@@ -158,7 +158,7 @@
 				}
 				if($is_principal and $pr_comment_type != $COMMENT_TYPE_NONE and !$row['PrincipalCommentDone']) {
 					if($row['PrincipalComment'] != "NULL" or $pr_comment_type != $COMMENT_TYPE_MANDATORY) {
-						$query =	"UPDATE classterm SET PrincipalCommentDone=1 " .
+						$query =	"UPDATE classlist SET PrincipalCommentDone=1 " .
 									"WHERE ClassTermIndex = {$row['ClassTermIndex']}";
 						$nres =& $db->query($query);
 						if(DB::isError($nres)) die($nres->getDebugInfo());
@@ -174,17 +174,18 @@
 				break;
 			}
 
-			$query =	"SELECT classterm.ClassTermIndex, user.Gender, user.FirstName, user.Surname, " .
-						"       classterm.CTComment, classterm.HODComment, " .
-						"       classterm.CTCommentDone, classterm.HODCommentDone, " .
-						"       classterm.PrincipalComment, classterm.PrincipalCommentDone, " .
-						"       classterm.PrincipalUsername, classterm.HODUsername " .
-						"       FROM user, classlist, classterm  " .
-						"WHERE classterm.ClassListIndex = classlist.ClassListIndex " .
-						"AND   classlist.ClassIndex     = $classindex " .
-						"AND   classterm.TermIndex      = $termindex " .
+			$query =	"SELECT classlist.ClassTermIndex, user.Gender, user.FirstName, user.Surname, " .
+						"       classlist.CTComment, classlist.HODComment, " .
+						"       classlist.CTCommentDone, classlist.HODCommentDone, " .
+						"       classlist.PrincipalComment, classlist.PrincipalCommentDone, " .
+						"       classlist.PrincipalUsername, classlist.HODUsername, " .
+						"       classlist.ReportDone " .
+						"       FROM user, classterm, classlist, classlist " .
+						"WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
+						"AND   classterm.ClassIndex     = $classindex " .
+						"AND   classlist.TermIndex      = $termindex " .
 						"AND   classlist.Username       = user.Username " .
-						"AND   classterm.ReportDone     = 0";
+						"AND   classlist.ReportDone     = 0";
 			$res =&  $db->query($query);
 			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 
@@ -239,12 +240,12 @@
 					continue;
 					$is_error = true;
 				}
-				$query =		"UPDATE classterm SET ";
+				$query =		"UPDATE classlist SET ";
 				if(!is_null($proof_username)) {
 					$query .=	"       ReportProofread = 1, ";
 				}
 				$query .=		"       ReportDone = 1 " .
-								" WHERE classterm.ClassTermIndex = {$row['ClassTermIndex']} ";
+								" WHERE classlist.ClassTermIndex = {$row['ClassTermIndex']} ";
 				$nres =& $db->query($query);
 				if(DB::isError($nres)) die($nres->getDebugInfo());
 			}

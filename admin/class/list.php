@@ -56,12 +56,19 @@
 		
 		/* Get class list */
 		$res =&  $db->query("SELECT class.ClassName, class.Grade, class.ClassIndex, " .
-							"       user.Username, user.Title, user.FirstName, user.Surname " .
-							"       FROM class LEFT OUTER JOIN user ON " .
+							"       user.Username, user.Title, user.FirstName, user.Surname, " .
+							"       classterm.ClassTermIndex, classterm.CanDoReport, " .
+							"       MIN(classlist.ReportDone) AS ReportDone, " .
+							"       COUNT(classlist.Username) AS StudentCount " .
+							"       FROM class INNER JOIN classterm USING (ClassIndex) " .
+							"       LEFT OUTER JOIN user ON " .
 							"       user.Username = class.ClassTeacherUsername " .
+							"       LEFT OUTER JOIN classlist USING (ClassTermIndex) " .
 							"WHERE  class.YearIndex = $yearindex " .
+							"AND    classterm.TermIndex = $termindex " .
 							"AND    class.DepartmentIndex = $depindex " .
-							"ORDER BY class.Grade, class.ClassName");
+							"GROUP BY classterm.ClassTermIndex " .
+							"ORDER BY class.Grade, class.ClassName, class.ClassIndex");
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 			
 		/* Print classes and the # of students in each class */
@@ -98,23 +105,11 @@
 				$rptbutton = "";
 				if($is_admin or $is_hod or $is_principal) {
 					/* Check whether subject is open for report editing */
-					$query =	"SELECT class_term.ClassTermIndex, class_term.CanDoReport, " .
-								"       MIN(classterm.ReportDone) AS ReportDone " .
-								"       FROM class_term, classterm, classlist " .
-								"WHERE class_term.ClassIndex = {$row['ClassIndex']} " .
-								"AND   class_term.TermIndex  = $termindex " .
-								"AND   classlist.ClassIndex  = {$row['ClassIndex']} " .
-								"AND   classterm.ClassListIndex = classlist.ClassListIndex " .
-								"AND   classterm.TermIndex   = $termindex " .
-								"GROUP BY class_term.ClassIndex";
-					$nres =& $db->query($query);
-					if(DB::isError($nres)) die($nres->getDebugInfo());         // Check for errors in query
-				
-					if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC) and ($nrow['CanDoReport'] or $nrow['ReportDone'])) {
+					if($row['CanDoReport'] or $row['ReportDone']) {
 						$rptlink =  "index.php?location=" .  dbfuncString2Int("teacher/report/class_list.php") .
 									"&amp;key=" .            dbfuncString2Int($row['ClassIndex']) .
 									"&amp;keyname=" .        dbfuncString2Int($row['ClassName']);
-						if($nrow['ReportDone']) {
+						if($row['ReportDone']) {
 							$rptbutton = dbfuncGetButton($rptlink,  "V", "small", "report", "View reports for class");
 						} else {
 							$rptbutton = dbfuncGetButton($rptlink,  "R", "small", "report", "Edit reports for class");
@@ -148,14 +143,7 @@
 				}
 			
 				/* Get list of students in class */
-				$numRes =& $db->query("SELECT COUNT(classlist.Username) FROM classlist " .
-									  "WHERE classlist.ClassIndex = {$row['ClassIndex']}");
-				if(DB::isError($numRes)) die($numRes->getDebugInfo());       // Check for errors in query
-				
-				/* Count number of students */
-				$nRow =& $numRes->fetchRow();
-				
-				echo "            <td>{$nRow[0]}</td>\n";                                                // Print number of students
+				echo "            <td>{$row['StudentCount']}</td>\n";                                                // Print number of students
 				
 				if($is_admin) {
 					$dellink =  "index.php?location=" .  dbfuncString2Int("admin/class/delete_confirm.php") .

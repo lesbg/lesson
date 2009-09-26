@@ -20,14 +20,16 @@
 		$query =	"SELECT disciplinetype.DisciplineType, user.Username, disciplinebacklog.DateOfViolation, " .
 					"       user.FirstName, user.Surname, disciplinebacklog.Date, disciplinebacklog.Comment, " .
 					"       class.ClassName, disciplinebacklog.DisciplineBacklogIndex " .
-					"       FROM class, classlist, disciplinetype, " .
+					"       FROM class, classterm, classlist, disciplinetype, " .
 					"       disciplinebacklog, user " .
 					"WHERE  disciplinebacklog.WorkerUsername = \"$teacherusername\" " .
 					"AND    disciplinebacklog.DisciplineTypeIndex = disciplinetype.DisciplineTypeIndex " .
-					"AND    classlist.Username = user.Username " .
+					"AND    classlist.Username         = user.Username " .
 					"AND    disciplinebacklog.Username = user.Username " .
-					"AND    class.ClassIndex = classlist.ClassIndex " .
-					"AND    class.YearIndex = $yearindex " .
+					"AND    classlist.ClassTermIndex   = classterm.ClassTermIndex " .
+					"AND    classterm.TermIndex        = $termindex " .
+					"AND    classterm.ClassIndex       = class.ClassIndex " .
+					"AND    class.YearIndex            = $yearindex " .
 					"AND    disciplinebacklog.RequestType = 1 " .
 					"ORDER BY disciplinebacklog.Date, disciplinebacklog.DisciplineBacklogIndex DESC";
 		$res =&  $db->query($query);

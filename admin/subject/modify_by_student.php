@@ -65,9 +65,11 @@
 		echo "               </td>\n";
 		
 		/* Create listboxes with classes */
-		$res =&  $db->query("SELECT class.ClassIndex FROM classlist, class " .
+		$res =&  $db->query("SELECT class.ClassIndex FROM classlist, classterm, class " .
 							"WHERE class.YearIndex = $yearindex " .
-							"AND   classlist.ClassIndex = class.ClassIndex " .
+							"AND   classterm.ClassTermIndex = classlist.ClassTermIndex " .
+							"AND   classterm.TermIndex = $termindex " .
+							"AND   class.ClassIndex = classterm.ClassIndex " .
 							"AND   Username = \"$studentusername\"");
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {

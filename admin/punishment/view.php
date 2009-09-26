@@ -27,7 +27,7 @@
 					"       tuser.Surname AS TSurname, ruser.FirstName AS RFirstName, ruser.Surname AS RSurname, " .
 					"       ruser.Title AS RTitle, " .
 					"       disciplinedate.PunishDate, discipline.ServedType " .
-					"       FROM class, classlist, disciplinetype, disciplineweight, " .
+					"       FROM class, classterm, classlist, disciplinetype, disciplineweight, " .
 					"       user, user AS tuser, user AS ruser, discipline LEFT OUTER JOIN disciplinedate ON " .
 					"       discipline.DisciplineDateIndex=disciplinedate.DisciplineDateIndex " .
 					"WHERE  disciplineweight.YearIndex = $yearindex " .
@@ -39,7 +39,9 @@
 					"AND    discipline.Username = user.Username " .
 					"AND    ruser.Username = discipline.RecordUsername " .
 					"AND    tuser.Username = discipline.WorkerUsername " .
-					"AND    class.ClassIndex = classlist.ClassIndex " .
+					"AND    classterm.ClassTermIndex = classlist.ClassTermIndex " .
+					"AND    classterm.TermIndex = $termindex " .
+					"AND    class.ClassIndex = classterm.ClassIndex " .
 					"AND    class.YearIndex = $yearindex " .
 					"ORDER BY discipline.Date DESC";
 		$res =&  $db->query($query);

@@ -16,19 +16,20 @@
 	
 	/* Get subject information for current teacher */
 	$query =	"SELECT suser.Username, suser.FirstName, suser.Surname " .
-				"       FROM user, support, classlist, user AS suser " .
-				"WHERE support.WorkerUsername  = \"$username\" " .
-				"AND   user.Username           = support.WorkerUsername " .
-				"AND   user.ActiveTeacher      = 1 " .
-				"AND   user.SupportTeacher     = 1 " .
-				"AND   support.StudentUsername = classlist.Username " .
-				"AND   suser.Username          = support.StudentUsername " .
-				"AND   classlist.ClassIndex    = $classindex ";
+				"       FROM user, support, classlist, classterm, user AS suser " .
+				"WHERE support.WorkerUsername   = '$username' " .
+				"AND   user.Username            = support.WorkerUsername " .
+				"AND   user.ActiveTeacher       = 1 " .
+				"AND   user.SupportTeacher      = 1 " .
+				"AND   support.StudentUsername  = classlist.Username " .
+				"AND   suser.Username           = support.StudentUsername " .
+				"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+				"AND   classterm.ClassIndex     = $classindex";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query	
 
 	if($res->numRows() > 0 || dbfuncGetPermission($permissions, $PERM_ADMIN)) {
-		$query =    "SELECT Permissions FROM disciplineperms WHERE Username=\"$username\"";
+		$query =    "SELECT Permissions FROM disciplineperms WHERE Username='$username'";
 		$nres =&  $db->query($query);
 		if(DB::isError($res)) die($nres->getDebugInfo());           // Check for errors in query
 		if($row =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
@@ -40,7 +41,7 @@
 		$order = 1;
 		include "core/titletermyear.php";			
 		
-		echo "      <table align=\"center\" border=\"1\">\n"; // Table headers
+		echo "      <table align='center' border='1'>\n"; // Table headers
 		echo "         <tr>\n";
 		echo "            <th>&nbsp;</th>\n";
 		echo "            <th>Student</th>\n";
@@ -55,7 +56,7 @@
 				$alt_step = "std";
 			}
 			
-			$alt = " class=\"$alt_step\"";
+			$alt = " class='$alt_step'";
 			echo "         <tr$alt>\n";
 
 			if($currentyear == $yearindex) {
@@ -105,7 +106,7 @@
 					"Tried to access support students for $title.");
 		
 		echo "      <p>You do not have permission to access this page</p>\n";
-		echo "      <p><a href=\"$backLink\">Click here to go back</a></p>\n";
+		echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";
 	}
 	
 	include "footer.php";

@@ -1,4 +1,6 @@
 <?php
+	// FIX CLASS STUFF
+	
 	/*****************************************************************
 	 * admin/print/marks_by_subject_type.php  (c) 2005-2007 Jonathan Dieter
 	 *

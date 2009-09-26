@@ -1,6 +1,8 @@
 <?php
+	// FIX CLASS STUFF
+	
 	/*****************************************************************
-	 * admin/class/modify_action.php  (c) 2005-2008 Jonathan Dieter
+	 * admin/class/modify_action.php  (c) 2005-2009 Jonathan Dieter
 	 *
 	 * Add or remove students from class
 	 *****************************************************************/
@@ -23,12 +25,25 @@
 		} else {
 			die("Unable to find class with index $classindex!");
 		}
+
+		/* Get classterm */
+		$res =& $db->query("SELECT ClassTermIndex FROM classterm " . 
+						   "WHERE ClassIndex = $classindex" .
+						   "AND   TermIndex = $termindex");
+		if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
+		if ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+			$classterm = $row['ClassTermIndex'];
+		} else {
+			die("Unable to find class term with index $classindex!");
+		}
 		
 		/* Check which button was pressed */
 		if($_POST["action"] == ">>") {                                   // If >> was pressed, remove students from
 			foreach($_POST['removefromclass'] as $remUserName) {         //  class
 				$res =& $db->query("DELETE FROM classlist " . 
-								   "WHERE Username = \"$remUserName\"");
+								   "WHERE Username = '$remUserName' " .
+								   "AND   ClassTermIndex = $classterm");
+								   
 				if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 				log_event($LOG_LEVEL_ADMIN, "admin/class/modify_action.php", $LOG_ADMIN,
 					"Removed $remUserName from $classname.");

@@ -31,12 +31,15 @@
 	}
 
 	/* Check whether current user is head of department for student */
-	$res =&  $db->query("SELECT hod.Username FROM hod, class, classlist " .
-						"WHERE hod.Username = \"$username\" " .
-						"AND   hod.DepartmentIndex = class.DepartmentIndex " .
-						"AND   class.ClassIndex = classlist.ClassIndex " .
-						"AND   classlist.Username = \"$studentusername\" " .
-						"AND   class.YearIndex = $currentyear");
+	$query =	"SELECT hod.Username FROM hod, class, classterm, classlist " .
+				"WHERE hod.Username = '$username' " .
+				"AND   hod.DepartmentIndex = class.DepartmentIndex " .
+				"AND   classlist.Username = '$studentusername' " .
+				"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+				"AND   classterm.TermIndex = $currentterm " .
+				"AND   class.ClassIndex = classterm.ClassIndex " .
+				"AND   class.YearIndex = $currentyear";
+	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
 	if($res->numRows() > 0) {
@@ -57,11 +60,14 @@
 	}
 
 	/* Check whether current user is class teacher for this student this year */
-	$res =&  $db->query("SELECT class.ClassTeacherUsername FROM class, classlist " .
-						"WHERE class.ClassTeacherUsername = \"$username\" " .
-						"AND   class.ClassIndex = classlist.ClassIndex " .
-						"AND   classlist.Username = \"$studentusername\" " .
-						"AND   class.YearIndex = $currentyear");
+	$query =	"SELECT class.ClassTeacherUsername FROM class, classterm, classlist " .
+				"WHERE class.ClassTeacherUsername = '$username' " .
+				"AND   classlist.Username = '$studentusername' " .
+				"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+				"AND   classterm.TermIndex = $currentterm " .
+				"AND   class.ClassIndex = classterm.ClassIndex " .
+				"AND   class.YearIndex = $currentyear";
+	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
 	if($res->numRows() > 0) {

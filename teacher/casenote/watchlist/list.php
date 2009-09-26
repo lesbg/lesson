@@ -13,7 +13,7 @@
 	
 	/* Check whether current user is a counselor */
 	$res =&  $db->query("SELECT Username FROM counselorlist " .
-						"WHERE Username=\"$username\"");
+						"WHERE Username='$username'");
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
 	if($res->numRows() > 0) {
@@ -58,13 +58,15 @@
 				"         class.ClassName, class.Grade, " .
 				"         COUNT(casenote.StudentUsername) AS NewCount, casenotewatch.CaseNoteWatchIndex, " .
 				"         classlist.ClassOrder " .
-				"         FROM user, class, classlist, casenotenew, casenote LEFT OUTER JOIN " .
+				"         FROM user, class, classterm, classlist, casenotenew, casenote LEFT OUTER JOIN " .
 				"              casenotewatch ON (casenotewatch.StudentUsername=casenote.StudentUsername " .
-				"              AND casenotewatch.WorkerUsername=\"$username\") " .
+				"              AND casenotewatch.WorkerUsername='$username') " .
 				" WHERE  user.Username = casenote.StudentUsername " .
 				" AND    casenotenew.CaseNoteIndex = casenote.CaseNoteIndex " .
 				" AND    user.Username = classlist.Username " .
-				" AND    classlist.ClassIndex = class.ClassIndex " .
+				" AND    classlist.ClassTermIndex = classterm.ClassTermIndex " .
+				" AND    classterm.TermIndex = $currentterm " .
+				" AND    class.ClassIndex = classterm.ClassIndex " .
 				" AND    class.YearIndex = $currentyear " .
 				" AND    casenotenew.WorkerUsername = '$username' " .
 				" GROUP BY casenote.StudentUsername) " .
@@ -73,15 +75,17 @@
 				"         class.ClassName, class.Grade, " .
 				"         NULL AS NewCount, casenotewatch.CaseNoteWatchIndex, " .
 				"         classlist.ClassOrder " .
-				"         FROM user, class, classlist, casenote LEFT OUTER JOIN casenotenew " .
+				"         FROM user, class, classterm, classlist, casenote LEFT OUTER JOIN casenotenew " .
 				"              ON (casenote.CaseNoteIndex=casenotenew.CaseNoteIndex AND " .
-				"              casenotenew.WorkerUsername=\"$username\"), casenotewatch " .
+				"              casenotenew.WorkerUsername='$username'), casenotewatch " .
 				" WHERE  user.Username = casenote.StudentUsername " .
 				" AND    casenotenew.CaseNoteNewIndex IS NULL " .
 				" AND    casenotewatch.StudentUsername = casenote.StudentUsername " .
-				" AND    casenotewatch.WorkerUsername = \"$username\" " .
+				" AND    casenotewatch.WorkerUsername = '$username' " .
 				" AND    user.Username = classlist.Username " .
-				" AND    classlist.ClassIndex = class.ClassIndex " .
+				" AND    classlist.ClassTermIndex = classterm.ClassTermIndex " .
+				" AND    classterm.TermIndex = $currentterm " .
+				" AND    class.ClassIndex = classterm.ClassIndex " .
 				" AND    class.YearIndex = $currentyear " .
 				" GROUP BY casenote.StudentUsername )" .
 				"ORDER BY $sortorder";
@@ -90,7 +94,7 @@
 	
 	/* Print students and their class */
 	if($res->numRows() > 0) {
-		echo "      <table align=\"center\" border=\"1\">\n";  // Table headers
+		echo "      <table align='center' border='1'>\n";  // Table headers
 		echo "         <tr>\n";
 		echo "            <th>Name $nameAsc $nameDec</th>\n";
 		echo "            <th>Class $classAsc $classDec</th>\n";
@@ -103,9 +107,9 @@
 		while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 			$alt_count += 1;
 			if($alt_count % 2 == 0) {
-				$alt = " class=\"alt\"";
+				$alt = " class='alt'";
 			} else {
-				$alt = " class=\"std\"";
+				$alt = " class='std'";
 			}
 			echo "         <tr$alt>\n";
 
@@ -114,7 +118,7 @@
 						"&amp;keyname=" .       dbfuncString2Int("{$row['FirstName']} {$row['Surname']} ({$row['Username']})") .
 						"&amp;keyname2=" .      dbfuncSTring2Int($row['FirstName']);
 
-			echo "            <td><a href=\"$cnlink\">{$row['FirstName']} {$row['Surname']} ({$row['Username']})</a></td>\n";
+			echo "            <td><a href='$cnlink'>{$row['FirstName']} {$row['Surname']} ({$row['Username']})</a></td>\n";
 			if($row['ClassName'] != NULL) {
 				echo "            <td>{$row['ClassName']}</td>\n";
 			} else {
@@ -136,7 +140,7 @@
 		}
 		echo "      </table>\n";               // End of table
 	} else {
-		echo "      <p align=\"center\">There are no students with new casenotes.</p>\n";
+		echo "      <p align='center'>There are no students with new casenotes.</p>\n";
 	}
 	
 	include "footer.php";

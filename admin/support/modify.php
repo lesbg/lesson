@@ -55,12 +55,14 @@
 		echo "                  <select name=\"removefromsupport[]\" style=\"width: 100%;\" multiple size=16>\n";
 		$res =&  $db->query("SELECT support.SupportIndex, tuser.Title AS TTitle, tuser.Surname AS TSurname, " .
 							"       suser.FirstName, suser.Surname, suser.Username, class.ClassName FROM " .
-							"       support, user AS tuser, user AS suser, class, classlist " .
-							"WHERE  support.WorkerUsername  = tuser.Username " .
-							"AND    support.StudentUsername = suser.Username " .
-							"AND    classlist.Username      = suser.Username " .
-							"AND    class.ClassIndex        = classlist.ClassIndex " .
-							"AND    class.YearIndex         = $yearindex "  .
+							"       support, user AS tuser, user AS suser, class, classterm, classlist " .
+							"WHERE  support.WorkerUsername   = tuser.Username " .
+							"AND    support.StudentUsername  = suser.Username " .
+							"AND    classlist.Username       = suser.Username " .
+							"AND    classterm.ClassTermIndex = classlist.ClassTermIndex " .
+							"AND    classterm.TermIndex      = $termindex " .
+							"AND    class.ClassIndex         = classterm.ClassIndex " .
+							"AND    class.YearIndex          = $yearindex "  .
 							"ORDER BY tuser.Username, class.Grade, class.ClassName, suser.Username");
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
@@ -93,9 +95,10 @@
 		if ($_POST['class'] != "") {
 			$_POST['class'] = intval($_POST['class']);
 			$query =        "SELECT user.FirstName, user.Surname, user.Username FROM " .
-							"       user, classlist " .
+							"       user, classlist, classterm " .
 							"WHERE  user.Username = classlist.Username " .
-							"AND    classlist.ClassIndex = {$_POST['class']} " .
+							"AND    classlist.ClassTermIndex = classterm.ClassTermIndex " .
+							"AND    classterm.ClassIndex = {$_POST['class']} " .
 							"ORDER BY user.Username";
 			$res =&  $db->query($query);
 			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query

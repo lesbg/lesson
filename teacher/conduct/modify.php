@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * teacher/conduct/modify.php  (c) 2008 Jonathan Dieter
+	 * teacher/conduct/modify.php  (c) 2008-2009 Jonathan Dieter
 	 *
 	 * Allow modification of conduct and effort marks for students
 	 *****************************************************************/
@@ -25,8 +25,10 @@
 		$res =&  $db->query("SELECT user.FirstName, user.Surname, user.Username, subjectstudent.Conduct " .
 							"       query.ClassOrder, subject. FROM subject, subjectstudent LEFT OUTER JOIN" .
 							"       (SELECT classlist.ClassOrder, classlist.Username " .
-							"               FROM class, classlist, subject " .
-							"        WHERE classlist.ClassIndex       = class.ClassIndex " .
+							"               FROM class, classterm, classlist, subject " .
+							"        WHERE classlist.ClassTermIndex   = classterm.ClassTermIndex " .
+							"        AND   classterm.TermIndex        = subject.TermIndex " .
+							"        AND   classterm.ClassIndex       = class.ClassIndex " .
 							"        AND   class.YearIndex            = subject.YearIndex " .
 							"        AND   subject.SubjectIndex       = $subjectindex) AS query " .
 							"       ON subjectstudent.Username = query.Username, " .

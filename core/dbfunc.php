@@ -1,4 +1,6 @@
 <?php
+	// FIX CLASS STUFF
+	
 	/*****************************************************************
 	 * core/dbfunc.php  (c) 2004-2007 Jonathan Dieter
 	 *
@@ -205,10 +207,13 @@
 		$row =& $res->fetchRow(DB_FETCHMODE_ASSOC);             // Get result of query
 		$depindex = $row['DepartmentIndex'];                               //   and return
 		if(is_null($depindex)) {
-			$res =&  $db->query("SELECT class.DepartmentIndex FROM class, classlist " .
-								"WHERE classlist.Username=\"$username\" " .
-								"AND   class.ClassIndex=classlist.ClassIndex " .
-								"AND   class.YearIndex=$yearindex ");
+			$res =&  $db->query("SELECT class.DepartmentIndex FROM class, classterm, classlist " .
+								"WHERE classlist.Username='$username' " .
+								"AND   classlist.ClassTermIndex=classterm.ClassTermIndex " .
+								"AND   class.ClassIndex = classterm.ClassIndex " .
+								"AND   class.YearIndex = $yearindex " .
+								"ORDER BY classterm.TermIndex DESC " .
+								"LIMIT 1");
 			if(DB::isError($res)) die($res->getDebugInfo());          // Check for errors in query
 			if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {             // Get result of query
 				return $row['DepartmentIndex'];                               //   and return
@@ -535,6 +540,8 @@
 	}
 
 	function dbfuncMoveDir($assignment_index, $old_dirname, $new_dirname) {
+		global $LOG_ERROR;
+		global $LOG_LEVEL_ERROR;
 		global $db;
 		
 		$assignment_index = safe($assignment_index);
@@ -682,7 +689,7 @@
 		return true;
 	}
 
-	function update_classterm_from_user($username, $term_index, $year_index) {
+	/*function update_classterm_from_user($username, $term_index, $year_index) {
 		global $db;
 
 		$query =	"SELECT classlist.ClassIndex FROM class, classlist " .
@@ -695,19 +702,21 @@
 		if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 			update_classterm($row['ClassIndex'], $term_index);
 		}
-	}
+	}*/
 
 	function update_classterm_from_subject($subject_index) {
 		global $db;
 
-		$query =	"SELECT classlist.ClassIndex, subject.TermIndex FROM " .
-					"       classlist, class, subject, subjectstudent " .
+		$query =	"SELECT classterm.ClassIndex, subject.TermIndex FROM " .
+					"       classlist, classterm, class, subject, subjectstudent " .
 					"WHERE subject.SubjectIndex = $subject_index " .
 					"AND   subjectstudent.SubjectIndex = subject.SubjectIndex " .
 					"AND   classlist.Username = subjectstudent.Username " .
-					"AND   classlist.ClassIndex = class.ClassIndex " .
+					"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+					"AND   classterm.TermIndex = subject.TermIndex " .
+					"AND   classterm.ClassIndex = class.ClassIndex " .
 					"AND   class.YearIndex = subject.YearIndex " .
-					"GROUP BY classlist.ClassIndex";
+					"GROUP BY classterm.ClassIndex";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 
@@ -716,27 +725,31 @@
 		}
 	}
 
+	
 	function update_classterm($class_index, $term_index) {
 		global $db;
 		global $AVG_TYPE_PERCENT;
 
-		$query =	"UPDATE classterm, classlist " .
-					"       SET classterm.Average=-1, classterm.Rank=-1 " .
+		$query =	"UPDATE classlist, classterm " .
+					"       SET classlist.Average=-1, classlist.Rank=-1 " .
 					"WHERE classterm.TermIndex = $term_index " .
-					"AND   classterm.ClassListIndex = classlist.ClassListIndex " .
-					"AND   classlist.ClassIndex = $class_index";
+					"AND   classterm.ClassIndex = $class_index " .
+					"AND   classterm.ClassTermIndex = classlist.ClassTermIndex ";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 
-		$query =	"SELECT classlist.Username, classlist.ClassListIndex, class.YearIndex " .
-					"       FROM classlist, class " .
-					"WHERE classlist.ClassIndex = $class_index " .
-					"AND   class.ClassIndex     = $class_index";
+		$query =	"SELECT classlist.Username, classlist.ClassListIndex, " .
+					"       classterm.ClassTermIndex, class.YearIndex " .
+					"       FROM classlist, classterm, class " .
+					"WHERE class.ClassIndex = $class_index " .
+					"AND   classterm.ClassIndex = class.ClassIndex " .
+					"ANd   classterm.TermIndex = $term_index " .
+					"AND   classlist.ClassTermIndex = classterm.ClassTermIndex";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 
 		while($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-			$query =	"UPDATE classterm, " .
+			$query =	"UPDATE classlist, classterm, " .
 						"  (SELECT SUM(subject_weight.DistWeight * subjectstudent.Average) * 100 / " .
 						"          SUM(subject_weight.DistWeight * 100) AS Avg " .
 						"          FROM subjectstudent, subject, " .
@@ -761,18 +774,20 @@
 						"   AND   subjectstudent.Username         =  '{$row['Username']}' " .
 						"   AND   subject_weight.SubjectTypeIndex =  subject.SubjectTypeIndex " .
 						"   GROUP BY subjectstudent.Username) AS ctinfo " .
-						"SET classterm.Average = ctinfo.Avg " .
-						"WHERE classterm.ClassListIndex = '{$row['ClassListIndex']}' " .
-						"AND   classterm.TermIndex      = $term_index";
+						"SET classlist.Average = ctinfo.Avg " .
+						"WHERE classlist.Username  = '{$row['Username']}' " .
+						"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+						"AND   classterm.TermIndex = $term_index " .
+						"AND   classterm.ClassIndex = $class_index";
 			$nres =&  $db->query($query);
 			if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
 		}
 
-		$query =	"SELECT classterm.ClassTermIndex, classterm.Average FROM classterm, classlist " .
-					"WHERE classterm.ClassListIndex = classlist.ClassListIndex " .
-					"AND   classlist.ClassIndex     = $class_index " .
+		$query =	"SELECT classlist.ClassListIndex, classlist.Average FROM classterm, classlist " .
+					"WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
 					"AND   classterm.TermIndex      = $term_index " .
-					"AND   classterm.Average >= 0 " .
+					"AND   classterm.ClassIndex     = $class_index";
+					"AND   classterm.Average        >= 0 " .
 					"ORDER BY Average DESC";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
@@ -789,8 +804,8 @@
 				$count += 1;
 			}
 			$prevmark = round($row['Average']);
-			$query =	"UPDATE classterm SET Rank=$rank " .
-						"WHERE ClassTermIndex = {$row['ClassTermIndex']}";
+			$query =	"UPDATE classlist SET Rank=$rank " .
+						"WHERE ClassListIndex = {$row['ClassListIndex']}";
 			$nres =&  $db->query($query);
 			if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
 		}
@@ -902,6 +917,7 @@
 	}
 
 	/* Update all student conduct marks for year and term */
+	/*
 	function update_conduct_year_term($year, $term) {
 		global $db;
 
@@ -915,8 +931,9 @@
 		while($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 			update_conduct_mark($row['Username'], $year, $term);
 		}
-	}
+	}*/
 
+	/*
 	function update_conduct_input($class_index, $term_index) {
 		global $db;
 		global $CONDUCT_TYPE_PERCENT;
@@ -972,7 +989,7 @@
 			$nres =&  $db->query($query);
 			if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
 		}
-	}
+	}*/
 
 	function update_conduct_mark($studentusername, $year=-1, $term=-1) {
 		global $yearindex;
@@ -982,10 +999,13 @@
 		if($year == -1) $year = $yearindex;
 		if($term == -1) $term = $termindex;
 		$query =	"SELECT class.HasConduct, term.HasConduct AS TermConduct, " .
-					"       COUNT(subjectstudent.SubjectIndex) AS SubjectCount FROM " .
-					"       class, classlist, term, subject, subjectstudent " .
+					"       COUNT(subjectstudent.SubjectIndex) AS SubjectCount, " .
+					"       classterm.ClassTermIndex FROM " .
+					"       class, classterm, classlist, term, subject, subjectstudent " .
 					"WHERE class.YearIndex = $year " .
-					"AND   classlist.ClassIndex = class.ClassIndex " .
+					"AND   classterm.ClassIndex = class.ClassIndex " .
+					"AND   classterm.TermIndex = $term " .
+					"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
 					"AND   classlist.Username = '$studentusername' " .
 					"AND   term.TermIndex = $term " .
 					"AND   subject.YearIndex = $year " .
@@ -997,6 +1017,8 @@
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 
 		if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC) and $row['HasConduct'] == 1 and $row['TermConduct'] == 1) {
+			$classterm = $row['ClassTermIndex'];
+			
 			$query =	"SELECT IF((sum(disciplineweight.DisciplineWeight) > 100), 0, " .
 						"          (100 - sum(disciplineweight.DisciplineWeight))) AS Score " .
 						"       FROM discipline, disciplineweight " .
@@ -1014,28 +1036,17 @@
 				$score = 100;
 			}
 	
-			$query =	"SELECT Username FROM conduct_mark " .
-						"WHERE Username  = '$studentusername' " .
-						"AND   YearIndex = $year " .
-						"AND   TermIndex = $term";
-			$res =&  $db->query($query);
-			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
-			if($res->numRows() > 0) {
-				$query =	"UPDATE conduct_mark SET Score=$score " .
-							"WHERE Username  = '$studentusername' " .
-							"AND   YearIndex = $year " .
-							"AND   TermIndex = $term";
-			} else {
-				$query =	"INSERT INTO conduct_mark (Username, YearIndex, TermIndex, Score) " .
-							"       VALUES ('$studentusername', $year, $term, $score)";
-			}
+			$query =	"UPDATE classlist SET Conduct=$score " .
+						"WHERE Username       = '$studentusername' " .
+						"AND   ClassTermIndex = $classterm";
 			$res =&  $db->query($query);
 			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		} else {
-			$query =	"DELETE FROM conduct_mark " .
-						"WHERE Username = '$studentusername' " .
-						"AND   YearIndex = $year " .
-						"AND   TermIndex = $term";
+			$classterm = $row['ClassTermIndex'];
+			
+			$query =	"UPDATE classlist SET Conduct=-1 " .
+						"WHERE Username       = '$studentusername' " .
+						"AND   ClassTermIndex = $classterm";
 			$res =&  $db->query($query);
 			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		}

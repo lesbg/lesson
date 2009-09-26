@@ -132,8 +132,10 @@
 							"       subjectstudent.Average FROM user, " .
 							"       subjectstudent LEFT OUTER JOIN " .
 							"       (SELECT classlist.ClassOrder, classlist.Username FROM class, " .
-							"               classlist, subject " .
-							"        WHERE classlist.ClassIndex = class.ClassIndex " .
+							"               classterm, classlist, subject " .
+							"        WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
+							"        AND   classterm.TermIndex = subject.TermIndex " .
+							"        AND   class.ClassIndex = classterm.ClassIndex " .
 							"        AND   class.YearIndex = subject.YearIndex " .
 							"        AND subject.SubjectIndex=$subjectindex) AS query " .
 							"       ON subjectstudent.Username = query.Username " .

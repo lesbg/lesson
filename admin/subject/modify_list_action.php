@@ -119,11 +119,13 @@
 			/* Get list of students who are in the active class */
 			if ($_POST['class'] != "") {
 				$query =        "SELECT user.FirstName, user.Surname, user.Username FROM " .
-								"       user, classlist LEFT JOIN subjectstudent ON classlist.Username=subjectstudent.Username AND " .
+								"       user, classterm, classlist LEFT JOIN subjectstudent ON classlist.Username=subjectstudent.Username AND " .
 								"       subjectstudent.SubjectIndex = $subjectindex " .
 								"WHERE  user.Username = classlist.Username " .
 								"AND    subjectstudent.Username IS NULL " .
-								"AND    classlist.ClassIndex = {$_POST['class']} ";
+								"AND    classlist.ClassTermIndex = classterm.ClassTermIndex " .
+								"AND    classterm.TermIndex = $termindex " .
+								"AND    classterm.ClassIndex = {$_POST['class']} ";
 				if    ($showNew  == "checked")            // Add appropriate filter according to radio button that has been selected
 					$query .=   "AND user.User1 = 1 ";
 				elseif($showOld  == "checked")

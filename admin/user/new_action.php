@@ -9,12 +9,7 @@
 	$error = false;        // Boolean to store any errors
 	
 	 /* Check whether user is authorized to change scores */
-	if($is_admin) {
-		/* Set primary password to be the same as username if not entered */
-		if(!isset($_POST['password']) or $_POST['password'] == "") {
-			$_POST['password'] = $_POST['uname'];
-		}
-		
+	if($is_admin) {		
 		/* Set secondary password to null if not entered */
 		if(!isset($_POST['password2']) or $_POST['password2'] == "") {
 			$_POST['password2'] = "NULL";
@@ -22,8 +17,27 @@
 			$_POST['password2'] = "MD5('{$_POST['password2']}')";
 		}
 		
+		$fi = strtolower(substr($_POST['fname'], 0, 1));
+		$si = strtolower(substr($_POST['sname'], 0, 1));
+		
+		if($_POST['autouname'] == "Y") {
+			$res  =& $db->query("SELECT Username FROM user WHERE Username REGEXP '{$fi}{$si}.*' ORDER BY Username DESC LIMIT 1");
+			if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+				$num = intval(substr($row['Username'], 2)) + 1;
+				$_POST['uname'] = sprintf("{$fi}{$si}%03d", $num);
+			} else {
+				$_POST['uname'] = "{$fi}{$si}001";
+			}
+			echo "</p>\n      <p>{$_POST['fname']}'s username is {$_POST['uname']}.</p>\n      <p>"; 
+		}
+		
+		/* Set primary password to be the same as username if not entered */
+		if(!isset($_POST['password']) or $_POST['password'] == "") {
+			$_POST['password'] = $_POST['uname'];
+		}
+		
 		/* Check whether a user already exists with new username */
-		$res  =& $db->query("SELECT username FROM user WHERE username = '{$_POST['uname']}'");
+		$res  =& $db->query("SELECT Username FROM user WHERE Username = '{$_POST['uname']}'");
 		if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 			echo "</p>\n      <p>There is already a user with that username.  " .
 			                    "Press \"Back\" to fix the problem.</p>\n      <p>";

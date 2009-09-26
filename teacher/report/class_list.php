@@ -1,4 +1,6 @@
 <?php
+	//FIX CLASS STUFF FOR EVERYTHING IN THIS FOLDER
+	
 	/*****************************************************************
 	 * teacher/report/class_list.php  (c) 2008 Jonathan Dieter
 	 *
@@ -8,7 +10,7 @@
 	/* Get variables */
 	$class         = dbfuncInt2String($_GET['keyname']);
 	$title         = "Reports for " . $class;
-	$classindex    = safe(dbfuncInt2String($_GET['key']));
+	$classtermindex    = safe(dbfuncInt2String($_GET['key']));
 
 	/* Check whether current user is principal */
 	$res =&  $db->query("SELECT Username FROM principal " .
@@ -34,10 +36,11 @@
 	}
 
 	/* Check whether current user is a hod */
-	$res =&  $db->query("SELECT hod.Username FROM hod, class " .
+	$res =&  $db->query("SELECT hod.Username FROM hod, class, classterm " .
 						"WHERE hod.Username        = '$username' " .
 						"AND   hod.DepartmentIndex = class.DepartmentIndex " .
-						"AND   class.ClassIndex    = $classindex");
+						"AND   class.ClassIndex    = classterm.ClassIndex " .
+						"AND   classterm.ClassTermIndex = $classtermindex");
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
 	/* Check whether user is authorized to change scores */
@@ -69,19 +72,17 @@
 	}
 
 	/* Check whether subject is open for report editing */
-	$query =	"SELECT class_term.AverageType, class_term.EffortType, class_term.ConductType, " .
-				"       class_term.AverageTypeIndex, class_term.EffortTypeIndex, " .
-				"       class_term.ConductTypeIndex, class_term.CTCommentType, " .
-				"       class_term.HODCommentType, class_term.PrincipalCommentType, " .
-				"       class_term.CanDoReport, class_term.AbsenceType, " .
-				"       MIN(classterm.ReportDone) AS ReportDone " .
-				"       FROM class_term, classterm, classlist " .
-				"WHERE class_term.ClassIndex    = $classindex " .
-				"AND   class_term.TermIndex     = $termindex " .
-				"AND   classlist.ClassIndex     = $classindex " .
-				"AND   classterm.ClassListIndex = classlist.ClassListIndex " .
-				"AND   classterm.TermIndex      = $termindex " .
-				"GROUP BY class_term.ClassIndex";
+	$query =	"SELECT classterm.AverageType, classterm.EffortType, classterm.ConductType, " .
+				"       classterm.AverageTypeIndex, classterm.EffortTypeIndex, " .
+				"       classterm.ConductTypeIndex, classterm.CTCommentType, " .
+				"       classterm.HODCommentType, classterm.PrincipalCommentType, " .
+				"       classterm.CanDoReport, classterm.AbsenceType, " .
+				"       MIN(classlist.ReportDone) AS ReportDone " .
+				"       FROM classterm, classlist " .
+				"WHERE classterm.ClassIndex    = $classindex " .
+				"AND   classterm.TermIndex     = $termindex " .
+				"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+				"GROUP BY classterm.ClassIndex";
 	$res =& $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
@@ -105,28 +106,28 @@
 	$conduct_type_index = $row['ConductTypeIndex'];
 
 	$query =	"SELECT user.Gender, user.FirstName, user.Surname, user.Username, " .
-				"       classterm.Average, classterm.Conduct, classterm.Effort, " .
-				"       classterm.Rank, classterm.CTComment, classterm.HODComment, " .
-				"       classterm.CTCommentDone, classterm.HODCommentDone, " .
-				"       classterm.PrincipalComment, classterm.PrincipalCommentDone, " .
-				"       classterm.PrincipalUsername, classterm.HODUsername, " .
-				"       classterm.ReportDone, classterm.ReportProofread, " .
-				"       classterm.ReportPrinted, classterm.Absences, " .
-				"       classterm.ReportProofDone, " .
+				"       classlist.Average, classlist.Conduct, classlist.Effort, " .
+				"       classlist.Rank, classlist.CTComment, classlist.HODComment, " .
+				"       classlist.CTCommentDone, classlist.HODCommentDone, " .
+				"       classlist.PrincipalComment, classlist.PrincipalCommentDone, " .
+				"       classlist.PrincipalUsername, classlist.HODUsername, " .
+				"       classlist.ReportDone, classlist.ReportProofread, " .
+				"       classlist.ReportPrinted, classlist.Absences, " .
+				"       classlist.ReportProofDone, " .
 				"       average_index.Display AS AverageDisplay, " .
 				"       effort_index.Display AS EffortDisplay, " .
 				"       conduct_index.Display AS ConductDisplay " .
 				"       FROM user, classlist, classterm " .
 				"       LEFT OUTER JOIN nonmark_index AS average_index ON " .
-				"            classterm.Average = average_index.NonmarkIndex " .
+				"            classlist.Average = average_index.NonmarkIndex " .
 				"       LEFT OUTER JOIN nonmark_index AS effort_index ON " .
-				"            classterm.Effort = effort_index.NonmarkIndex " .
+				"            classlist.Effort = effort_index.NonmarkIndex " .
 				"       LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
-				"            classterm.Conduct = conduct_index.NonmarkIndex " .
+				"            classlist.Conduct = conduct_index.NonmarkIndex " .
 				"WHERE user.Username            = classlist.Username " .
 				"AND   classlist.ClassIndex     = $classindex " .
 				"AND   classterm.TermIndex      = $termindex " .
-				"AND   classterm.ClassListIndex = classlist.ClassListIndex " .
+				"AND   classlist.ClassListIndex = classlist.ClassListIndex " .
 				"ORDER BY user.FirstName, user.Surname, user.Username";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
@@ -399,13 +400,13 @@
 
 	$show_finish = false;
 	$query =	"SELECT MIN(CTCommentDone) AS CTCommentDone " .
-				"       FROM class_term, classterm, classlist " .
-				"WHERE classterm.ClassListIndex = classlist.ClassListIndex " .
+				"       FROM classterm, classlist, classlist " .
+				"WHERE classlist.ClassListIndex = classlist.ClassListIndex " .
 				"AND   classlist.ClassIndex     =  $classindex " .
-				"AND   classterm.TermIndex      =  $termindex " .
-				"AND   class_term.ClassIndex    =  $classindex " .
-				"AND   class_term.TermIndex     =  $termindex " .
-				"AND   class_term.CTCommentType  != $COMMENT_TYPE_NONE " .
+				"AND   classlist.TermIndex      =  $termindex " .
+				"AND   classterm.ClassIndex    =  $classindex " .
+				"AND   classterm.TermIndex     =  $termindex " .
+				"AND   classterm.CTCommentType  != $COMMENT_TYPE_NONE " .
 				"GROUP BY classlist.ClassIndex";
 	$res =& $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
@@ -415,13 +416,13 @@
 	}
 
 	$query =	"SELECT MIN(HODCommentDone) AS HODCommentDone " .
-				"       FROM class_term, classterm, classlist " .
-				"WHERE classterm.ClassListIndex = classlist.ClassListIndex " .
+				"       FROM classterm, classlist, classlist " .
+				"WHERE classlist.ClassListIndex = classlist.ClassListIndex " .
 				"AND   classlist.ClassIndex     =  $classindex " .
-				"AND   classterm.TermIndex      =  $termindex " .
-				"AND   class_term.ClassIndex    =  $classindex " .
-				"AND   class_term.TermIndex     =  $termindex " .
-				"AND   class_term.HODCommentType != $COMMENT_TYPE_NONE " .
+				"AND   classlist.TermIndex      =  $termindex " .
+				"AND   classterm.ClassIndex    =  $classindex " .
+				"AND   classterm.TermIndex     =  $termindex " .
+				"AND   classterm.HODCommentType != $COMMENT_TYPE_NONE " .
 				"GROUP BY classlist.ClassIndex";
 	$res =& $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
@@ -431,13 +432,13 @@
 	}
 
 	$query =	"SELECT MIN(PrincipalCommentDone) AS PrincipalCommentDone " .
-				"       FROM class_term, classterm, classlist " .
-				"WHERE classterm.ClassListIndex        = classlist.ClassListIndex " .
+				"       FROM classterm, classlist, classlist " .
+				"WHERE classlist.ClassListIndex        = classlist.ClassListIndex " .
 				"AND   classlist.ClassIndex            =  $classindex " .
-				"AND   classterm.TermIndex             =  $termindex " .
-				"AND   class_term.ClassIndex           =  $classindex " .
-				"AND   class_term.TermIndex            =  $termindex " .
-				"AND   class_term.PrincipalCommentType != $COMMENT_TYPE_NONE " .
+				"AND   classlist.TermIndex             =  $termindex " .
+				"AND   classterm.ClassIndex           =  $classindex " .
+				"AND   classterm.TermIndex            =  $termindex " .
+				"AND   classterm.PrincipalCommentType != $COMMENT_TYPE_NONE " .
 				"GROUP BY classlist.ClassIndex";
 	$res =& $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
@@ -447,10 +448,10 @@
 	}
 
 	$show_rpt_close = false;
-	$query =	"SELECT MIN(classterm.ReportDone) AS ReportDone FROM classterm, classlist " .
+	$query =	"SELECT MIN(classlist.ReportDone) AS ReportDone FROM classlist, classlist " .
 				"WHERE classlist.ClassIndex     = $classindex " .
-				"AND   classterm.ClassListIndex = classlist.ClassListIndex " .
-				"AND   classterm.TermIndex      = $termindex " .
+				"AND   classlist.ClassListIndex = classlist.ClassListIndex " .
+				"AND   classlist.TermIndex      = $termindex " .
 				"GROUP BY classlist.ClassIndex";
 	$res =& $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query

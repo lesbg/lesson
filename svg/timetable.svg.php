@@ -46,10 +46,12 @@
 	$row =& $res->fetchRow(DB_FETCHMODE_ASSOC);
 	$depindex   = $row['DepartmentIndex'];
 	if(is_null($depindex)) {
-		$query =	"SELECT class.DepartmentIndex FROM class, classlist " .
+		$query =	"SELECT class.DepartmentIndex FROM class, classterm, classlist " .
 					"WHERE  classlist.Username = '$ttusername' " .
-					"AND    class.ClassIndex = classlist.ClassIndex " .
-					"AND    class.YearIndex = $yearindex";
+					"AND    class.ClassIndex         = classterm.ClassIndex " .
+					"AND    classterm.TermIndex      = $termindex " .
+					"AND    classlist.ClassTermIndex = classterm.ClassTermIndex " .
+					"AND    class.YearIndex          = $yearindex";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());
 		$row =& $res->fetchRow(DB_FETCHMODE_ASSOC);

@@ -70,10 +70,12 @@
 					"       view_discipline.PunishDate, view_discipline.ServedType " .
 					"       FROM class, classlist, view_discipline " .
 					"WHERE  view_discipline.DisciplineDateIndex = $pindex " .
-					"AND    classlist.Username = view_discipline.Username " .
-					"AND    class.ClassIndex = classlist.ClassIndex " .
-					"AND    class.YearIndex = $yearindex " .
-					"AND    class.DepartmentIndex = $depindex " .
+					"AND    classlist.Username         = view_discipline.Username " .
+					"AND    classlist.ClassTermIndex   = classterm.ClassTermIndex " .
+					"AND    classterm.TermIndex        = $termindex " .
+					"AND    classterm.ClassIndex       = class.ClassIndex " .
+					"AND    class.YearIndex            = $yearindex " .
+					"AND    class.DepartmentIndex      = $depindex " .
 					"GROUP BY view_discipline.Username " .
 					"ORDER BY class.Grade, class.ClassName, view_discipline.Username ";
 		$res =&  $db->query($query);

@@ -9,13 +9,13 @@
 	$key          = dbfuncInt2String($_GET['key']);                    // Key
 	$nextLink     = dbfuncInt2String($_GET['next']);                   // Link to next page
 	
-	if(!isset($_POST['strength']) or is_null($_POST['strength']) or $_POST['strength'] == "") {\
+	if(!isset($_POST['strength']) or is_null($_POST['strength']) or $_POST['strength'] == "") {
 		$_POST['strength'] = "NULL";
 	} else {
 		$_POST['strength'] = strval(intval($_POST['strength']));
 	}
 
-	if(!isset($_POST['number']) or is_null($_POST['number']) or $_POST['number'] == "") {\
+	if(!isset($_POST['number']) or is_null($_POST['number']) or $_POST['number'] == "") {
 		$_POST['number'] = "";
 	} else {
 		$_POST['number'] = strval(intval($_POST['number']));

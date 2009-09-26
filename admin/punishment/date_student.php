@@ -74,7 +74,7 @@
 					"       view_discipline.Date, " .
 					"       view_discipline.Comment, class.ClassName, view_discipline.DisciplineIndex, " .
 					"       view_discipline.PunishDate, view_discipline.Done " .
-					"       FROM class, classlist, view_discipline LEFT OUTER JOIN view_attendance ON ( " .
+					"       FROM class, classterm, classlist, view_discipline LEFT OUTER JOIN view_attendance ON ( " .
 					"            view_discipline.Username = view_attendance.Username " .
 					"            AND view_attendance.Date = '$pundate' " .
 					"            AND view_attendance.Period = 1 " .
@@ -87,7 +87,9 @@
 					"AND    view_attendance.AttendanceTypeIndex != $ATT_SUSPENDED " .
 					"AND    view_discipline.DisciplineTypeIndex = $dtype " .
 					"AND    classlist.Username = view_discipline.Username " .
-					"AND    class.ClassIndex = classlist.ClassIndex " .
+					"AND    classterm.ClassTermIndex = classlist.ClassTermIndex " .
+					"AND    classterm.TermIndex = $termindex " .
+					"AND    class.ClassIndex = classterm.ClassIndex " .
 					"AND    class.YearIndex = $yearindex " .
 					"AND    class.DepartmentIndex = $depindex " .
 					"GROUP BY view_discipline.Username " .

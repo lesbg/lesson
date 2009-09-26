@@ -1,4 +1,6 @@
 <?php
+	// FIX CLASS STUFF
+	
 	/*****************************************************************
 	 * admin/punishment/proxy.php  (c) 2006-2008 Jonathan Dieter
 	 *

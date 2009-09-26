@@ -92,9 +92,9 @@
 		} elseif($_GET['sort'] == '3') {
 			$sortorder = "ORDER BY user.Username DESC";
 		} elseif($_GET['sort'] == '8') {
-			$sortorder = "ORDER BY conduct_mark.Score, class.Grade, class.ClassName, user.Username";
+			$sortorder = "ORDER BY classlist.Conduct, class.Grade, class.ClassName, user.Username";
 		} elseif($_GET['sort'] == '9') {
-			$sortorder = "ORDER BY conduct_mark.Score DESC, class.Grade DESC, class.ClassName DESC, user.Username DESC";
+			$sortorder = "ORDER BY classlist.Conduct DESC, class.Grade DESC, class.ClassName DESC, user.Username DESC";
 		} else {
 			$sortorder = "ORDER BY class.Grade, class.ClassName, user.Username";
 		}
@@ -114,13 +114,13 @@
 	
 		$query =	"SELECT user.Username FROM classlist " .
 					"         INNER JOIN user USING (Username) " .
+					"         INNER JOIN classterm USING (ClassTermIndex) " .
 					"         INNER JOIN class USING (ClassIndex) " .
-					"         INNER JOIN conduct_mark ON " .
-					"           (    conduct_mark.Username = classlist.Username " .
-					"            AND conduct_mark.YearIndex = class.YearIndex " .
-					"            AND conduct_mark.TermIndex = $termindex) " .
 					"WHERE class.YearIndex = $yearindex " .
-					"AND   conduct_mark.Score <= $fdata ";
+					"AND   classterm.TermIndex = $termindex " .
+					"AND   classlist.Conduct IS NOT NULL " .
+					"AND   classlist.Conduct != -1 " .
+					"AND   classlist.Conduct <= $fdata ";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		$count = $res->numRows();
@@ -128,16 +128,15 @@
 		$fpstart = intval(intval($max)/$LOGS_PER_PAGE) * $LOGS_PER_PAGE;
 		if($start > $max) $start = 0;
 
-		$query =	"SELECT user.FirstName, user.Surname, user.Username, class.ClassName, class.Grade, " .
-					"       conduct_mark.Score FROM classlist " .
+		$query =	"SELECT user.FirstName, user.Surname, user.Username, class.ClassName, class.Grade FROM classlist " .
 					"         INNER JOIN user USING (Username) " .
+					"         INNER JOIN classterm USING (ClassTermIndex) " .
 					"         INNER JOIN class USING (ClassIndex) " .
-					"         INNER JOIN conduct_mark ON " .
-					"           (    conduct_mark.Username = classlist.Username " .
-					"            AND conduct_mark.YearIndex = class.YearIndex " .
-					"            AND conduct_mark.TermIndex = $termindex) " .
 					"WHERE class.YearIndex = $yearindex " .
-					"AND   conduct_mark.Score <= $fdata " .
+					"AND   classterm.TermIndex = $termindex " .
+					"AND   classlist.Conduct IS NOT NULL " .
+					"AND   classlist.Conduct != -1 " .
+					"AND   classlist.Conduct <= $fdata ";
 					"$sortorder " .
 					"LIMIT $start, $LOGS_PER_PAGE";
 		$res =&  $db->query($query);
@@ -209,8 +208,6 @@
 		/* For each assignment, print subject, teacher, assignment title, date, score, and any comments */
 		$alt_count = 0;
 		while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-			$can_modify = $row['CanModify'];
-			
 			$alt_count += 1;
 			if($alt_count % 2 == 0) {
 				$alt_step = "alt";
@@ -218,11 +215,7 @@
 				$alt_step = "std";
 			}
 			$alt = " class='$alt_step'";
-			if($row['Score'] == $MARK_LATE and $can_modify == 1) {
-				$alt = " class='late-$alt_step'";
-			} else {
-				$alt = " class='$alt_step'";
-			}
+
 			echo "         <tr$alt>\n";
 			
 			if($is_admin) {
@@ -234,7 +227,7 @@
 				echo "            <td nowrap>{$row['FirstName']} {$row['Surname']} ({$row['Username']})</td>\n";
 			}
 			echo "            <td nowrap>{$row['ClassName']}</td>\n";
-			echo "            <td nowrap>{$row['Score']}%</td>\n";
+			echo "            <td nowrap>{$row['Conduct']}%</td>\n";
 			echo "         </tr>\n";
 		}
 		echo "      </table>\n";               // End of table

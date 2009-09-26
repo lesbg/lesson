@@ -39,8 +39,8 @@
 	echo "      <p><a href='$timetableLink'>Timetable</a></p>\n";
 
 	/* If we're supposed to proofread reports this term, show link */
-	$query =	"SELECT user.Username " .
-				"       FROM department, user, classlist, class, class_term, classterm " .
+	/*$query =	"SELECT user.Username " .
+				"       FROM department, user, class, class_term, classterm " .
 				"WHERE user.Username                  = classlist.Username " .
 				"AND   classterm.TermIndex            = class_term.TermIndex " .
 				"AND   classterm.ClassListIndex       = classlist.ClassListIndex " .
@@ -59,19 +59,17 @@
 	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 		$prLink =	"index.php?location=" . dbfuncString2Int("teacher/report/proofread_list.php");
 		echo "      <p><a href='$prLink'>Proofread reports</a></p>\n";
-	}
+	}*/
 
 	/* If user is a class teacher and there are class reports ready, show link */
 	$query =	"SELECT class.ClassIndex, class.ClassName, " .
-				"       class_term.CanDoReport, MIN(classterm.ReportDone) AS ReportDone " .
-				"       FROM class, classterm, classlist, class_term " .
+				"       classterm.CanDoReport, MIN(classlist.ReportDone) AS ReportDone " .
+				"       FROM class, classterm, classlist " .
 				"WHERE class.ClassTeacherUsername = '$username' " .
 				"AND   class.YearIndex            = $yearindex " .
-				"AND   class_term.ClassIndex      = class.ClassIndex " .
-				"AND   class_term.TermIndex       = $termindex " .
-				"AND   classlist.ClassIndex       = class.ClassIndex " .
-				"AND   classterm.ClassListIndex   = classlist.ClassListIndex " .
+				"AND   classterm.ClassIndex       = class.ClassIndex " .
 				"AND   classterm.TermIndex        = $termindex " .
+				"AND   classlist.ClassTermIndex   = classterm.ClassTermIndex " .
 				"GROUP BY class.ClassIndex";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
@@ -363,14 +361,16 @@
 
 	/* Get subject information for support teacher */
 	$query =	"SELECT class.ClassName, class.ClassIndex, COUNT(support.StudentUsername) AS StudentCount " .
-				"       FROM user, support, class, classlist " .
-				"WHERE support.WorkerUsername  = '$username' " .
-				"AND   user.Username           = support.WorkerUsername " .
-				"AND   user.ActiveTeacher      = 1 " .
-				"AND   user.SupportTeacher     = 1 " .
-				"AND   support.StudentUsername = classlist.Username " .
-				"AND   classlist.ClassIndex    = class.ClassIndex " .
-				"AND   class.YearIndex         = $yearindex " .
+				"       FROM user, support, class, classterm, classlist " .
+				"WHERE support.WorkerUsername   = '$username' " .
+				"AND   user.Username            = support.WorkerUsername " .
+				"AND   user.ActiveTeacher       = 1 " .
+				"AND   user.SupportTeacher      = 1 " .
+				"AND   support.StudentUsername  = classlist.Username " .
+				"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+				"AND   classterm.TermIndex      = $termindex " .
+				"AND   classterm.ClassIndex     = class.ClassIndex " .
+				"AND   class.YearIndex          = $yearindex " .
 				"GROUP BY class.ClassName " .
 				"ORDER BY class.Grade, class.ClassName, class.ClassIndex";
 	$nrs =&  $db->query($query);

@@ -69,8 +69,10 @@
 						"       subjectstudent.Average FROM user, " .
 						"       subjectstudent LEFT OUTER JOIN " .
 						"       (SELECT classlist.ClassOrder, classlist.Username FROM class, " .
-						"               classlist, subject " .
-						"        WHERE classlist.ClassIndex = class.ClassIndex " .
+						"               classlist, classterm, subject " .
+						"        WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
+						"        AND   classterm.TermIndex = subject.TermIndex " .
+						"        AND   class.ClassIndex = classterm.ClassIndex " .
 						"        AND   class.YearIndex = subject.YearIndex " .
 						"        AND subject.SubjectIndex = $subjectindex) AS query " .
 						"       ON subjectstudent.Username = query.Username " .
@@ -79,13 +81,15 @@
 						"ORDER BY user.FirstName, user.Surname, user.Username";
 		} else {
 			$query =	"SELECT user.FirstName, user.Surname, user.Username, classlist.ClassOrder, " .
-						"       view_subject_student.Average FROM user, " .
+						"       view_subject_student.Average FROM user, classterm, " .
 						"       classlist LEFT OUTER JOIN view_subject_student " .
 						"       ON classlist.Username = view_subject_student.Username " .
 						"       AND view_subject_student.SubjectIndex = $subjectindex " .
 						"       AND view_subject_student.ClassIndex = $class_index " .
 						"WHERE user.Username = classlist.Username " .
-						"AND   classlist.ClassIndex = $class_index " .
+						"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+						"AND   classterm.TermIndex = $termindex " .
+						"AND   classterm.ClassIndex = $class_index " .
 						"ORDER BY user.FirstName, user.Surname, user.Username";
 		}
 		$res =&  $db->query($query);

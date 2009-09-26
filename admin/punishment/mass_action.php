@@ -1,4 +1,6 @@
 <?php
+	// FIX CLASS STUFF
+	
 	/*****************************************************************
 	 * admin/punishment/mass_action.php  (c) 2006 Jonathan Dieter
 	 *
@@ -49,7 +51,9 @@
 			foreach($_POST['addtopunishment'] as $addUserName) {
 				$query =	"SELECT user.FirstName, user.Surname FROM user, class, classlist " .
 							"WHERE user.Username = '$addUserName' " .
-							"AND   classlist.ClassIndex = class.ClassIndex " .
+							"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+							"AND   classterm.TermIndex = $termindex " .
+							"AND   classterm.ClassIndex = class.ClassIndex " .
 							"AND   class.YearIndex = $yearindex " .
 							"AND   classlist.Username = user.Username " .
 							"AND NOT (1 = 0 " .                    // Will never be true, but OR'd with

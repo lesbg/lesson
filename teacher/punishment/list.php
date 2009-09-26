@@ -38,7 +38,7 @@
 					"       user.FirstName, user.Surname, discipline.Date, discipline.Comment, class.ClassName, " .
 					"       discipline.DisciplineIndex, disciplinetype.PermLevel, " .
 					"       disciplinedate.PunishDate, discipline.ServedType " .
-					"       FROM class, classlist, disciplinetype, disciplineweight, " .
+					"       FROM class, classterm, classlist, disciplinetype, disciplineweight, " .
 					"       user, discipline LEFT OUTER JOIN disciplinedate ON discipline.DisciplineDateIndex = " .
 					"       disciplinedate.DisciplineDateIndex " .
 					"WHERE  discipline.WorkerUsername = \"$teacherusername\" " .
@@ -48,8 +48,10 @@
 					"AND    disciplineweight.DisciplineTypeIndex = disciplinetype.DisciplineTypeIndex " .
 					"AND    classlist.Username = user.Username " .
 					"AND    discipline.Username = user.Username " .
-					"AND    class.ClassIndex = classlist.ClassIndex " .
-					"AND    class.YearIndex = $yearindex " .
+					"AND    classlist.ClassTermIndex   = classterm.ClassTermIndex " .
+					"AND    classterm.TermIndex        = $termindex " .
+					"AND    classterm.ClassIndex       = class.ClassIndex " .
+					"AND    class.YearIndex            = $yearindex " .
 					"ORDER BY discipline.Date DESC";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query

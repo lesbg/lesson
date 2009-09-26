@@ -86,14 +86,16 @@
 		$query =	"SELECT user.Username, user.FirstName, user.Surname, discipline.Date, " .
 					"       discipline.Comment, class.ClassName, discipline.DisciplineIndex, " .
 					"       disciplinedate.PunishDate, discipline.ServedType " .
-					"       FROM class, classlist, disciplinetype, disciplinedate, discipline, " .
+					"       FROM class, classterm, classlist, disciplinetype, disciplinedate, discipline, " .
 					"       user " .
 					"WHERE  disciplinedate.DisciplineDateIndex = $pindex " .
 					"AND    discipline.DisciplineDateIndex = disciplinedate.DisciplineDateIndex " .
 					"AND    disciplinedate.DisciplineTypeIndex = disciplinetype.DisciplineTypeIndex " .
 					"AND    classlist.Username = user.Username " .
 					"AND    discipline.Username = user.Username " .
-					"AND    class.ClassIndex = classlist.ClassIndex " .
+					"AND    classterm.ClassTermIndex = classlist.ClassTermIndex " .
+					"AND    classterm.TermIndex = $termindex " .
+					"AND    class.ClassIndex = classterm.ClassIndex " .
 					"AND    class.YearIndex = $yearindex " .
 					"AND    class.DepartmentIndex = $depindex " .
 					"GROUP BY user.Username " .

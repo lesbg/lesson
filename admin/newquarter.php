@@ -1,4 +1,6 @@
 <?php
+	// FIX CLASS STUFF
+	
 	/*****************************************************************
 	 * admin/newquarter.php  (c) 2005-2008 Jonathan Dieter
 	 *

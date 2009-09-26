@@ -21,14 +21,19 @@
 
 		/* Check whether user is authorized to change scores */
 		if(dbfuncGetPermission($permissions, $PERM_ADMIN)) {
+			$res =&  $db->query("DELETE classlist FROM classlist " .
+								"INNER JOIN classterm USING (ClassTermIndex) " .              // Remove students from class
+								"WHERE classterm.ClassIndex  = $classindex");
+			if(DB::isError($res)) die($res->getDebugInfo());            // Check for errors in query
+
+			$res =&  $db->query("DELETE FROM classterm " .              // Delete class term
+								"WHERE ClassIndex  = $classindex");
+			if(DB::isError($res)) die($res->getDebugInfo());            // Check for errors in query
+			
 			$res =&  $db->query("DELETE FROM class " .                  // Delete class
 								"WHERE ClassIndex  = $classindex");
 			if(DB::isError($res)) die($res->getDebugInfo());            // Check for errors in query
-			
-			$res =&  $db->query("DELETE FROM classlist " .              // Remove students from class
-								"WHERE ClassIndex  = $classindex");
-			if(DB::isError($res)) die($res->getDebugInfo());            // Check for errors in query
-			
+						
 			echo "      <p align=\"center\">Class successfully deleted.</p>\n";
 			echo "      <p align=\"center\"><a href=\"$nextLink\">Continue</a></p>\n";
 			log_event($LOG_LEVEL_ADMIN, "admin/class/delete.php", $LOG_ADMIN,

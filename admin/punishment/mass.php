@@ -1,4 +1,6 @@
 <?php
+	// FIX CLASS STUFF
+	
 	/*****************************************************************
 	 * admin/punishment/mass.php  (c) 2006 Jonathan Dieter
 	 *

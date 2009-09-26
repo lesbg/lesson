@@ -46,10 +46,11 @@
 	/* Verify that user is allowed to choose specified department */
 	if(!$showalldeps) {
 		if(!$admin_page) {
-			$query =		"(SELECT class.DepartmentIndex FROM class, classlist " .
-							" WHERE classlist.Username = '$username' " .
-							" AND   class.ClassIndex   = classlist.ClassIndex " .
-							" AND   class.YearIndex    = $yearindex) " .
+			$query =		"(SELECT class.DepartmentIndex FROM class, classterm, classlist " .
+							" WHERE classlist.Username         = '$username' " .
+							" AND   classlist.ClassTermIndex   = classterm.ClassTermIndex " .
+							" AND   classterm.ClassIndex       = class.ClassIndex " .
+							" AND   class.YearIndex            = $yearindex) " .
 							"UNION " .
 							"(SELECT subject.DepartmentIndex FROM subject, subjectteacher " .
 							" WHERE subjectteacher.Username = '$username' " .

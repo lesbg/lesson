@@ -17,8 +17,8 @@
 	
 	/* Check whether student is in current user's watchlist */
 	$res =&  $db->query("SELECT WorkerUsername FROM casenotewatch " .
-						"WHERE StudentUsername=\"$studentusername\" " .
-						"AND   WorkerUsername=\"$username\"");
+						"WHERE StudentUsername='$studentusername' " .
+						"AND   WorkerUsername='$username'");
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
 	if($res->numRows() > 0) {
@@ -29,7 +29,7 @@
 
 	/* Check whether current user is principal */
 	$res =&  $db->query("SELECT Username FROM principal " .
-						"WHERE Username=\"$username\" AND Level=1");
+						"WHERE Username='$username' AND Level=1");
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
 	if($res->numRows() > 0) {
@@ -39,12 +39,15 @@
 	}
 
 	/* Check whether current user is head of department for student */
-	$res =&  $db->query("SELECT hod.Username FROM hod, class, classlist " .
-						"WHERE hod.Username = \"$username\" " .
-						"AND   hod.DepartmentIndex = class.DepartmentIndex " .
-						"AND   class.ClassIndex = classlist.ClassIndex " .
-						"AND   classlist.Username = \"$studentusername\" " .
-						"AND   class.YearIndex = $currentyear");
+	$query =	"SELECT hod.Username FROM hod, class, classterm, classlist " .
+				"WHERE hod.Username = '$username' " .
+				"AND   hod.DepartmentIndex = class.DepartmentIndex " .
+				"AND   classlist.Username = '$studentusername' " .
+				"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+				"AND   classterm.TermIndex = $currentterm " .
+				"AND   class.ClassIndex = classterm.ClassIndex " .
+				"AND   class.YearIndex = $currentyear";
+	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
 	if($res->numRows() > 0) {
@@ -55,7 +58,7 @@
 
 	/* Check whether current user is a counselor */
 	$res =&  $db->query("SELECT Username FROM counselorlist " .
-						"WHERE Username=\"$username\"");
+						"WHERE Username='$username'");
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
 	if($res->numRows() > 0) {
@@ -65,11 +68,14 @@
 	}
 
 	/* Check whether current user is class teacher for this student this year */
-	$res =&  $db->query("SELECT class.ClassTeacherUsername FROM class, classlist " .
-						"WHERE class.ClassTeacherUsername = \"$username\" " .
-						"AND   class.ClassIndex = classlist.ClassIndex " .
-						"AND   classlist.Username = \"$studentusername\" " .
-						"AND   class.YearIndex = $currentyear");
+	$query =	"SELECT class.ClassTeacherUsername FROM class, classterm, classlist " .
+				"WHERE class.ClassTeacherUsername = '$username' " .
+				"AND   classlist.Username = '$studentusername' " .
+				"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+				"AND   classterm.TermIndex = $currentterm " .
+				"AND   class.ClassIndex = classterm.ClassIndex " .
+				"AND   class.YearIndex = $currentyear";
+	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
 	if($res->numRows() > 0) {
@@ -80,8 +86,8 @@
 
 	/* Check whether current user is a support teacher for this student */
 	$res =&  $db->query("SELECT user.Username FROM support, user " .
-						"WHERE support.StudentUsername = \"$studentusername\" " .
-						"AND   support.WorkerUsername = \"$username\" " .
+						"WHERE support.StudentUsername = '$studentusername' " .
+						"AND   support.WorkerUsername = '$username' " .
 						"AND   user.Username = support.WorkerUsername " .
 						"AND   user.ActiveTeacher = 1 " .
 						"AND   user.SupportTeacher = 1");
@@ -105,8 +111,8 @@
 
 	/* Check whether current user has ever written a casenote for this student  */
 	$res =&  $db->query("SELECT WorkerUsername FROM casenote " .
-						"WHERE WorkerUsername = \"$username\" " .
-						"AND   StudentUsername = \"$studentusername\"");
+						"WHERE WorkerUsername = '$username' " .
+						"AND   StudentUsername = '$studentusername'");
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
 	if($res->numRows() > 0) {
@@ -133,11 +139,13 @@
 
 		/* Build list of relevant head of departments */
 		$query = 	"SELECT user.Title, user.FirstName, user.Surname " .
-					"       FROM hod, class, classlist, user " .
+					"       FROM hod, class, classterm, classlist, user " .
 					"WHERE hod.DepartmentIndex = class.DepartmentIndex " .
 					"AND   class.YearIndex = $currentyear " .
-					"AND   class.ClassIndex = classlist.ClassIndex " .
-					"AND   classlist.Username = \"$studentusername\" " .
+					"AND   class.ClassIndex = classterm.ClassIndex " .
+					"AND   classterm.TermIndex = $currentterm " .
+					"AND   classterm.ClassTermIndex = classlist.ClassTermIndex " .
+					"AND   classlist.Username = '$studentusername' " .
 					"AND   hod.Username = user.Username";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
@@ -148,11 +156,13 @@
 		
 		/* Build list of this student's class teacher for this year */
 		$query = 	"SELECT user.Title, user.FirstName, user.Surname " .
-					"       FROM class, classlist, user " .
-					"WHERE class.YearIndex = $currentyear " .
-					"AND   class.ClassIndex = classlist.ClassIndex " .
-					"AND   classlist.Username = \"$studentusername\" " .
-					"AND   class.ClassTeacherUsername = user.Username";
+					"       FROM class, classterm, classlist, user " .
+					"WHERE class.ClassTeacherUsername = user.Username " .
+					"AND   class.YearIndex = $currentyear " .
+					"AND   class.ClassIndex = classterm.ClassIndex " .
+					"AND   classterm.TermIndex = $currentterm " .
+					"AND   classterm.ClassTermIndex = classlist.ClassTermIndex " .
+					"AND   classlist.Username = '$studentusername' ";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 		$ct_list = array();
@@ -168,8 +178,8 @@
 						"       FROM user, casenote " .
 						"WHERE user.Username = casenote.WorkerUsername " .
 						"AND   (casenote.Level > 0 OR " .
-						"       casenote.WorkerUsername = \"$username\")" .
-						"AND   casenote.StudentUsername = \"$studentusername\" " .
+						"       casenote.WorkerUsername = '$username')" .
+						"AND   casenote.StudentUsername = '$studentusername' " .
 						"ORDER BY casenote.Date DESC, casenote.CaseNoteIndex DESC";
 		} elseif($is_hod) {
 			$query = 	"SELECT user.FirstName, user.Surname, user.Username, " .
@@ -178,8 +188,8 @@
 						"       FROM user, casenote " .
 						"WHERE user.Username = casenote.WorkerUsername " .
 						"AND   ((casenote.Level > 0 AND casenote.Level < 5) OR " .
-						"       casenote.WorkerUsername = \"$username\")" .
-						"AND   casenote.StudentUsername = \"$studentusername\" " .
+						"       casenote.WorkerUsername = '$username')" .
+						"AND   casenote.StudentUsername = '$studentusername' " .
 						"ORDER BY casenote.Date DESC, casenote.CaseNoteIndex DESC";
 		} elseif($is_counselor) {
 			$query = 	"SELECT user.FirstName, user.Surname, user.Username, " .
@@ -190,10 +200,10 @@
 						"WHERE user.Username = casenote.WorkerUsername " .
 						"AND   ((casenote.Level > 0 AND casenote.Level < 3) OR " .
 						"       (casenote.Level = 3 AND " .
-						"        (casenotelist.WorkerUsername = \"$username\" OR " .
+						"        (casenotelist.WorkerUsername = '$username' OR " .
 						"         casenotelist.WorkerUsername IS NULL)) OR " .
-						"       (casenote.WorkerUsername = \"$username\")) " .
-						"AND   casenote.StudentUsername = \"$studentusername\" " .
+						"       (casenote.WorkerUsername = '$username')) " .
+						"AND   casenote.StudentUsername = '$studentusername' " .
 						"GROUP BY casenote.CaseNoteIndex " .
 						"ORDER BY casenote.Date DESC, casenote.CaseNoteIndex DESC";
 		} elseif($is_classteacher) {
@@ -203,8 +213,8 @@
 						"       FROM user, casenote " .
 						"WHERE user.Username = casenote.WorkerUsername " .
 						"AND   ((casenote.Level > 0 AND casenote.Level < 3) OR " .
-						"       casenote.WorkerUsername = \"$username\")" .
-						"AND   casenote.StudentUsername = \"$studentusername\" " .
+						"       casenote.WorkerUsername = '$username')" .
+						"AND   casenote.StudentUsername = '$studentusername' " .
 						"ORDER BY casenote.Date DESC, casenote.CaseNoteIndex DESC";
 		} elseif($is_supportteacher or $is_teacher) {
 			$query = 	"SELECT user.FirstName, user.Surname, user.Username, " .
@@ -213,8 +223,8 @@
 						"       FROM user, casenote " .
 						"WHERE user.Username = casenote.WorkerUsername " .
 						"AND   ((casenote.Level > 0 AND casenote.Level < 2) OR " .
-						"       casenote.WorkerUsername = \"$username\")" .
-						"AND   casenote.StudentUsername = \"$studentusername\" " .
+						"       casenote.WorkerUsername = '$username')" .
+						"AND   casenote.StudentUsername = '$studentusername' " .
 						"ORDER BY casenote.Date DESC, casenote.CaseNoteIndex DESC";
 		} else {
 			$query = 	"SELECT user.FirstName, user.Surname, user.Username, " .
@@ -222,17 +232,17 @@
 						"       casenote.Level, casenote.Date " .
 						"       FROM user, casenote " .
 						"WHERE user.Username = casenote.WorkerUsername " .
-						"AND   casenote.WorkerUsername = \"$username\"" .
-						"AND   casenote.StudentUsername = \"$studentusername\" " .
+						"AND   casenote.WorkerUsername = '$username'" .
+						"AND   casenote.StudentUsername = '$studentusername' " .
 						"ORDER BY casenote.Date DESC, casenote.CaseNoteIndex DESC";
 			$writable = false;
 		}
 
 		/* Clear new casenotes flag for current student */
 		$res =&  $db->query("DELETE casenotenew.* FROM casenotenew, casenote " .
-							"WHERE casenotenew.WorkerUsername=\"$username\" " .
+							"WHERE casenotenew.WorkerUsername='$username' " .
 							"AND   casenote.CaseNoteIndex=casenotenew.CaseNoteIndex " .
-							"AND   casenote.StudentUsername=\"$studentusername\"");
+							"AND   casenote.StudentUsername='$studentusername'");
 		if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 		if($writable) {
 			/* Check to see if we are supposed to add someone to the watchlist */
@@ -267,7 +277,7 @@
 					$wlbutton = dbfuncGetButton($wlnLink, "Add to my watchlist", "medium", "cn", "Add $studentfirstname to my casenote watchlist");
 				} else {
 					$res =&  $db->query("DELETE FROM casenotewatch " .
-										"WHERE WorkerUsername=\"{$username}\"");
+										"WHERE WorkerUsername='{$username}'");
 					if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 					$is_on_wl = false;
 					$wlbutton = "";
@@ -284,21 +294,21 @@
 					$wlbutton = "";
 				}
 			}
-			echo "        <p align=\"center\">$addbutton $wlbutton</p>\n";
+			echo "        <p align='center'>$addbutton $wlbutton</p>\n";
 
 		} elseif($is_on_wl) {
 			/* Clear new casenotes flag for current student */
 			$res =&  $db->query("DELETE casenotenew.* FROM casenotenew, casenote " .
-								"WHERE casenotenew.WorkerUsername=\"$username\" " .
+								"WHERE casenotenew.WorkerUsername='$username' " .
 								"AND   casenote.CaseNoteIndex=casenotenew.CaseNoteIndex " .
-								"AND   casenote.StudentUsername=\"$studentusername\"");
+								"AND   casenote.StudentUsername='$studentusername'");
 			if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 			/* Remove student from watchlist because teacher is no longer able to see
 			   anybody else's casenotes */
 			$res =&  $db->query("DELETE FROM casenotewatch " .
-								"WHERE CaseNoteWatchIndex=\"{$username}{$studentusername}\"");
+								"WHERE CaseNoteWatchIndex='{$username}{$studentusername}'");
 			if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
-			echo "        <p align=\"center\">Removed $student from your watchlist because you are no longer able to see any other teacher's casenotes on this student.</p>\n";
+			echo "        <p align='center'>Removed $student from your watchlist because you are no longer able to see any other teacher's casenotes on this student.</p>\n";
 			$is_on_wl = false;
 		}
 				
@@ -357,15 +367,15 @@
 				$level       = "Level: {$row['Level']}";
 				$level_title = "Viewable by " . getNamesFromList($name_list);
 			}
-			echo "         <table align=\"center\" border=\"1\" width=\"400px\">\n"; // Table headers
-			echo "            <tr class=\"alt\">\n";
-			echo "               <td style=\"border-style: none\">\n";
-			echo "                  <span style=\"float: left\">{$row['Title']} {$row['FirstName']} {$row['Surname']} ({$row['Username']})</span><span style=\"float: right\">$date</span><br>\n";
-			echo "                  <span style=\"float: left\"><a title=\"$level_title\" class=\"cn-level{$row['Level']}\">$level</a></span><span style=\"float: right\">$time</span>\n";
+			echo "         <table align='center' border='1' width='400px'>\n"; // Table headers
+			echo "            <tr class='alt'>\n";
+			echo "               <td style='border-style: none'>\n";
+			echo "                  <span style='float: left'>{$row['Title']} {$row['FirstName']} {$row['Surname']} ({$row['Username']})</span><span style='float: right'>$date</span><br>\n";
+			echo "                  <span style='float: left'><a title='$level_title' class='cn-level{$row['Level']}'>$level</a></span><span style='float: right'>$time</span>\n";
 			echo "               </td>\n";
 			echo "            </tr>\n";
-			echo "            <tr class=\"std\">\n";
-			echo "               <td colspan=\"2\">\n";
+			echo "            <tr class='std'>\n";
+			echo "               <td colspan='2'>\n";
 			echo "                  {$row['Note']}\n";
 			echo "               </td>\n";
 			echo "            </tr>\n";
@@ -380,7 +390,7 @@
 		
 		/* Print error message */
 		echo "      <p>You do not have permission to access this page</p>\n";
-		echo "      <p><a href=\"$backLink\">Click here to go back</a></p>\n";
+		echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";
 	}
 	
 	include "footer.php";

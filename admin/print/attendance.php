@@ -38,9 +38,12 @@
 		$query =	"SELECT user.FirstName, user.Surname, user.Username, attendancetype.AttendanceType, " .
 					"       query.ClassName, query.Grade FROM attendance, attendancetype, period, " .
 					"       user LEFT OUTER JOIN " .
-					"       (SELECT class.ClassName, class.Grade, classlist.ClassOrder, " .
-					"        classlist.Username FROM classlist, class WHERE " .
-					"        classlist.ClassIndex = class.ClassIndex AND class.YearIndex = $yearindex) " .
+					"       (SELECT class.ClassName, class.Grade, " .
+					"               classlist.Username FROM classlist, classterm, class " .
+					"        WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
+					"        AND   classterm.TermIndex = $termindex " .
+					"        AND   classterm.ClassIndex = class.ClassIndex " .
+					"        AND   class.YearIndex = $yearindex) " .
 					"       AS query USING (Username) " .
 					"WHERE attendance.AttendanceTypeIndex = attendancetype.AttendanceTypeIndex " .
 					"AND   attendance.Date = CURDATE() " .

@@ -33,8 +33,10 @@
 		$query =	"SELECT user.FirstName, user.Surname, user.Username, query.ClassOrder FROM timetable, user, " .
 					"       subjectstudent LEFT OUTER JOIN " .
 					"       (SELECT classlist.ClassOrder, classlist.Username FROM class, " .
-					"               classlist, subject " .
-					"        WHERE classlist.ClassIndex = class.ClassIndex " .
+					"               classlist, classterm, subject " .
+					"        WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
+					"        AND   classterm.TermIndex = subject.TermIndex " .
+					"        AND   class.ClassIndex = classterm.ClassIndex " .
 					"        AND   class.YearIndex = subject.YearIndex " .
 					"        AND   subject.SubjectIndex=$subjectindex) AS query " .
 					"       ON subjectstudent.Username = query.Username " .

@@ -208,9 +208,12 @@
 					"         INNER JOIN subject        USING (SubjectIndex) " .
 					"         INNER JOIN user           USING (Username) " .
 					"         INNER JOIN ( " .
-					"           classlist INNER JOIN class " .
-					"             ON  class.ClassIndex = classlist.ClassIndex " .
-					"             AND class.YearIndex = $yearindex " .
+					"           classlist INNER JOIN classterm " .
+					"             ON  (class.ClassTermIndex = classlist.ClassTermIndex " .
+					"                  AND classterm.TermIndex = $termindex) " .
+					"             INNER JOIN class " .
+					"             ON  (class.ClassIndex = classterm.ClassIndex " .
+					"                  AND class.YearIndex = $yearindex) " .
 					"         ) ON mark.Username = classlist.Username " .
 					"WHERE subject.YearIndex = $yearindex " .
 					"AND   subject.TermIndex = $termindex " .

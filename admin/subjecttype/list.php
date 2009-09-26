@@ -16,11 +16,11 @@
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 			
 		/* Print subjects and the teachers that teach them */
-		if($res->numRows() > 0) {
-			$newlink =  "index.php?location=" .  dbfuncString2Int("admin/subjecttype/new.php");  // link to create a new subject 
-			$newbutton = dbfuncGetButton($newlink, "New subject type", "medium", "", "Create new subject type");
-			echo "      <p align=\"center\">$newbutton</p>\n";
-			
+		$newlink =  "index.php?location=" .  dbfuncString2Int("admin/subjecttype/new.php");  // link to create a new subject 
+		$newbutton = dbfuncGetButton($newlink, "New subject type", "medium", "", "Create new subject type");
+		echo "      <p align=\"center\">$newbutton</p>\n";
+		
+		if($res->numRows() > 0) {			
 			echo "      <table align=\"center\" border=\"1\">\n"; // Table headers
 			echo "         <tr>\n";
 			echo "            <th>&nbsp;</th>\n";

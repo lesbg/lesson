@@ -51,7 +51,8 @@
 		$res =&  $db->query("SELECT user.FirstName, user.Surname, user.Username FROM " .
 							"       user, classlist " .
 							"WHERE classlist.Username = user.Username " .
-							"AND   classlist.ClassIndex = $classindex " .
+							"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+							"AND   classterm.ClassIndex = $classindex " .
 							"ORDER BY user.Username");
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
@@ -65,9 +66,14 @@
 		echo "               <td>\n";
 		echo "                  <select name=\"addtoclass[]\" multiple size=15>\n";
 		$res =&  $db->query("SELECT user.FirstName, user.Surname, user.Username FROM " .
-							"       user LEFT OUTER JOIN (classlist INNER JOIN class ON classlist.ClassIndex = class.ClassIndex AND class.YearIndex = $yearindex) ON user.Username = classlist.Username " .
+							"       user LEFT OUTER JOIN " .
+							"            (classlist INNER JOIN classterm ON" .
+							"                classlist.ClassTermIndex = classterm.ClassTermIndex AND classterm.TermIndex = $termindex " .
+							"             INNER JOIN class ON" .
+							"                classterm.ClassIndex = class.ClassIndex AND class.YearIndex = $yearindex)" .
+							"            ON user.Username = classlist.Username " .
 							"WHERE user.ActiveStudent = '1' " .
-							"AND   classlist.ClassIndex IS NULL " .
+							"AND   classlist.ClassTermIndex IS NULL " .
 							"ORDER BY user.Username");
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
@@ -117,22 +123,22 @@
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		
 		while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-			echo "                     <option value=\"{$row['Username']}\">{$row['FirstName']} " .
+			echo "                     <option value='{$row['Username']}'>{$row['FirstName']} " .
 													"{$row['Surname']} ({$row['Username']})\n";
 		}
 		echo "                  </select><br>\n";
 		echo "               </td>\n";
 		echo "            </tr>\n";
-		echo "            <tr class=\"alt\">\n";
-		echo "               <td align=\"center\"><input type=\"submit\" name=\"actiont\" value=\">>\" \></td>\n";
-		echo "               <td align=\"center\"><input type=\"submit\" name=\"actiont\" value=\"<<\" \></td>\n";
+		echo "            <tr class='alt'>\n";
+		echo "               <td align='center'><input type='submit' name='actiont' value='>>' \></td>\n";
+		echo "               <td align='center'><input type='submit' name='actiont' value='<<' \></td>\n";
 		echo "            </tr>\n";
 		echo "         </table>\n";               // End of table
 		echo "         <p></p>\n";
 		echo "      </form>\n";
 	} else {  // User isn't authorized to view or change scores.
 		echo "      <p>You do not have permission to access this page</p>\n";
-		echo "      <p><a href=\"$backLink\">Click here to go back</a></p>\n";
+		echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";
 	}
 	
 	include "footer.php";

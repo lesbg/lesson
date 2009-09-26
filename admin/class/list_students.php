@@ -60,26 +60,22 @@
 		include "core/settermandyear.php";
 		include "core/titletermyear.php";
 
-		$res =&  $db->query("SELECT user.FirstName, user.Surname, user.Username, user.User1, user.User2, " .
-							"       conduct_mark.Score, classterm.Average, classterm.Rank, " .
-							"       COUNT(subjectstudent.SubjectIndex) AS SubjectCount " .
-							"       FROM class INNER JOIN classlist USING (ClassIndex) " .
-							"            INNER JOIN user USING (Username) " .
-							"            LEFT OUTER JOIN classterm ON " .
-							"               (classterm.ClassListIndex = classlist.ClassListIndex " .
-							"                AND classterm.TermIndex  = $termindex) " .
-							"            LEFT OUTER JOIN conduct_mark ON " .
-							"              (conduct_mark.Username = classlist.Username " .
-							"               AND conduct_mark.YearIndex = class.YearIndex " .
-							"               AND conduct_mark.TermIndex = $termindex) " .
-							"            LEFT OUTER JOIN (subjectstudent " .
-							"               INNER JOIN subject USING (SubjectIndex)) ON " .
-							"               (subjectstudent.Username = user.Username " .
-							"                AND subject.YearIndex = $yearindex " .
-							"                AND subject.TermIndex = $termindex) " .
-							"WHERE classlist.ClassIndex = $classindex " .
-							"GROUP BY user.Username " .
-							"ORDER BY user.FirstName, user.Surname, user.Username");
+		$query =	"SELECT user.FirstName, user.Surname, user.Username, user.User1, user.User2, " .
+					"       classlist.Conduct, classlist.Average, classlist.Rank, " .
+					"       COUNT(subjectstudent.SubjectIndex) AS SubjectCount " .
+					"       FROM classterm " .
+					"            INNER JOIN classlist USING (ClassTermIndex) " .
+					"            INNER JOIN user USING (Username) " .
+					"            LEFT OUTER JOIN (subjectstudent " .
+					"               INNER JOIN subject USING (SubjectIndex)) ON " .
+					"               (subjectstudent.Username = user.Username " .
+					"                AND subject.YearIndex = $yearindex " .
+					"                AND subject.TermIndex = $termindex) " .
+					"WHERE classterm.ClassIndex = $classindex " .
+					"AND   classterm.TermIndex = $termindex " .
+					"GROUP BY user.Username " .
+					"ORDER BY user.FirstName, user.Surname, user.Username";
+		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		
 		/* Print students and their class */
@@ -109,8 +105,8 @@
 			$alt_count = 0;
 			
 			while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-				if(!is_null($row['Score'])) {
-					$conduct = "{$row['Score']}%";
+				if(!is_null($row['Conduct']) and ($row['Conduct'] != -1)) {
+					$conduct = "{$row['Conduct']}%";
 				} else {
 					$conduct = "N/A";
 				}
@@ -129,9 +125,10 @@
 				$absent    = "-";
 				$late      = "-";
 				$suspended = "-";
+				// TODO: Clean this up for speed improvement
 				$query =    "SELECT AttendanceTypeIndex, COUNT(AttendanceIndex) AS Count " .
 							"       FROM view_attendance " .
-							"WHERE  Username = \"{$row['Username']}\" " .
+							"WHERE  Username = '{$row['Username']}' " .
 							"AND    YearIndex = $yearindex " .
 							"AND    TermIndex = $termindex " .
 							"AND    Period = 1 " .

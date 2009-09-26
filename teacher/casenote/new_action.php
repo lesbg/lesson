@@ -27,12 +27,15 @@
 	}
 
 	/* Check whether current user is head of department for student */
-	$res =&  $db->query("SELECT hod.Username FROM hod, class, classlist " .
-						"WHERE hod.Username = \"$username\" " .
-						"AND   hod.DepartmentIndex = class.DepartmentIndex " .
-						"AND   class.ClassIndex = classlist.ClassIndex " .
-						"AND   classlist.Username = \"$studentusername\" " .
-						"AND   class.YearIndex = $currentyear");
+	$query =	"SELECT hod.Username FROM hod, class, classterm, classlist " .
+				"WHERE hod.Username = '$username' " .
+				"AND   hod.DepartmentIndex = class.DepartmentIndex " .
+				"AND   classlist.Username = '$studentusername' " .
+				"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+				"AND   classterm.TermIndex = $currentterm " .
+				"AND   class.ClassIndex = classterm.ClassIndex " .
+				"AND   class.YearIndex = $currentyear";
+	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
 	if($res->numRows() > 0) {
@@ -53,11 +56,14 @@
 	}
 
 	/* Check whether current user is class teacher for this student this year */
-	$res =&  $db->query("SELECT class.ClassTeacherUsername FROM class, classlist " .
-						"WHERE class.ClassTeacherUsername = \"$username\" " .
-						"AND   class.ClassIndex = classlist.ClassIndex " .
-						"AND   classlist.Username = \"$studentusername\" " .
-						"AND   class.YearIndex = $currentyear");
+	$query =	"SELECT class.ClassTeacherUsername FROM class, classterm, classlist " .
+				"WHERE class.ClassTeacherUsername = '$username' " .
+				"AND   classlist.Username = '$studentusername' " .
+				"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+				"AND   classterm.TermIndex = $currentterm " .
+				"AND   class.ClassIndex = classterm.ClassIndex " .
+				"AND   class.YearIndex = $currentyear";
+	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
 	if($res->numRows() > 0) {
@@ -159,12 +165,15 @@
 
 						if($level < 5) {
 							/* Build list of relevant head of departments */
-							$query = 	"SELECT hod.Username " .
-										"       FROM hod, class, classlist " .
+							$query = 	"SELECT user.Title, user.FirstName, user.Surname " .
+										"       FROM hod, class, classterm, classlist, user " .
 										"WHERE hod.DepartmentIndex = class.DepartmentIndex " .
 										"AND   class.YearIndex = $currentyear " .
-										"AND   class.ClassIndex = classlist.ClassIndex " .
-										"AND   classlist.Username = \"$studentusername\" ";
+										"AND   class.ClassIndex = classterm.ClassIndex " .
+										"AND   classterm.TermIndex = $currentterm " .
+										"AND   classterm.ClassTermIndex = classlist.ClassTermIndex " .
+										"AND   classlist.Username = '$studentusername' " .
+										"AND   hod.Username = user.Username";
 							$res =&  $db->query($query);
 							if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 							if($res->numRows() > 0) {
@@ -202,10 +211,15 @@
 
 						/* Class teacher */
 						if($level < 3) {
-							$query =	"SELECT class.ClassTeacherUsername FROM class, classlist " .
-										"WHERE  class.ClassIndex = classlist.ClassIndex " .
-										"AND    classlist.Username = '$studentusername' " .
-										"AND    class.YearIndex = $currentyear";
+							/* Build list of this student's class teacher for this term */
+							$query = 	"SELECT user.Title, user.FirstName, user.Surname " .
+										"       FROM class, classterm, classlist, user " .
+										"WHERE class.ClassTeacherUsername = user.Username " .
+										"AND   class.YearIndex = $currentyear " .
+										"AND   class.ClassIndex = classterm.ClassIndex " .
+										"AND   classterm.TermIndex = $currentterm " .
+										"AND   classterm.ClassTermIndex = classlist.ClassTermIndex " .
+										"AND   classlist.Username = '$studentusername' ";
 							$res =&  $db->query($query);
 							if(DB::isError($res)) die($res->getDebugInfo());
 							if($res->numRows() > 0) {

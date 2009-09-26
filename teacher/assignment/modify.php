@@ -28,9 +28,11 @@
 		$res =&  $db->query("SELECT user.FirstName, user.Surname, user.Username, mark.Score, mark.Comment, " .
 							"       query.ClassOrder FROM assignment, subjectstudent LEFT OUTER JOIN" .
 							"       (SELECT classlist.ClassOrder, classlist.Username " .
-							"               FROM class, classlist, subject, assignment " .
-							"        WHERE classlist.ClassIndex       = class.ClassIndex " .
-							"        AND   class.YearIndex            = subject.YearIndex " .
+							"               FROM class, classterm, classlist, subject, assignment " .
+							"        WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
+							"        AND   classterm.TermIndex = subject.TermIndex " .
+							"        AND   class.ClassIndex = classterm.ClassIndex " .
+							"        AND   class.YearIndex = subject.YearIndex " .
 							"        AND   subject.SubjectIndex       = assignment.SubjectIndex " .
 							"        AND   assignment.AssignmentIndex = $assignmentindex) AS query " .
 							"       ON subjectstudent.Username = query.Username, " .

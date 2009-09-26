@@ -62,11 +62,13 @@
 	if($nochangeyt == false and isset($depindex) and !is_null($depindex) and $showdeps) {
 		if(!$showalldeps) {
 			if(!$admin_page) {
-				$query =	"(SELECT department.Department, class.DepartmentIndex FROM class, classlist, " .
+				$query =	"(SELECT department.Department, class.DepartmentIndex FROM class, classterm, classlist, " .
 							"        department " .
-							" WHERE classlist.Username = \"$username\" " .
-							" AND   class.ClassIndex   = classlist.ClassIndex " .
-							" AND   class.YearIndex    = $yearindex " .
+							" WHERE classlist.Username         = '$username' " .
+							" AND   classlist.ClassTermIndex   = classterm.ClassTermIndex " .
+							" AND   classterm.TermIndex        = $termindex " .
+							" AND   classterm.ClassIndex       = class.ClassIndex " .
+							" AND   class.YearIndex            = $yearindex " .
 							" AND   department.DepartmentIndex = class.DepartmentIndex) " .
 							"UNION " .
 							"(SELECT department.Department, subject.DepartmentIndex FROM subject, subjectteacher, " .

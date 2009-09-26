@@ -33,9 +33,9 @@
 	$username    = $_SESSION['_auth_LESSONSESSION']['username'];
 	if(isset($_GET['key'])) {
 		$month = safe(dbfuncInt2String($_GET['key']));
-		$day   = -1
+		$day   = -1;
 	} else {
-		$month =
+		$month = 1;
 	}
 	$yearindex   = dbfuncGetYearIndex();            // Get current year
 	$depindex    = dbfuncGetDepIndex();             // Get current department index

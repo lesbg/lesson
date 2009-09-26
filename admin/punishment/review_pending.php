@@ -1,4 +1,6 @@
 <?php
+	// FIX CLASS STUFF
+	
 	/*****************************************************************
 	 * admin/punishment/review_pending.php  (c) 2006 Jonathan Dieter
 	 *
