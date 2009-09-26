@@ -128,7 +128,7 @@
 		$fpstart = intval(intval($max)/$LOGS_PER_PAGE) * $LOGS_PER_PAGE;
 		if($start > $max) $start = 0;
 
-		$query =	"SELECT user.FirstName, user.Surname, user.Username, class.ClassName, class.Grade FROM classlist " .
+		$query =	"SELECT user.FirstName, user.Surname, user.Username, class.ClassName, class.Grade, classlist.Conduct FROM classlist " .
 					"         INNER JOIN user USING (Username) " .
 					"         INNER JOIN classterm USING (ClassTermIndex) " .
 					"         INNER JOIN class USING (ClassIndex) " .

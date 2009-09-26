@@ -105,7 +105,7 @@
 			$_POST['absence_type'] = NULL;
 		}
 	
-		$query =		"UPDATE class_term SET ";
+		$query =		"UPDATE classterm SET ";
 		if(!is_null($_POST['report_enabled'])) {
 			$query .=	"       CanDoReport = {$_POST['report_enabled']}, ";
 		}
@@ -132,8 +132,8 @@
 		}
 	
 		$query = substr($query, 0, strlen($query)-2); // Get rid of final comma
-		$query .=	" WHERE class_term.ClassIndex = $classindex " .
-					" AND   class_term.TermIndex  = $termindex";
+		$query .=	" WHERE classterm.ClassIndex = $classindex " .
+					" AND   classterm.TermIndex  = $termindex";
 		$nres =& $db->query($query);
 		if(DB::isError($nres)) die($nres->getDebugInfo());
 

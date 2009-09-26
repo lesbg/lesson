@@ -1,8 +1,6 @@
 <?php
-	// FIX CLASS STUFF
-	
 	/*****************************************************************
-	 * admin/punishment/proxy_action.php  (c) 2006-2008 Jonathan Dieter
+	 * admin/punishment/proxy_action.php  (c) 2006-2009 Jonathan Dieter
 	 *
 	 * Issue punishment on behalf of another teacher
 	 *****************************************************************/
@@ -41,85 +39,91 @@
 			$punish_list = array();
 			include "admin/punishment/proxy.php";
 		} elseif($_POST["action"] == "<") {                                   // If < was pressed, add selected students to
-			foreach($_POST['addtopunishment'] as $addUserName) {
-				$query =	"SELECT user.FirstName, user.Surname FROM user, class, classlist " .
-							"WHERE user.Username = '$addUserName' " .
-							"AND   classlist.ClassIndex = class.ClassIndex " .
-							"AND   class.YearIndex = $yearindex " .
-							"AND   classlist.Username = user.Username ";
-				$nres =&  $db->query($query);
-				if(DB::isError($nres)) die($nres->getDebugInfo());         // Check for errors in query
-				if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-					if(!isset($_POST['date']) || $_POST['date'] == "") {         // Make sure date is in correct format.
-						$dateinfo =& dbfuncCreateDate(date($dateformat));
-					} else {
-						$dateinfo =& dbfuncCreateDate($_POST['date']);
-					}
-					$dateinfo = $db->escapeSimple($dateinfo);
-					$thisdateinfo = dbfuncCreateDate(date($dateformat));
-					$weightindex = intval($_POST['type']);
-					$query =	"SELECT DisciplineType FROM disciplineweight, disciplinetype " .
-								"WHERE  disciplineweight.DisciplineWeightIndex = $weightindex " .
-								"AND    disciplinetype.DisciplineTypeIndex = disciplineweight.DisciplineTypeIndex " .
-								"AND    disciplineweight.YearIndex = $currentyear " .
-								"AND    disciplineweight.TermIndex = $currentterm ";
-					$res =& $db->query($query);
-					if(DB::isError($res)) die($res->getDebugInfo()); // Check for errors in query
-					$failed = 0;
-					if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-						$dtype = $row['DisciplineType'];
-						if($_POST['reason'] == "" or is_null($_POST['reason'])) {
-							$errorlist[] = "You must explain why you want the students punished!";
-							$failed = 1;
-						} elseif($_POST['reason'] == "other") {
-							if($_POST['reasonother'] == "" or is_null($_POST['reasonother'])) {
+		    if(isset($_POST['addtopunishment'])) {
+				foreach($_POST['addtopunishment'] as $addUserName) {
+					$query =    "SELECT user.FirstName, user.Surname FROM " .
+								"       user, classterm, classlist, class " .
+								"WHERE  user.Username = '$addUserName' " .
+								"AND    user.Username = classlist.Username " .
+								"AND    classlist.ClassTermIndex = classterm.ClassTermIndex " .
+								"AND    classterm.TermIndex = $currentterm " .
+								"AND    classterm.ClassIndex = class.ClassIndex " .
+								"AND    class.YearIndex = $currentyear";
+					$nres =&  $db->query($query);
+					if(DB::isError($nres)) die($nres->getDebugInfo());         // Check for errors in query
+					if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
+						print $nrow['Firstname'];
+						if(!isset($_POST['date']) || $_POST['date'] == "") {         // Make sure date is in correct format.
+							$dateinfo =& dbfuncCreateDate(date($dateformat));
+						} else {
+							$dateinfo =& dbfuncCreateDate($_POST['date']);
+						}
+						$dateinfo = $db->escapeSimple($dateinfo);
+						$thisdateinfo = dbfuncCreateDate(date($dateformat));
+						$weightindex = intval($_POST['type']);
+						$query =	"SELECT DisciplineType FROM disciplineweight, disciplinetype " .
+									"WHERE  disciplineweight.DisciplineWeightIndex = $weightindex " .
+									"AND    disciplinetype.DisciplineTypeIndex = disciplineweight.DisciplineTypeIndex " .
+									"AND    disciplineweight.YearIndex = $currentyear " .
+									"AND    disciplineweight.TermIndex = $currentterm ";
+						$res =& $db->query($query);
+						if(DB::isError($res)) die($res->getDebugInfo()); // Check for errors in query
+						$failed = 0;
+						if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+							$dtype = $row['DisciplineType'];
+							if($_POST['reason'] == "" or is_null($_POST['reason'])) {
 								$errorlist[] = "You must explain why you want the students punished!";
 								$failed = 1;
+							} elseif($_POST['reason'] == "other") {
+								if($_POST['reasonother'] == "" or is_null($_POST['reasonother'])) {
+									$errorlist[] = "You must explain why you want the students punished!";
+									$failed = 1;
+								} else {
+									$reason = $_POST['reasonother'];
+								}
 							} else {
-								$reason = $_POST['reasonother'];
+								$reasonindex = intval($_POST['reason']);
+								$query =	"SELECT DisciplineReason FROM disciplinereason " .
+											"WHERE  DisciplineReasonIndex = $reasonindex";
+								$res =& $db->query($query);
+								if(DB::isError($res)) die($res->getDebugInfo()); // Check for errors in query
+								if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+									$reason = $row['DisciplineReason'];
+								} else {
+									$errorlist[] = "You must explain why you want the students punished!";
+									$failed = 1;
+								}
 							}
-						} else {
-							$reasonindex = intval($_POST['reason']);
-							$query =	"SELECT DisciplineReason FROM disciplinereason " .
-										"WHERE  DisciplineReasonIndex = $reasonindex";
+							$tusername = $db->escapeSimple($_POST['teacher']);
+							$query =	"SELECT Title, Surname FROM user WHERE Username='$tusername'";
 							$res =& $db->query($query);
 							if(DB::isError($res)) die($res->getDebugInfo()); // Check for errors in query
 							if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-								$reason = $row['DisciplineReason'];
+								$ttitle = $row['Title'];
+								$tsurname = $row['Surname'];
 							} else {
-								$errorlist[] = "You must explain why you want the students punished!";
+								$errorlist[] = "You must select a teacher!";
 								$failed = 1;
 							}
-						}
-						$tusername = $db->escapeSimple($_POST['teacher']);
-						$query =	"SELECT Title, Surname FROM user WHERE Username='$tusername'";
-						$res =& $db->query($query);
-						if(DB::isError($res)) die($res->getDebugInfo()); // Check for errors in query
-						if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-							$ttitle = $row['Title'];
-							$tsurname = $row['Surname'];
+							
+							if($failed == 0) {
+									$punish_list[] = array(	"display"=>"{$nrow['FirstName']} {$nrow['Surname']} ($addUserName) - " .
+																	"$dtype - $ttitle $tsurname - {$_POST['date']}",
+															"student"=>$addUserName,
+															"teacher"=>$tusername,
+															"issuedate"=>$dateinfo,
+															"today"=>$thisdateinfo,
+															"weightindex"=>$weightindex,
+															"reason"=>$reason,
+															"dtype"=>$dtype,
+															"type"=>0);
+							}
 						} else {
-							$errorlist[] = "You must select a teacher!";
-							$failed = 1;
+							$errorlist[] = "You must explain why you want the students punished!";
 						}
-						
-						if($failed == 0) {
-								$punish_list[] = array(	"display"=>"{$nrow['FirstName']} {$nrow['Surname']} ($addUserName) - " .
-																"$dtype - $ttitle $tsurname - {$_POST['date']}",
-														"student"=>$addUserName,
-														"teacher"=>$tusername,
-														"issuedate"=>$dateinfo,
-														"today"=>$thisdateinfo,
-														"weightindex"=>$weightindex,
-														"reason"=>$reason,
-														"dtype"=>$dtype,
-														"type"=>0);
-						}
-					} else {
-						$errorlist[] = "You must explain why you want the students punished!";
 					}
 				}
-			}
+		    }
 			include "admin/punishment/proxy.php";
 		} elseif($_POST["action"] == "<<") {
 			$_POST["class"] = intval($_POST["class"]);
@@ -223,9 +227,11 @@
 						$dtype        = $punishment['dtype'];
 						if($punishment['type'] == 1) {
 							$classindex  = intval($punishment['class']);
-							$query =	"SELECT user.Username FROM user, classlist " .
+							$query =	"SELECT user.Username FROM user, classterm, classlist " .
 										"WHERE  user.Username = classlist.Username " .
-										"AND    classlist.ClassIndex = $classindex " .
+										"AND    classterm.TermIndex = $currentterm " .
+										"AND    classlist.ClassTermIndex = classterm.ClassTermIndex " .
+										"AND    classterm.ClassIndex = $classindex " .
 										"ORDER BY user.Username";
 							$pres =&  $db->query($query);
 							if(DB::isError($pres)) die($pres->getDebugInfo());           // Check for errors in query

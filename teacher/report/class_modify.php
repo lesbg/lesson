@@ -1,6 +1,4 @@
 <?php
-	//FIX CLASS STUFF
-	
 	/*****************************************************************
 	 * teacher/report/class_modify.php  (c) 2008 Jonathan Dieter
 	 *
@@ -31,19 +29,17 @@
 	include "header.php";                                      // Show header
 
 	/* Check whether subject is open for report editing */
-	$query =	"SELECT class_term.AverageType, class_term.EffortType, class_term.ConductType, " .
-				"       class_term.AverageTypeIndex, class_term.EffortTypeIndex, " .
-				"       class_term.ConductTypeIndex, class_term.CTCommentType, " .
-				"       class_term.HODCommentType, class_term.PrincipalCommentType, " .
-				"       class_term.CanDoReport, class_term.AbsenceType, " .
-				"       MIN(classterm.ReportDone) AS ReportDone " .
-				"       FROM class_term, classterm, classlist " .
-				"WHERE class_term.ClassIndex    = $classindex " .
-				"AND   class_term.TermIndex     = $termindex " .
-				"AND   classlist.ClassIndex     = $classindex " .
-				"AND   classterm.ClassListIndex = classlist.ClassListIndex " .
-				"AND   classterm.TermIndex      = $termindex " .
-				"GROUP BY class_term.ClassIndex";
+	$query =	"SELECT classterm.AverageType, classterm.EffortType, classterm.ConductType, " .
+				"       classterm.AverageTypeIndex, classterm.EffortTypeIndex, " .
+				"       classterm.ConductTypeIndex, classterm.CTCommentType, " .
+				"       classterm.HODCommentType, classterm.PrincipalCommentType, " .
+				"       classterm.CanDoReport, classterm.AbsenceType, " .
+				"       MIN(classlist.ReportDone) AS ReportDone " .
+				"       FROM classterm, classlist, classlist " .
+				"WHERE classterm.ClassIndex    = $classindex " .
+				"AND   classterm.TermIndex     = $termindex " .
+				"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+				"GROUP BY classterm.ClassIndex";
 	$res =& $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 

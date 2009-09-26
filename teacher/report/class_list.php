@@ -253,15 +253,17 @@
 					$score = $row['ConductDisplay'];
 				}
 			} elseif($conduct_type == $CLASS_CONDUCT_TYPE_PUN) {
-				$query =	"SELECT Score FROM conduct_mark " .
-							"WHERE YearIndex = $yearindex " .
-							"AND   TermIndex = $termindex " .
-							"AND   Username = '{$row['Username']}'";
+				$query =	"SELECT Conduct FROM classlist, classterm, class " .
+							"WHERE class.YearIndex = $yearindex " .
+							"AND   classterm.ClassIndex = class.ClassIndex " .
+							"AND   classterm.TermIndex = $termindex " .
+							"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+							"AND   classlist.Username = '{$row['Username']}'";
 				$nres =& $db->query($query);
 				if(DB::isError($nres)) die($nres->getDebugInfo());
 
 				if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-					$scorestr = round($nrow['Score']);
+					$scorestr = round($nrow['Conduct']);
 					$score = "$scorestr%";
 				} else {
 					$score = "N/A";

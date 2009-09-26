@@ -27,24 +27,21 @@
 		exit(0);
 	}
 
-	$query =	"SELECT calendar.Date, COUNT(attendance.SubjectIndex) As SubjectCount " .
-				"       FROM calendar LEFT OUTER JOIN (attendance INNER JOIN subject ON attendance.SubjectIndex = subject.SubjectIndex " .
-				"AND   subject.YearIndex       = $yearindex " .
-				"AND   subject.TermIndex       = $termindex) USING (Date), currentterm " .
-				"WHERE currentterm.DepartmentIndex = $depindex " .
-				"AND   calendar.Date >= currentterm.StartDate " .
-				"AND   calendar.Date <= CURRENT_DATE() " .
-				"GROUP BY calendar.Date " .
-				"ORDER BY calendar.Date DESC ";
+	$query =	"SELECT StartDate, CURRENT_DATE() AS EndDate FROM currentterm " .
+				"WHERE DepartmentIndex = $depindex ";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 	
-	if($res->numRows() == 0) {
-		echo "      <p align='center' class='subtitle'>There has been no attendance for this term.</p>\n";
+	if (!$row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		echo "     <p>Error getting beginning and end of term</p>\n";
 		include "footer.php";
 		exit(0);
 	}
 
+	$start_date = $row['StartDate'];
+	$check_date = $start_date;
+	$end_date = $row['EndDate'];
+	
 	/* Print attendance */
 	echo "      <table align='center' border='1'>\n"; // Table headers
 	echo "         <tr>\n";
@@ -54,7 +51,22 @@
 	
 	/* For each day, print a row with the date and number of subjects */
 	$alt_count = 0;
-	while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+
+	$query =	"SELECT attendance.Date, COUNT(attendance.SubjectIndex) As SubjectCount " .
+				"       FROM attendance INNER JOIN subject ON attendance.SubjectIndex = subject.SubjectIndex " .
+				"AND   subject.YearIndex       = $yearindex " .
+				"AND   subject.TermIndex       = $termindex, currentterm " .
+				"WHERE currentterm.DepartmentIndex = $depindex " .
+				"AND   attendance.Date >= currentterm.StartDate " .
+				"AND   attendance.Date <= CURRENT_DATE() " .
+				"GROUP BY attendance.Date " .
+				"ORDER BY attendance.Date DESC ";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+
+	$row =& $res->fetchRow(DB_FETCHMODE_ASSOC);
+	
+	while ($check_date != $end_date) {
 		$alt_count += 1;
 		if($alt_count % 2 == 0) {
 			$alt_step = "alt";
@@ -62,12 +74,29 @@
 			$alt_step = "std";
 		}
 		$alt = " class='$alt_step'";
-		echo "         <tr$alt>\n";
 		$link = "index.php?location="    . dbfuncString2Int("admin/attendance/first_period.php") .
-						"&amp;key="      . dbfuncString2Int($row['Date']);
-		echo "            <td><a href='$link'>{$row['Date']}</a></td>\n";
-		echo "            <td>{$row['SubjectCount']}</td>\n";
-		echo "         </tr>\n";
+						"&amp;key="      . dbfuncString2Int($check_date);
+		$day = date('l', strtotime($check_date));
+		$show_date = date($dateformat, strtotime($check_date));
+		if(isset($row['Date']) and $row['Date'] == $check_date) {
+			echo "         <tr$alt>\n";
+			echo "            <td><a href='$link'>$day, $show_date</a></td>\n";
+			echo "            <td>{$row['SubjectCount']}</td>\n";
+			echo "         </tr>\n";
+			$row =& $res->fetchRow(DB_FETCHMODE_ASSOC);
+		} else {
+			$weekday = date('w', strtotime($check_date));
+			if($weekday > 0 and $weekday < 6){
+				echo "         <tr$alt>\n";
+				echo "            <td><b><a href='$link'>$day, $show_date</a></b></td>\n";
+				echo "            <td><b>0</b></td>\n";
+				echo "         </tr>\n";
+			} else {
+				$alt_count -= 1;
+			}
+		}
+		
+		$check_date = date ("Y-m-d", strtotime ("+1 day", strtotime($check_date)));
 	}
 	echo "      </table>\n";
 	

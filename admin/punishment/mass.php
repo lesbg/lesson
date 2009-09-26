@@ -87,9 +87,11 @@
 				}
 			}
 			$query =        "SELECT user.FirstName, user.Surname, user.Username FROM " .
-							"       user, classlist " .
+							"       user, classterm, classlist " .
 							"WHERE  user.Username = classlist.Username " .
-							"AND    classlist.ClassIndex = {$_POST['class']} " .
+							"AND    classlist.ClassTermIndex = classterm.ClassTermIndex " .
+							"AND    classterm.TermIndex = $termindex " .
+							"AND    classterm.ClassIndex = {$_POST['class']} " .
 							"AND    NOT (1 = 0 " .
 							"            $selected_classes_sql " .
 							"           ) " .

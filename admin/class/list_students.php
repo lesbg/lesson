@@ -63,16 +63,15 @@
 		$query =	"SELECT user.FirstName, user.Surname, user.Username, user.User1, user.User2, " .
 					"       classlist.Conduct, classlist.Average, classlist.Rank, " .
 					"       COUNT(subjectstudent.SubjectIndex) AS SubjectCount " .
-					"       FROM classterm " .
+					"       FROM classterm INNER JOIN currentterm USING (TermIndex) " .
 					"            INNER JOIN classlist USING (ClassTermIndex) " .
 					"            INNER JOIN user USING (Username) " .
 					"            LEFT OUTER JOIN (subjectstudent " .
 					"               INNER JOIN subject USING (SubjectIndex)) ON " .
 					"               (subjectstudent.Username = user.Username " .
 					"                AND subject.YearIndex = $yearindex " .
-					"                AND subject.TermIndex = $termindex) " .
+					"                AND subject.TermIndex = currentterm.TermIndex) " .
 					"WHERE classterm.ClassIndex = $classindex " .
-					"AND   classterm.TermIndex = $termindex " .
 					"GROUP BY user.Username " .
 					"ORDER BY user.FirstName, user.Surname, user.Username";
 		$res =&  $db->query($query);

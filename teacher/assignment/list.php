@@ -61,7 +61,7 @@
 					"&amp;key=" .               dbfuncString2Int($subjectindex) .
 					"&amp;keyname=" .           dbfuncString2Int($title);
 		
-		if($can_modify==1 or dbfuncGetPermission($permissions, $PERM_ADMIN)){
+		if(($can_modify==1 or dbfuncGetPermission($permissions, $PERM_ADMIN)) and $average_type != 0){
 			$newbutton = dbfuncGetButton($newlink, "New assignment", "medium", "", "Create new assignment for this subject");
 			$optbutton = dbfuncGetButton($optlink, "Subject options", "medium", "", "Edit options for this subject");
 		} else {
@@ -84,7 +84,7 @@
 		echo "            <th>&nbsp;</th>\n";
 		echo "            <th>Student</th>\n";
 		
-		if($no_marks == 0) {
+		if($average_type != 0) {
 			$rowcount = 0;
 			
 			/* Get assignment list */
@@ -128,20 +128,21 @@
 		echo "         </tr>\n";
 
 		/* For each student, print a row with the student's name and score on each assignment*/
-		$res =&  $db->query("SELECT user.FirstName, user.Surname, user.Username, query.ClassOrder, " .
-							"       subjectstudent.Average FROM user, " .
-							"       subjectstudent LEFT OUTER JOIN " .
-							"       (SELECT classlist.ClassOrder, classlist.Username FROM class, " .
-							"               classterm, classlist, subject " .
-							"        WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
-							"        AND   classterm.TermIndex = subject.TermIndex " .
-							"        AND   class.ClassIndex = classterm.ClassIndex " .
-							"        AND   class.YearIndex = subject.YearIndex " .
-							"        AND subject.SubjectIndex=$subjectindex) AS query " .
-							"       ON subjectstudent.Username = query.Username " .
-							"WHERE user.Username=subjectstudent.Username " .
-							"AND subjectstudent.SubjectIndex=$subjectindex " .
-							"ORDER BY user.FirstName, user.Surname, user.Username");
+		$query =	"SELECT user.FirstName, user.Surname, user.Username, query.ClassOrder, " .
+					"       subjectstudent.Average FROM user, " .
+					"       subjectstudent LEFT OUTER JOIN " .
+					"       (SELECT classlist.ClassOrder, classlist.Username FROM class, " .
+					"               classterm, classlist, subject " .
+					"        WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
+					"        AND   classterm.TermIndex = subject.TermIndex " .
+					"        AND   class.ClassIndex = classterm.ClassIndex " .
+					"        AND   class.YearIndex = subject.YearIndex " .
+					"        AND subject.SubjectIndex=$subjectindex) AS query " .
+					"       ON subjectstudent.Username = query.Username " .
+					"WHERE user.Username=subjectstudent.Username " .
+					"AND subjectstudent.SubjectIndex=$subjectindex " .
+					"ORDER BY user.FirstName, user.Surname, user.Username";
+		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 			
 		$alt_count     = 0;
@@ -166,8 +167,8 @@
 			} else {
 				$cnbutton = "";
 			}
-			if($currentyear == $yearindex and $currentterm == $termindex and ($perm > 0 or dbfuncGetPermission($permissions, $PERM_ADMIN))) {
-				if($perm == 1) {
+			if($currentyear == $yearindex and $currentterm == $termindex and ($perm >= $PUN_PERM_REQUEST or dbfuncGetPermission($permissions, $PERM_ADMIN))) {
+				if($perm == $PUN_PERM_REQUEST) {
 					$punlink =  "index.php?location=" . dbfuncString2Int("teacher/punishment/request/new.php") .
 								"&amp;key=" .           dbfuncString2Int($row['Username']) .
 								"&amp;keyname=" .       dbfuncString2Int("{$row['FirstName']} {$row['Surname']} ({$row['Username']})") .
@@ -193,7 +194,7 @@
 			echo "            <td nowrap>$punbutton$cnbutton $order</td>\n";
 			$order += 1;
 
-			if($no_marks == 0) {
+			if($average_type != 0) {
 				$link     = "index.php?location=" . dbfuncString2Int("student/subjectinfo.php") .
 							"&amp;key2=" .          dbfuncString2Int($row['Username']) .
 							"&amp;key2name=" .      dbfuncString2Int("{$row['FirstName']} {$row['Surname']}") .

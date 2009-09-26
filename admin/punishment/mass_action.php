@@ -49,7 +49,7 @@
 				}
 			}
 			foreach($_POST['addtopunishment'] as $addUserName) {
-				$query =	"SELECT user.FirstName, user.Surname FROM user, class, classlist " .
+				$query =	"SELECT user.FirstName, user.Surname FROM user, classterm, class, classlist " .
 							"WHERE user.Username = '$addUserName' " .
 							"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
 							"AND   classterm.TermIndex = $termindex " .

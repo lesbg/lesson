@@ -22,7 +22,7 @@
 		$query =	"SELECT subject.Name, subject.SubjectIndex, subject.Period, " .
 					"       subject.ShowAverage, subjectstudent.Average FROM subject, subjectstudent " .
 					"WHERE subjectstudent.SubjectIndex = subject.SubjectIndex " .
-					"AND   subject.NoMarks             = 0 " .
+					"AND   subject.AverageType         > 0 " .
 					"AND   subject.YearIndex           = $yearindex " .
 					"AND   subject.TermIndex           = $termindex " .
 					"AND   subjectstudent.Username     = \"$studentusername\" " .

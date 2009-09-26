@@ -2,7 +2,7 @@
 	/*****************************************************************
 	 * admin/class_term/list.php  (c) 2008 Jonathan Dieter
 	 *
-	 * List all class_term options for the current term
+	 * List all classterm options for the current term
 	 *****************************************************************/
 
 	$title = "Report List";
@@ -24,16 +24,16 @@
 	include "core/settermandyear.php";
 	include "core/titletermyear.php";
 
-	$query =	"SELECT class.Grade, class.ClassName, class_term.AverageType, " .
-				"       class_term.EffortType, class_term.ConductType, " .
-				"       class_term.AbsenceType, class.ClassIndex, " .
-				"       class_term.CTCommentType, class_term.HODCommentType, " .
-				"       class_term.PrincipalCommentType, class_term.CanDoReport, " .
-				"       class_term.ReportTemplateType " .
-				"       FROM class LEFT OUTER JOIN class_term ON " .
+	$query =	"SELECT class.Grade, class.ClassName, classterm.AverageType, " .
+				"       classterm.EffortType, classterm.ConductType, " .
+				"       classterm.AbsenceType, class.ClassIndex, " .
+				"       classterm.CTCommentType, classterm.HODCommentType, " .
+				"       classterm.PrincipalCommentType, classterm.CanDoReport, " .
+				"       classterm.ReportTemplateType " .
+				"       FROM class LEFT OUTER JOIN classterm ON " .
 				"            (class.YearIndex           = $yearindex " .
-				"             AND class_term.ClassIndex = class.ClassIndex " .
-				"             AND class_term.TermIndex  = $termindex) " .
+				"             AND classterm.ClassIndex = class.ClassIndex " .
+				"             AND classterm.TermIndex  = $termindex) " .
 				"WHERE class.YearIndex       = $yearindex " .
 				"AND   class.DepartmentIndex = $depindex " .
 				"ORDER BY class.Grade, class.ClassName";

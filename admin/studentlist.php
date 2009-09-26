@@ -74,9 +74,9 @@
 			$query =	"SELECT user.FirstName, user.Surname, user.Username, user.User1, user.User2, " .
 						"       user.House, query.ClassName, query.Grade, COUNT(subjectstudent.SubjectIndex) AS SubjectCount FROM user LEFT OUTER JOIN " .
 						"       (SELECT class.ClassName, class.Grade, classlist.ClassOrder, " .
-						"               classlist.Username FROM classlist, classterm, class " .
+						"               classlist.Username FROM classlist, classterm, class, currentterm " .
 						"        WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
-						"        AND   classterm.TermIndex      = $termindex " .
+						"        AND   classterm.TermIndex      = currentterm.TermIndex " .
 						"        AND   classterm.ClassIndex     = class.ClassIndex " .
 						"        AND   class.YearIndex          = $yearindex) " .
 						"       AS query USING (Username) LEFT OUTER JOIN (subjectstudent INNER JOIN subject USING (SubjectIndex)) ON (subjectstudent.Username = user.Username AND subject.YearIndex = $yearindex AND subject.TermIndex = $termindex) " .
@@ -89,9 +89,9 @@
 			$query =	"SELECT user.FirstName, user.Surname, user.Username, user.User1, user.User2, " .
 						"       user.House, query.ClassName, query.Grade, COUNT(subjectstudent.SubjectIndex) AS SubjectCount FROM user INNER JOIN " .
 						"       (SELECT class.ClassName, class.Grade, classlist.ClassOrder, " .
-						"        classlist.Username FROM classlist, classterm, class " .
+						"        classlist.Username FROM classlist, classterm, class, currentterm " .
 						"        WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
-						"        AND   classterm.TermIndex      = $termindex " .
+						"        AND   classterm.TermIndex      = currentterm.TermIndex " .
 						"        AND   classterm.ClassIndex     = class.ClassIndex " .
 						"        AND   class.YearIndex          = $yearindex) " .
 						"       AS query USING (Username) LEFT OUTER JOIN (subjectstudent INNER JOIN subject USING (SubjectIndex)) ON (subjectstudent.Username = user.Username AND subject.YearIndex = $yearindex AND subject.TermIndex = $termindex) " .

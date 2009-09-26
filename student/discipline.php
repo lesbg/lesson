@@ -30,14 +30,16 @@
 		include "core/titletermyear.php";
 
 		/* Calculate conduct mark */
-		$query =    "SELECT Score FROM conduct_mark " .
-					"WHERE  Username = \"$studentusername\" " .
-					"AND    YearIndex = $yearindex " .
-					"AND    TermIndex = $termindex ";
+		$query =	"SELECT Conduct FROM classlist, classterm, class " .
+					"WHERE class.YearIndex = $yearindex " .
+					"AND   classterm.ClassIndex = class.ClassIndex " .
+					"AND   classterm.TermIndex = $termindex " .
+					"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+					"AND   classlist.Username = '$studentusername'";
 		$conductRes =&   $db->query($query);
 		if(DB::isError($conductRes)) die($conductRes->getDebugInfo());          // Check for errors in query
-		if($conductRow =& $conductRes->fetchrow(DB_FETCHMODE_ASSOC) and $conductRow['Score'] != "") {
-			$total_conduct = $conductRow['Score'];
+		if($conductRow =& $conductRes->fetchrow(DB_FETCHMODE_ASSOC) and $conductRow['Conduct'] != "") {
+			$total_conduct = $conductRow['Conduct'];
 			
 			if($termindex == $currentterm) {
 				$query =	"(SELECT disciplinetype.DisciplineType, disciplineweight.DisciplineWeight,  " .
@@ -83,13 +85,13 @@
 			$res =&  $db->query($query);
 			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 			
-			if($conductRow['Score'] < 0) {
+			if($conductRow['Conduct'] < 0) {
 				echo "      <p class=\"subtitle\" align=\"center\">Conduct: 0%</p>\n";
 			} else {
 				echo "      <p class=\"subtitle\" align=\"center\">Conduct: {$conductRow['Score']}%</p>\n";
 			}
 			
-			$conduct_mark = $conductRow['Score'];
+			$conduct_mark = $conductRow['Conduct'];
 			
 			echo "      <table align=\"center\" border=\"1\">\n"; // Table headers
 			echo "         <tr>\n";

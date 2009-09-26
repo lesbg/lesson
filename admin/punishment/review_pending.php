@@ -1,6 +1,4 @@
 <?php
-	// FIX CLASS STUFF
-	
 	/*****************************************************************
 	 * admin/punishment/review_pending.php  (c) 2006 Jonathan Dieter
 	 *
@@ -10,8 +8,12 @@
 	/* Get variables */
 	$title           = "Pending Punishments";
 	
-	include "header.php";
 
+	include "core/settermandyear.php";
+	include "header.php";
+	
+	include "core/titletermyear.php";
+	
 	$query =    "SELECT Permissions FROM disciplineperms WHERE Username=\"$username\"";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
@@ -32,13 +34,15 @@
 					"       class.ClassName, disciplinebacklog.DisciplineBacklogIndex, NULL AS Reason, " .
 					"       tuser.Title AS TTitle, tuser.FirstName " .
 					"       AS TFirstName, tuser.Surname AS TSurname, 'Punishment' AS Type " .
-					"       FROM class, classlist, disciplinetype, " .
+					"       FROM class, classterm, classlist, disciplinetype, " .
 					"       disciplinebacklog, user, user AS tuser " .
 					"WHERE  disciplinebacklog.DisciplineTypeIndex = disciplinetype.DisciplineTypeIndex " .
 					"AND    classlist.Username = user.Username " .
 					"AND    disciplinebacklog.Username = user.Username " .
 					"AND    disciplinebacklog.WorkerUsername = tuser.Username " .
-					"AND    class.ClassIndex = classlist.ClassIndex " .
+					"AND    classlist.ClassTermIndex = classterm.ClassTermIndex " .
+					"AND    classterm.TermIndex = $termindex " .
+					"AND    class.ClassIndex = classterm.ClassIndex " .
 					"AND    class.YearIndex = $yearindex " .
 					"AND    disciplinebacklog.RequestType = 1) " .
 					"UNION " .
@@ -47,7 +51,7 @@
 					"       class.ClassName, disciplinebacklog.DisciplineBacklogIndex, " .
 					"       disciplinebacklog.Comment AS Reason, tuser.Title AS TTitle, tuser.FirstName " .
 					"       AS TFirstName, tuser.Surname AS TSurname, 'Removal' AS Type " .
-					"       FROM class, classlist, disciplinetype, disciplineweight, " .
+					"       FROM class, classterm, classlist, disciplinetype, disciplineweight, " .
 					"       discipline, user, disciplinebacklog, user AS tuser " .
 					"WHERE  disciplinebacklog.DisciplineIndex = discipline.DisciplineIndex " .
 					"AND    discipline.DisciplineWeightIndex = disciplineweight.DisciplineWeightIndex " .
@@ -55,7 +59,9 @@
 					"AND    classlist.Username = user.Username " .
 					"AND    discipline.Username = user.Username " .
 					"AND    disciplinebacklog.WorkerUsername = tuser.Username " .
-					"AND    class.ClassIndex = classlist.ClassIndex " .
+					"AND    classlist.ClassTermIndex = classterm.ClassTermIndex " .
+					"AND    classterm.TermIndex = $termindex " .
+					"AND    class.ClassIndex = classterm.ClassIndex " .					
 					"AND    class.YearIndex = $yearindex " .
 					"AND    disciplinebacklog.RequestType = 2) " .
 					"ORDER BY Date DESC";

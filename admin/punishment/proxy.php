@@ -1,6 +1,4 @@
 <?php
-	// FIX CLASS STUFF
-	
 	/*****************************************************************
 	 * admin/punishment/proxy.php  (c) 2006-2008 Jonathan Dieter
 	 *
@@ -87,9 +85,11 @@
 		if ($_POST['class'] != "") {
 			$_POST['class'] = intval($_POST['class']);
 			$query =        "SELECT user.FirstName, user.Surname, user.Username FROM " .
-							"       user, classlist " .
+							"       user, classterm, classlist " .
 							"WHERE  user.Username = classlist.Username " .
-							"AND    classlist.ClassIndex = {$_POST['class']} " .
+							"AND    classlist.ClassTermIndex = classterm.ClassTermIndex " .
+							"AND    classterm.TermIndex = $termindex " .
+							"AND    classterm.ClassIndex = {$_POST['class']} " .
 							"ORDER BY user.Username";
 			$res =&  $db->query($query);
 			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query

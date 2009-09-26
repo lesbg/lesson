@@ -31,16 +31,16 @@
 		exit(0);
 	}
 
-	$query =	"SELECT class_term.AverageType, " .
-				"       class_term.EffortType, class_term.ConductType, " .
-				"       class_term.AbsenceType, " .
-				"       class_term.CTCommentType, class_term.HODCommentType, " .
-				"       class_term.PrincipalCommentType, class_term.CanDoReport, " .
-				"       class_term.ReportTemplateType " .
-				"       FROM class LEFT OUTER JOIN class_term ON " .
+	$query =	"SELECT classterm.AverageType, " .
+				"       classterm.EffortType, classterm.ConductType, " .
+				"       classterm.AbsenceType, " .
+				"       classterm.CTCommentType, classterm.HODCommentType, " .
+				"       classterm.PrincipalCommentType, classterm.CanDoReport, " .
+				"       classterm.ReportTemplateType " .
+				"       FROM class LEFT OUTER JOIN classterm ON " .
 				"            (class.ClassIndex          = $classindex " .
-				"             AND class_term.ClassIndex = $classindex " .
-				"             AND class_term.TermIndex  = $termindex) " .
+				"             AND classterm.ClassIndex = $classindex " .
+				"             AND classterm.TermIndex  = $termindex) " .
 				"WHERE class.ClassIndex = $classindex ";
 	$res =& $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());             // Check for errors in query

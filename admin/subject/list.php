@@ -23,9 +23,9 @@
 		} elseif($_GET['sort'] == '3') {
 			$sortorder = "StudentCount DESC, query.Grade, query.ClassName, query.Name";
 		} elseif($_GET['sort'] == '4') {
-			$sortorder = "query.NoMarks DESC, query.AssignmentCount, query.Grade, query.ClassName, query.Name";
+			$sortorder = "query.AverageType DESC, query.AssignmentCount, query.Grade, query.ClassName, query.Name";
 		} elseif($_GET['sort'] == '5') {
-			$sortorder = "query.NoMarks, query.AssignmentCount DESC, query.Grade, query.ClassName, query.Name";
+			$sortorder = "query.AverageType, query.AssignmentCount DESC, query.Grade, query.ClassName, query.Name";
 		} elseif($_GET['sort'] == '6') {
 			$sortorder = "query.Average, query.AssignmentCount, query.Grade, query.ClassName, query.Name";
 		} elseif($_GET['sort'] == '7') {
@@ -61,12 +61,12 @@
 		
 		$query =	"SELECT query.CanDoReport, query.SubjectIndex, query.Average, query.ClassName, " .
 					"       query.Grade, query.RealGrade, query.ClassIndex, query.Name, " .
-					"       query.AssignmentCount, query.NoMarks, timetablequery.PeriodCount, " .
+					"       query.AssignmentCount, query.AverageType, timetablequery.PeriodCount, " .
 					"       COUNT(subjectstudent.SubjectIndex) AS StudentCount, " .
 					"       MIN(subjectstudent.ReportDone) AS ReportDone " .
 					"FROM ( " .
 					"      (SELECT subject.CanDoReport, subject.SubjectIndex, " .
-					"              NULL AS ClassName, subject.Grade, subject.NoMarks, " .
+					"              NULL AS ClassName, subject.Grade, subject.AverageType, " .
 					"              subject.Grade AS RealGrade, subject.Period, subject.Name, NULL AS ClassIndex, " .
 					"              subject.Average, COUNT(assignment.SubjectIndex) AS AssignmentCount " .
 					"       FROM subject LEFT OUTER JOIN assignment ON " .
@@ -77,7 +77,7 @@
 					"       GROUP BY subject.SubjectIndex) " .
 					"      UNION " .
 					"      (SELECT subject.CanDoReport, subject.SubjectIndex, " .
-					"              class.ClassName, class.Grade, subject.NoMarks, " .
+					"              class.ClassName, class.Grade, subject.AverageType, " .
 					"              NULL AS RealGrade, subject.Period, subject.Name, class.ClassIndex, " .
 					"              subject.Average, COUNT(assignment.SubjectIndex) AS AssignmentCount " .
 					"       FROM class, subject LEFT OUTER JOIN assignment ON " .
@@ -182,7 +182,7 @@
 				
 				echo "            <td>{$row['StudentCount']}</td>\n";                    // Print number of students
 				echo "            <td>{$row['PeriodCount']}</td>\n";
-				if($row['NoMarks'] == 1) {
+				if($row['AverageType'] == 0) {
 					echo "            <td>X</td>\n";
 				} else {
 					echo "            <td>{$row['AssignmentCount']}</td>\n";

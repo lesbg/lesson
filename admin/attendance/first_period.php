@@ -90,7 +90,7 @@
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 	
 	if($res->numRows() == 0) {
-		echo "      <p align=\"center\" class=\"subtitle\">There is not attendance for this day in this term.</p>\n";
+		echo "      <p align=\"center\" class=\"subtitle\">There is no attendance for this day in this term.</p>\n";
 		include "footer.php";
 		exit(0);
 	}

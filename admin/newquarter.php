@@ -79,15 +79,14 @@
 			/* Create new subject */
 			$query =	"INSERT INTO subject (Name, ShortName, SubjectTypeIndex, YearIndex, " .
 						"                     TermIndex, ShowAverage, DepartmentIndex, " .
-						"                     ClassIndex, Grade, NoMarks, RenameUploads, " .
+						"                     ClassIndex, Grade, RenameUploads, " .
 						"                     CanModify, ShowInList, AverageType, " .
 						"                     AverageTypeIndex, ConductType, ConductTypeIndex, " .
 						"                     EffortType, EffortTypeIndex, " .
 						"                     TeacherCanChangeCategories) " .
 						"SELECT Name, ShortName, SubjectTypeIndex, YearIndex, $newterm AS TermIndex, " .
 						"       ShowAverage, DepartmentIndex, ClassIndex, Grade, " .
-						"       NoMarks, RenameUploads, " .
-						"       CanModify, ShowInList, AverageType, AverageTypeIndex, " .
+						"       RenameUploads, CanModify, ShowInList, AverageType, AverageTypeIndex, " .
 						"       ConductType, ConductTypeIndex, EffortType, EffortTypeIndex, " .
 						"       TeacherCanChangeCategories FROM subject " .
 						"WHERE  SubjectIndex = {$row['SubjectIndex']} ";

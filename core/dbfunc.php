@@ -1044,6 +1044,9 @@
 		} else {
 			$classterm = $row['ClassTermIndex'];
 			
+			if(!isset($classterm) or isnull($classterm)){
+				return;
+			}
 			$query =	"UPDATE classlist SET Conduct=-1 " .
 						"WHERE Username       = '$studentusername' " .
 						"AND   ClassTermIndex = $classterm";
