@@ -19,6 +19,9 @@
 		
 		$error = false;
 
+		if(!isset($_POST['department'])) $_POST['department'] = "NULL";
+		if($_POST['department'] != "NULL") $_POST['department'] = intval($_POST['department']);
+		 
 		$_POST['uname'] = trim($_POST['uname']);
 		if((!isset($_POST['uname']) or $_POST['uname'] == "") and $_POST["action"] == "Save" and (!isset($_POST['autouname']) or $_POST['autouname'] == "N")) { // Make sure a username was written.
 			echo "<p>You need to write a username.  Press \"Back\" to fix this.</p>\n";

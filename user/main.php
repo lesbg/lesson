@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * user/main.php  (c) 2004-2008 Jonathan Dieter
+	 * user/main.php  (c) 2004-2009 Jonathan Dieter
 	 *
 	 * Initial page that shows what classes the user is in, if they
 	 * are a student or what classes they teach if they are a teacher
@@ -256,15 +256,17 @@
 		$disclink =	"index.php?location=" .  dbfuncString2Int("student/discipline.php") .
 					"&amp;key=" .            dbfuncString2Int($username) .
 					"&amp;keyname=" .        dbfuncString2Int($fullname);
-		$query =    "SELECT Score FROM conduct_mark " .
-					"WHERE  Username = '$username' " .
-					"AND    YearIndex = $yearindex " .
-					"AND    TermIndex = $termindex ";
+		$query =    "SELECT classlist.Conduct FROM classlist, classterm, class " .
+					"WHERE  classlist.Username = '$username' " .
+					"AND    classlist.ClassTermIndex = classterm.ClassTermindex " .
+					"AND    classterm.TermIndex = $termindex " .
+					"AND    classterm.ClassIndex = class.ClassIndex " .
+					"AND    class.YearIndex = $yearindex ";
 		$conductRes =&   $db->query($query);
 		if(DB::isError($conductRes)) die($conductRes->getDebugInfo());          // Check for errors in query
-		if($conductRow =& $conductRes->fetchrow(DB_FETCHMODE_ASSOC) and $conductRow['Score'] != "") {
-			if($conductRow['Score'] < 0) $conductRow['Score'] = 0;
-			echo "      <p class='subtitle' align='center'><a href='$disclink'>Conduct: {$conductRow['Score']}%</a></p>\n";
+		if($conductRow =& $conductRes->fetchrow(DB_FETCHMODE_ASSOC) and $conductRow['Conduct'] != "") {
+			if($conductRow['Conduct'] < 0) $conductRow['Conduct'] = 0;
+			echo "      <p class='subtitle' align='center'><a href='$disclink'>Conduct: {$conductRow['Conduct']}%</a></p>\n";
 		}
 		echo "      <p></p>\n";
 	}

@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * admin/class/modify.php  (c) 2005 Jonathan Dieter
+	 * admin/class/modify.php  (c) 2005-2009 Jonathan Dieter
 	 *
 	 * Add or remove students from class.
 	 *****************************************************************/
@@ -19,7 +19,7 @@
 	
 	/* Check whether user is authorized to change class */
 	if(dbfuncGetPermission($permissions, $PERM_ADMIN)) {
-		echo "      <form action=\"$link\" method=\"post\">\n";        // Form method
+		echo "      <form action='$link' method='post'>\n";        // Form method
 		
 		/* Find current year */
 		$res =&  $db->query("SELECT YearIndex FROM class WHERE ClassIndex = $classindex");
@@ -30,15 +30,15 @@
 		/* Show list of years */
 		$res =&  $db->query("SELECT YearIndex, Year FROM year ");
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
-		echo "         <p align=\"center\">Modify year: <select name=\"year\">\n";
+		echo "         <p align='center'>Modify year: <select name='year'>\n";
 		while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-			echo "            <option value=\"{$row['YearIndex']}\"";
+			echo "            <option value='{$row['YearIndex']}'";
 			if($row['YearIndex'] == $classyearindex) echo " selected";
 			echo ">{$row['Year']}\n";
 		}
-		echo "         </select>&nbsp; &nbsp;<input type=\"submit\" name=\"action\" value=\"Done\" \></p>\n";
+		echo "         </select>&nbsp; &nbsp;<input type='submit' name='action' value='Done' \></p>\n";
 		
-		echo "         <table align=\"center\" border=\"1\">\n"; // Table headers
+		echo "         <table align='center' border='1'>\n"; // Table headers
 		echo "            <tr>\n";
 		echo "               <th>Students in class</th>\n";
 		echo "               <th>Unassigned students</th>\n";
@@ -47,16 +47,16 @@
 		
 		/* Get list of students in class and store in option list */
 		echo "               <td>\n";
-		echo "                  <select name=\"removefromclass[]\" multiple size=15>\n";
+		echo "                  <select name='removefromclass[]' multiple size=15>\n";
 		$res =&  $db->query("SELECT user.FirstName, user.Surname, user.Username FROM " .
-							"       user, classlist " .
+							"       user, classlist, classterm " .
 							"WHERE classlist.Username = user.Username " .
 							"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
 							"AND   classterm.ClassIndex = $classindex " .
 							"ORDER BY user.Username");
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-			echo "                     <option value=\"{$row['Username']}\">{$row['FirstName']} " .
+			echo "                     <option value='{$row['Username']}'>{$row['FirstName']} " .
 			                                           "{$row['Surname']} ({$row['Username']})\n";
 		}
 		echo "                  </select>\n";
@@ -64,7 +64,7 @@
 		
 		/* Get list of active students who aren't in any classes and store in option list */
 		echo "               <td>\n";
-		echo "                  <select name=\"addtoclass[]\" multiple size=15>\n";
+		echo "                  <select name='addtoclass[]' multiple size=15>\n";
 		$res =&  $db->query("SELECT user.FirstName, user.Surname, user.Username FROM " .
 							"       user LEFT OUTER JOIN " .
 							"            (classlist INNER JOIN classterm ON" .
@@ -77,33 +77,33 @@
 							"ORDER BY user.Username");
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-			echo "                     <option value=\"{$row['Username']}\">{$row['FirstName']} " .
+			echo "                     <option value='{$row['Username']}'>{$row['FirstName']} " .
 			                                           "{$row['Surname']} ({$row['Username']})\n";
 		}
 		echo "                  </select>\n";
 		echo "               </td>\n";
 		echo "            </tr>\n";
 		echo "            <tr>\n";
-		echo "               <td align=\"center\"><input type=\"submit\" name=\"action\" value=\">>\" \></td>\n";
-		echo "               <td align=\"center\"><input type=\"submit\" name=\"action\" value=\"<<\" \></td>\n";
+		echo "               <td align='center'><input type='submit' name='action' value='>>' \></td>\n";
+		echo "               <td align='center'><input type='submit' name='action' value='<<' \></td>\n";
 		echo "            </tr>\n";
 		echo "            </tr>\n";
 		echo "            <tr>\n";
 		echo "               <th>Class teacher</th>\n";
 		echo "               <th>Unassigned teachers</th>\n";
 		echo "            </tr>\n";
-		echo "            <tr class=\"std\">\n";
+		echo "            <tr class='std'>\n";
 		
 		/* Get list of teachers in subject and store in option list */
 		echo "               <td>\n";
-		echo "                  <select name=\"removefromteacherlist\" style=\"width: 200px;\" size=10>\n";
+		echo "                  <select name='removefromteacherlist' style='width: 200px;' size=10>\n";
 		$res =&  $db->query("SELECT user.FirstName, user.Surname, user.Username FROM " .
 							"       user, class " .
 							"WHERE class.ClassTeacherUsername = user.Username " .
 							"AND   class.ClassIndex = $classindex");
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		if ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-			echo "                     <option value=\"{$row['Username']}\">{$row['FirstName']} " .
+			echo "                     <option value='{$row['Username']}'>{$row['FirstName']} " .
 													"{$row['Surname']} ({$row['Username']})\n";
 		}
 		echo "                  </select>\n";
@@ -111,7 +111,7 @@
 		
 		/* Get list of unassigned teachers */
 		echo "               <td>\n";
-		echo "                  <select name=\"addtoteacherlist\" style=\"width: 200px;\" size=10>\n";
+		echo "                  <select name='addtoteacherlist' style='width: 200px;' size=10>\n";
 		
 		$query =        "SELECT user.FirstName, user.Surname, user.Username FROM " .
 						"       user LEFT JOIN class ON user.Username=class.ClassTeacherUsername AND class.ClassIndex=$classindex " .

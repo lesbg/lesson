@@ -23,7 +23,14 @@
 	echo "   <body>\n";
 	echo "      <table class=\"transparent\" width=\"100%\">\n";
 	echo "         <tr>\n";
-	echo "            <td width=\"120px\" class=\"logo\"><img height=\"73\" width=\"75\" alt=\"LESB&G Logo\" src=\"images/lesbg-small.gif\"></td>\n"; 
+	$useragent = $_SERVER['HTTP_USER_AGENT'];
+	if (preg_match('|MSIE ([0-6].[0-9]{1,2})|',$useragent,$matched)) {
+		// Can't handle transparent png's, so we'll give them transparent gif's
+		?><td width="200px" class="logo"><img height="50" width="200" alt="LESSON Logo" src="images/lesson_logo_small.gif"></td><?php
+	} else {
+		// Can't handle transparent png's, so we'll give them transparent gif's
+		?><td width="200px" class="logo"><img height="50" width="200" alt="LESSON Logo" src="images/lesson_logo_small.png"></td><?php
+	} 
 	echo "            <td class=\"title\">$title</td>\n";
 	echo "            <td width=\"120px\" class=\"home\">\n";
 
@@ -81,11 +88,10 @@
 						"ORDER BY user.FirstName, user.Surname, user.Username";
 		} else {
 			$query =	"SELECT user.FirstName, user.Surname, user.Username, classlist.ClassOrder, " .
-						"       view_subject_student.Average FROM user, classterm, " .
-						"       classlist LEFT OUTER JOIN view_subject_student " .
-						"       ON classlist.Username = view_subject_student.Username " .
-						"       AND view_subject_student.SubjectIndex = $subjectindex " .
-						"       AND view_subject_student.ClassIndex = $class_index " .
+						"       subjectstudent.Average FROM user, classterm, " .
+						"       classlist LEFT OUTER JOIN subjectstudent " .
+						"       ON (classlist.Username = subjectstudent.Username " .
+						"           AND subjectstudent.SubjectIndex = $subjectindex) " .
 						"WHERE user.Username = classlist.Username " .
 						"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
 						"AND   classterm.TermIndex = $termindex " .

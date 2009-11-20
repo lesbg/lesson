@@ -52,6 +52,19 @@
 							" AND   classterm.ClassIndex       = class.ClassIndex " .
 							" AND   class.YearIndex            = $yearindex) " .
 							"UNION " .
+							"(SELECT class.DepartmentIndex  " .
+							"         FROM user, support, class, classterm, classlist, currentterm " .
+							" WHERE support.WorkerUsername   = '$username' " .
+							" AND   user.Username            = support.WorkerUsername " .
+							" AND   user.ActiveTeacher       = 1 " .
+							" AND   user.SupportTeacher      = 1 " .
+							" AND   support.StudentUsername  = classlist.Username " .
+							" AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+							" AND   classterm.TermIndex      = currentterm.TermIndex " .
+							" AND   classterm.ClassIndex     = class.ClassIndex " .
+							" AND   class.YearIndex          = $yearindex" .
+							" GROUP BY class.DepartmentIndex) " .
+							"UNION " .
 							"(SELECT subject.DepartmentIndex FROM subject, subjectteacher " .
 							" WHERE subjectteacher.Username = '$username' " .
 							" AND   subject.SubjectIndex    = subjectteacher.SubjectIndex " .

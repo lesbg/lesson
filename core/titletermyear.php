@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * core/titletermyear.php  (c) 2005 Jonathan Dieter
+	 * core/titletermyear.php  (c) 2005-2009 Jonathan Dieter
 	 *
 	 * Print the term and year in <h2>.  $termindex, $yearindex, and
 	 * $db must be set before invoking this page.
@@ -71,6 +71,20 @@
 							" AND   class.YearIndex            = $yearindex " .
 							" AND   department.DepartmentIndex = class.DepartmentIndex) " .
 							"UNION " .
+							"(SELECT department.Department, class.DepartmentIndex  " .
+							"         FROM department, user, support, class, classterm, classlist, currentterm " .
+							" WHERE support.WorkerUsername   = '$username' " .
+							" AND   user.Username            = support.WorkerUsername " .
+							" AND   user.ActiveTeacher       = 1 " .
+							" AND   user.SupportTeacher      = 1 " .
+							" AND   support.StudentUsername  = classlist.Username " .
+							" AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+							" AND   classterm.TermIndex      = currentterm.TermIndex " .
+							" AND   classterm.ClassIndex     = class.ClassIndex " .
+							" AND   class.YearIndex          = $yearindex" .
+							" AND   department.DepartmentIndex = class.DepartmentIndex " .
+							" GROUP BY class.DepartmentIndex) " .
+							"UNION " .
 							"(SELECT department.Department, subject.DepartmentIndex FROM subject, subjectteacher, " .
 							"        department " .
 							" WHERE subjectteacher.Username = \"$username\" " .
@@ -92,7 +106,7 @@
 							" AND department.DepartmentIndex = user.DepartmentIndex) " .
 							"ORDER BY DepartmentIndex";
 			} else {
-				$query =	"(SELECT department.Department, hod.DepartmentIndex FROM " .
+				$query =	"(SELECT hod.DepartmentIndex, department.Department FROM " .
 							"        hod INNER JOIN department USING (DepartmentIndex) " .
 							" WHERE hod.Username = '$username') " .
 							"UNION " .

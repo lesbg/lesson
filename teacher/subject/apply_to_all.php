@@ -63,7 +63,7 @@
 						"AND   new_subject.SubjectIndex != $subjectindex " .
 						"AND   new_subject.YearIndex = subject.YearIndex " .
 						"AND   new_subject.TermIndex = subject.TermIndex " .
-						"AND   new_subject.NoMarks = 0";
+						"AND   new_subject.AverageType > 0";
 			$res =&  $db->query($query);
 			if(DB::isError($res)) die($res->getDebugInfo());
 

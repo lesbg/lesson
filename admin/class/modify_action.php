@@ -1,6 +1,4 @@
 <?php
-	// FIX CLASS STUFF
-	
 	/*****************************************************************
 	 * admin/class/modify_action.php  (c) 2005-2009 Jonathan Dieter
 	 *
@@ -28,7 +26,7 @@
 
 		/* Get classterm */
 		$res =& $db->query("SELECT ClassTermIndex FROM classterm " . 
-						   "WHERE ClassIndex = $classindex" .
+						   "WHERE ClassIndex = $classindex " .
 						   "AND   TermIndex = $termindex");
 		if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 		if ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
@@ -53,8 +51,8 @@
 			include "admin/class/modify.php";
 		} elseif($_POST["action"] == "<<") {                             // If << was pressed, add students to
 			foreach($_POST['addtoclass'] as $addUserName) {              //  class
-				$res =& $db->query("INSERT INTO classlist (ClassListIndex, Username, ClassIndex) VALUES " .
-								   "                      (\"$addUserName$classyear\", \"$addUserName\", $classindex)");
+				$res =& $db->query("INSERT INTO classlist (Username, ClassTermIndex) VALUES " .
+								   "                      ('$addUserName', $classterm)");
 				if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 				//update_conduct_mark($addUserName // Where the flip do I find the term?
 				log_event($LOG_LEVEL_ADMIN, "admin/class/modify_action.php", $LOG_ADMIN,
@@ -85,7 +83,7 @@
 			if ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 				$remUserName = $row['ClassTeacherUsername'];
 				$addUserName = $_POST['addtoteacherlist'];
-				$res =&  $db->query("UPDATE class SET ClassTeacherUsername=\"$addUserName\" " .
+				$res =&  $db->query("UPDATE class SET ClassTeacherUsername='$addUserName' " .
 									"WHERE ClassIndex=$classindex");
 				if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 				if($remUserName != "") {
@@ -97,14 +95,14 @@
 			}
 			include "admin/class/modify.php";
 		} elseif($_POST["action"] == "Done") {
-			$extraMeta     = "      <meta http-equiv=\"REFRESH\" content=\"0;url=$nextLink\">\n";
+			$extraMeta     = "      <meta http-equiv='REFRESH' content='0;url=$nextLink'>\n";
 			$noJS          = true;
 			$noHeaderLinks = true;
 			$title         = "LESSON - Redirecting...";
 			
 			include "header.php";
 			
-			echo "      <p align=\"center\">Redirecting you to <a href=\"$nextLink\">$nextLink</a></p>\n";
+			echo "      <p align='center'>Redirecting you to <a href='$nextLink'>$nextLink</a></p>\n";
 			
 			include "footer.php";
 		} else {
@@ -121,8 +119,8 @@
 		
 		include "header.php";
 		
-		echo "      <p align=\"center\">You do not have permission to access this page. <a href=" .
-		                               "\"$nextLink\">Click here to continue.</a></p>\n";
+		echo "      <p align='center'>You do not have permission to access this page. <a href=" .
+		                               "'$nextLink'>Click here to continue.</a></p>\n";
 		
 		include "footer.php";
 	}

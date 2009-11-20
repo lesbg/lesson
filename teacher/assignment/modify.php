@@ -131,11 +131,14 @@
 			if($bRow =& $bsr->fetchRow(DB_FETCHMODE_ASSOC)) {
 				$min_score = $bRow['MinScore'];
 				$max_score = $bRow['MaxScore'];
-				$m         = ($top_mark - $bottom_mark) / ($max_score - $min_score);
-				$b         = ($top_mark * $min_score - $bottom_mark * $max_score) / ($min_score - $max_score);
+				if ($max_score - $min_score == 0) {
+					$m = $b = 0;
+				} else {
+					$m  = ($top_mark - $bottom_mark) / ($max_score - $min_score);
+					$b  = ($top_mark * $min_score - $bottom_mark * $max_score) / ($min_score - $max_score);
+				}
 			} else {
-				$m         = 0;
-				$b         = 0;
+				$m = $b = 0;
 			}
 		}
 		
@@ -368,7 +371,11 @@
 						$avg = "0%";
 					} else {
 						if($curve_type == 1) {
-							$avg = round(($row['Score'] / $max_score) * 100) . "%";
+							if($max_score == 0) {
+								$avg = "0%";
+							} else {
+								$avg = round(($row['Score'] / $max_score) * 100) . "%";
+							}
 						} elseif($curve_type == 2) {
 							if($m == 0 && $b == 0) {
 								$avg = "0%";
@@ -376,7 +383,11 @@
 								$avg = round(($m * $row['Score']) + $b) . "%";
 							}
 						} else {
-							$avg = round(($row['Score'] / $aRow['Max']) * 100) . "%";
+							if($aRow['Max'] == 0) {
+								$avg = "0%";
+							} else {
+								$avg = round(($row['Score'] / $aRow['Max']) * 100) . "%";
+							}
 						}
 					}
 				} elseif($average_type == $AVG_TYPE_INDEX) {

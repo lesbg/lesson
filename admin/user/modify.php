@@ -16,7 +16,7 @@
 	include "header.php";                                    // Show header
 	
 	if($is_admin) {
-		$res =&  $db->query("SELECT Username, FirstName, Surname, Gender, DOB, Permissions, " .
+		$res =&  $db->query("SELECT Username, FirstName, Surname, Gender, DOB, Permissions, DepartmentIndex, " .
 							"       Title, DateType, DateSeparator, Password2, PhoneNumber, ActiveStudent, " .
 							"       ActiveTeacher, SupportTeacher, User1, User2 FROM user " .
 							"WHERE Username = '$uname'");
@@ -109,6 +109,31 @@
 			echo "                   <input type=\"checkbox\" name=\"user1\" $check1>New student<br>\n";
 			echo "                   <input type=\"checkbox\" name=\"user2\" $check2>Special student<br></td>\n";
 			echo "            </tr>\n";
+			$nres =&  $db->query("SELECT Department, DepartmentIndex FROM department " .
+								 "ORDER BY DepartmentIndex");
+			if(DB::isError($nres)) die($nres->getDebugInfo());               // Check for errors in query
+			if($nres->numRows() > 0) {
+				echo "            <tr>\n";
+				echo "               <td><b>Department</b></td>\n";
+				echo "               <td colspan='2'>\n";
+				echo "                  <select name='department'>\n";
+				if(is_null($row['DepartmentIndex']))
+					$default = "selected";
+				else
+					$default = "";
+					
+				echo "                     <option value='NULL'>None</option>\n";
+				while($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
+					if($row['DepartmentIndex'] == $nrow['DepartmentIndex'])
+						$default = "selected";
+					else
+						$default = ""; 
+					echo "                     <option value='{$nrow['DepartmentIndex']}' $default>{$nrow['Department']}</option>\n";
+				}
+				echo "                  </select>\n";
+				echo "                  <br/>\n";
+				echo "            </tr>\n";
+			}
 			echo "            <tr>\n";
 			echo "               <td colspan=\"3\"><i>Note: if you leave the passwords blank, they will not be changed.</i></td>\n";
 			echo "            </tr>\n";

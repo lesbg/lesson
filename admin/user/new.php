@@ -13,12 +13,12 @@
 	include "header.php";                                    // Show header
 	
 	if($is_admin) {
-		echo "      <form action=\"$link\" method=\"post\">\n";    // Form method
-		echo "         <table class=\"transparent\" align=\"center\">\n";
+		echo "      <form action='$link' method='post'>\n";    // Form method
+		echo "         <table class='transparent' align='center'>\n";
 		echo "            <tr>\n";
-		echo "               <td colspan=\"1\"><b>Username:</b></td>\n";
-		echo "               <td colspan=\"2\">\n";
-		echo "                   <input type=\"radio\" name=\"autouname\" value='Y' checked>Automatic<br>\n";
+		echo "               <td colspan='1'><b>Username:</b></td>\n";
+		echo "               <td colspan='2'>\n";
+		echo "                   <input type='radio' name='autouname' value='Y' checked>Automatic<br>\n";
 		echo "                   <input type='radio' name='autouname' value='N'><input type='text' name='uname' size=35>\n";
 		echo "               </td>\n";
 		echo "            </tr>\n";
@@ -63,6 +63,23 @@
 		echo "                   <input type='checkbox' name='user1'>New student<br>\n";
 		echo "                   <input type='checkbox' name='user2'>Special student<br></td>\n";
 		echo "            </tr>\n";
+		$res =&  $db->query("SELECT Department, DepartmentIndex FROM department " .
+							"ORDER BY DepartmentIndex");
+		if(DB::isError($res)) die($res->getDebugInfo());               // Check for errors in query
+		
+		if($res->numRows() > 0) {
+			echo "            <tr>\n";
+			echo "               <td><b>Department</b></td>\n";
+			echo "               <td colspan='2'>\n";
+			echo "                  <select name='department'>\n";
+			echo "                     <option value='NULL'>None</option>\n";
+			while($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+				echo "                     <option value='{$row['DepartmentIndex']}'>{$row['Department']}</option>\n";
+			}
+			echo "                  </select>\n";
+			echo "                  <br/>\n";
+			echo "            </tr>\n";
+		}
 		echo "            <tr>\n";
 		echo "               <td colspan='3'><i>Note: if you leave the primary password blank, it will default to the user's username.</i></td>\n";
 		echo "            </tr>\n";

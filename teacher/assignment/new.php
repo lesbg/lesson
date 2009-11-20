@@ -116,7 +116,7 @@
 			echo "            </tr>\n";
 			echo "            <tr>\n";
 			echo "               <td>Weight:</td>\n";
-			echo "               <td colspan='2'><input type='text' name='weight' " .
+			echo "               <td colspan='2'><input type='text' name='weight' value='1' " .
 															"tabindex='5' size='50'></td>\n";
 			echo "            </tr>\n";
 		}

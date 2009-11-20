@@ -64,7 +64,7 @@
 
 		echo "                  <select name='addsubjecttype[]' style='width: 200px;' multiple size=15>\n";
 		while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-			if(!in_array($row['SubjectTypeIndex'], $values)) {
+			if(!isset($values) or !in_array($row['SubjectTypeIndex'], $values)) {
 				echo "                     <option value='{$row['SubjectTypeIndex']}'>{$row['Title']}\n";
 			}
 		}

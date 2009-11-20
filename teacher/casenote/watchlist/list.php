@@ -9,7 +9,11 @@
 	$title = "Casenote Watchlist";
 	
 	include "core/settermandyear.php";
-	include "header.php";                                          // Show header
+	include "header.php";
+	$showterm = false;
+	$showyear = false;
+	$showalldeps = true;
+	include "core/titletermyear.php";
 	
 	/* Check whether current user is a counselor */
 	$res =&  $db->query("SELECT Username FROM counselorlist " .

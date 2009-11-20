@@ -917,21 +917,21 @@
 	}
 
 	/* Update all student conduct marks for year and term */
-	/*
+	
 	function update_conduct_year_term($year, $term) {
 		global $db;
 
-		$query =	"SELECT classlist.Username FROM classlist, class, term " .
-					"WHERE class.YearIndex = $year " .
-					"AND   term.TermIndex = $term " .
-					"AND   class.DepartmentIndex = term.DepartmentIndex " .
-					"AND   classlist.ClassIndex = class.ClassIndex ";
+		$query =	"SELECT classlist.Username FROM classlist, classterm, class " .
+					"WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
+					"AND   classterm.TermIndex = $term " .
+					"AND   classterm.ClassIndex = class.ClassIndex " .
+					"AND   class.YearIndex = $year ";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());
 		while($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 			update_conduct_mark($row['Username'], $year, $term);
 		}
-	}*/
+	}
 
 	/*
 	function update_conduct_input($class_index, $term_index) {
@@ -1002,14 +1002,14 @@
 					"       COUNT(subjectstudent.SubjectIndex) AS SubjectCount, " .
 					"       classterm.ClassTermIndex FROM " .
 					"       class, classterm, classlist, term, subject, subjectstudent " .
-					"WHERE class.YearIndex = $year " .
+					"WHERE class.YearIndex = subject.YearIndex " .
 					"AND   classterm.ClassIndex = class.ClassIndex " .
-					"AND   classterm.TermIndex = $term " .
+					"AND   classterm.TermIndex = term.TermIndex " .
 					"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
 					"AND   classlist.Username = '$studentusername' " .
 					"AND   term.TermIndex = $term " .
 					"AND   subject.YearIndex = $year " .
-					"AND   subject.TermIndex = $term " .
+					"AND   subject.TermIndex = term.TermIndex " .
 					"AND   subject.SubjectIndex = subjectstudent.SubjectIndex " .
 					"AND   subjectstudent.Username = '$studentusername' " .
 					"GROUP BY subjectstudent.Username";

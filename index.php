@@ -96,7 +96,8 @@
 	//echo "$location - $password_number";
 	include "$location"; // Switch to current page
 	
-	//update_conduct_year_term(4, 9);
+	/*update_conduct_year_term(6, 1);
+	update_conduct_year_term(6, 7);*/
         //update_classterm(149, 1);
         
 

@@ -88,7 +88,7 @@
 			if($conductRow['Conduct'] < 0) {
 				echo "      <p class=\"subtitle\" align=\"center\">Conduct: 0%</p>\n";
 			} else {
-				echo "      <p class=\"subtitle\" align=\"center\">Conduct: {$conductRow['Score']}%</p>\n";
+				echo "      <p class=\"subtitle\" align=\"center\">Conduct: {$conductRow['Conduct']}%</p>\n";
 			}
 			
 			$conduct_mark = $conductRow['Conduct'];

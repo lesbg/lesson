@@ -26,6 +26,7 @@
 									"ActiveStudent = {$_POST['activestudent']}, " .
 									"ActiveTeacher = {$_POST['activeteacher']}, " .
 									"SupportTeacher = {$_POST['supportteacher']}, " .
+									"DepartmentIndex = {$_POST['department']}, " .
 									"User1 = {$_POST['user1']}, " .
 									"User2 = {$_POST['user2']}";
 		if(isset($_POST['password']) && $_POST['password'] != "") {

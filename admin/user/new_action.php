@@ -46,14 +46,14 @@
 			/* Add new user */
 			$query =	"INSERT INTO user (Username, FirstName, Surname, Gender, DOB, Password, Password2, " .
 						"                  Permissions, Title, PhoneNumber, DateType, DateSeparator, " .
-						"                  ActiveStudent, ActiveTeacher, SupportTeacher, " .
+						"                  ActiveStudent, ActiveTeacher, SupportTeacher, DepartmentIndex, " .
 						"                  User1, User2) " .
 						"VALUES ('{$_POST['uname']}', '{$_POST['fname']}', '{$_POST['sname']}', " .
 						"        '{$_POST['gender']}', {$_POST['DOB']}, MD5('{$_POST['password']}'), " .
 						"        {$_POST['password2']}, " .
 						"        {$_POST['perms']}, {$_POST['title']}, '{$_POST['phone']}', " .
 						"        {$_POST['datetype']}, {$_POST['datesep']}, {$_POST['activestudent']}, " .
-						"        {$_POST['activeteacher']}, {$_POST['supportteacher']}, " .
+						"        {$_POST['activeteacher']}, {$_POST['supportteacher']}, {$_POST['department']}, " .
 						"        {$_POST['user1']}, {$_POST['user2']})";
 			$aRes =& $db->query($query);
 			if(DB::isError($aRes)) die($aRes->getDebugInfo());           // Check for errors in query

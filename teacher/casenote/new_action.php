@@ -165,7 +165,7 @@
 
 						if($level < 5) {
 							/* Build list of relevant head of departments */
-							$query = 	"SELECT user.Title, user.FirstName, user.Surname " .
+							$query = 	"SELECT user.Username " .
 										"       FROM hod, class, classterm, classlist, user " .
 										"WHERE hod.DepartmentIndex = class.DepartmentIndex " .
 										"AND   class.YearIndex = $currentyear " .
@@ -212,7 +212,7 @@
 						/* Class teacher */
 						if($level < 3) {
 							/* Build list of this student's class teacher for this term */
-							$query = 	"SELECT user.Title, user.FirstName, user.Surname " .
+							$query = 	"SELECT class.ClassTeacherUsername " .
 										"       FROM class, classterm, classlist, user " .
 										"WHERE class.ClassTeacherUsername = user.Username " .
 										"AND   class.YearIndex = $currentyear " .

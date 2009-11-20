@@ -188,6 +188,7 @@
 						"AND   period.PeriodIndex = timetable.PeriodIndex " .
 						"GROUP BY period.PeriodIndex, day.DayIndex " .
 						"ORDER BY day.DayIndex, period.StartTime";
+	        print $query;
 		}
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query

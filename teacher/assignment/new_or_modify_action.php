@@ -218,13 +218,15 @@
 	
 			/* Check whether weight was included, and set to 0 if it wasn't */
 			if(!isset($_POST['weight']) or $_POST['weight'] == "") {
-				echo "</p>\n      <p>Weight not entered, defaulting to 0.</p>\n      <p>";  // Print error message
-				$_POST['weight'] = "0";
+				echo "</p>\n      <p>Weight not entered, defaulting to 1.</p>\n      <p>";  // Print error message
+				$_POST['weight'] = "1";
 			} else {
 				if($_POST['weight'] != "0") {
 					settype($_POST['weight'], "double");
-					if($_POST['weight'] == 0)
-						echo "</p>\n      <p>Weight must be a number...defaulting to 0.</p>\n      <p>";
+					if($_POST['weight'] == 0) {
+						echo "</p>\n      <p>Weight must be a number...defaulting to 1.</p>\n      <p>";
+						$_POST['weight'] = 1;
+					}
 					settype($_POST['max'], "string");
 				}
 			}

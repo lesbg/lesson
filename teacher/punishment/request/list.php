@@ -88,7 +88,7 @@
 					"       user.FirstName, user.Surname, disciplinebacklog.Date, class.ClassName, " .
 					"       disciplinebacklog.DisciplineBacklogIndex, disciplinebacklog.Comment, discipline.Comment AS " .
 					"       Reason " .
-					"       FROM class, classlist, disciplinetype, disciplineweight, " .
+					"       FROM class, classlist, classterm, disciplinetype, disciplineweight, " .
 					"       discipline, user, disciplinebacklog " .
 					"WHERE  disciplinebacklog.WorkerUsername = \"$teacherusername\" " .
 					"AND    disciplinebacklog.DisciplineIndex = discipline.DisciplineIndex " .
@@ -96,7 +96,8 @@
 					"AND    disciplineweight.DisciplineTypeIndex = disciplinetype.DisciplineTypeIndex " .
 					"AND    classlist.Username = user.Username " .
 					"AND    discipline.Username = user.Username " .
-					"AND    class.ClassIndex = classlist.ClassIndex " .
+					"AND    classlist.ClassTermIndex = classterm.ClassTermIndex " .
+					"AND    classterm.ClassIndex = class.ClassIndex " .
 					"AND    class.YearIndex = $yearindex " .
 					"AND    disciplinebacklog.RequestType = 2 " .
 					"ORDER BY discipline.Date DESC";
