@@ -8,18 +8,20 @@
 	/* Get variables */
 	if(!isset($_GET['next'])) $_GET['next'] = dbfuncString2Int($backLink);
 	$class            = dbfuncInt2String($_GET['keyname']);
-	$classindex       = safe(dbfuncInt2String($_GET['key']));
+	$classtermindex   = safe(dbfuncInt2String($_GET['key']));
 	$nextLink         = dbfuncInt2String($_GET['next']);              // Link to next page
 	$error            = false;    // Boolean to store any errors
 	
 	/* Check whether subject is open for report editing */
-	$query =	"SELECT class_term.CTCommentType, class.DepartmentIndex, " .
-				"       class_term.HODCommentType, class_term.PrincipalCommentType, " .
-				"       class_term.CanDoReport, department.ProofreaderUsername " .
-				"       FROM class_term, class, department " .
-				"WHERE class_term.ClassIndex      = $classindex " .
-				"AND   class_term.TermIndex       = $termindex " .
-				"AND   class.ClassIndex           = $classindex " .
+	$query =	"SELECT classterm.AverageType, classterm.EffortType, classterm.ConductType, " .
+				"       classterm.AverageTypeIndex, classterm.EffortTypeIndex, " .
+				"       classterm.ConductTypeIndex, classterm.CTCommentType, " .
+				"       classterm.HODCommentType, classterm.PrincipalCommentType, " .
+				"       classterm.CanDoReport, classterm.AbsenceType, class.DepartmentIndex, " .
+				"       department.ProofreaderUsername " .
+				"       FROM classterm, class, department " .
+				"WHERE classterm.ClassTermIndex    = $classtermindex " .
+				"AND   class.ClassIndex = classterm.ClassIndex " .
 				"AND   department.DepartmentIndex = class.DepartmentIndex ";
 	$res =& $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
@@ -55,10 +57,11 @@
 	}
 
 	/* Check whether current user is a hod */
-	$res =&  $db->query("SELECT hod.Username FROM hod, class " .
+	$res =&  $db->query("SELECT hod.Username FROM hod, class, classterm " .
 						"WHERE hod.Username        = '$username' " .
 						"AND   hod.DepartmentIndex = class.DepartmentIndex " .
-						"AND   class.ClassIndex    = $classindex");
+						"AND   class.ClassIndex    = classterm.ClassIndex " .
+						"AND   classterm.ClassTermIndex = $classtermindex");
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
 	if($res->numRows() > 0) {
@@ -68,9 +71,10 @@
 	}
 
 	/* Check whether user is authorized to change scores */
-	$res =& $db->query("SELECT ClassIndex FROM class " .
-					   "WHERE ClassIndex           = $classindex " .
-					   "AND   ClassTeacherUsername = '$username'");
+	$res =& $db->query("SELECT class.ClassIndex FROM class, classterm " .
+					   "WHERE class.ClassIndex           = classterm.ClassIndex " .
+					   "AND   classterm.ClassTermIndex   = $classtermindex " .
+					   "AND   class.ClassTeacherUsername = '$username'");
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
 	if($res->numRows() > 0) {
@@ -78,7 +82,7 @@
 	} else {
 		$is_ct = false;
 	}
-
+	
 	/* Check whether user is proofreader */
 	if($proof_username == $username) {
 		$is_proofreader = true;

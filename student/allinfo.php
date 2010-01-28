@@ -32,7 +32,45 @@
 
 	include "header.php";
 	
-	if($is_admin or $studentusername == $username) {
+		/* Check whether current user is principal */
+	$res =&  $db->query("SELECT Username FROM principal " .
+						"WHERE Username=\"$username\" AND Level=1");
+	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
+
+	if($res->numRows() > 0) {
+		$is_principal = true;
+	} else {
+		$is_principal = false;
+	}
+
+	/* Check whether current user is a counselor */
+	$res =&  $db->query("SELECT Username FROM counselorlist " .
+						"WHERE Username=\"$username\"");
+	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
+
+	if($res->numRows() > 0) {
+		$is_counselor = true;
+	} else {
+		$is_counselor = false;
+	}
+
+	/* Check whether current user is a hod */
+	$query =	"SELECT hod.Username FROM hod, class, classterm, classlist " .
+				"WHERE hod.Username='$username' " .
+				"AND hod.DepartmentIndex = class.DepartmentIndex " .
+				"AND classlist.Username = '$studentusername' " .
+				"AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+				"AND classterm.ClassIndex = class.ClassIndex";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
+
+	if($res->numRows() > 0) {
+		$is_hod = true;
+	} else {
+		$is_hod = false;
+	}
+	
+	if($is_admin or $is_hod or $is_counselor or $is_principal or $studentusername == $username) {
 		include "core/settermandyear.php";
 		include "core/titletermyear.php";
 
@@ -53,23 +91,28 @@
 		}
 
 		$query =		"SELECT Title, Date, DueDate, AssignmentIndex, Description, DescriptionData, " .
-						"       DescriptionFileType, AverageType, ShowAverage, SubjectIndex, " .
-						"       Uploadable, Weight, Score, Percentage, Comment, StudentSubjectAverage, " .
-						"       CanModify, CategoryName FROM view_marks " .
-						"WHERE Username = '$studentusername' " .
-						"AND   Hidden = 0 ";
+						"       DescriptionFileType, AverageType, ShowAverage, " .
+						"       Uploadable, assignment.Weight, Score, Percentage, mark.Comment, " .
+						"       subjectstudent.Average AS StudentSubjectAverage, " .
+						"       CanModify, CategoryName, subject.SubjectIndex " .
+						"       FROM subject INNER JOIN assignment USING (SubjectIndex) " .
+						"       INNER JOIN mark USING (AssignmentIndex) INNER JOIN subjectstudent " .
+						"       ON (subjectstudent.SubjectIndex = subject.SubjectIndex AND subjectstudent.Username = mark.Username) " .
+						"       LEFT OUTER JOIN categorylist USING (CategoryListIndex) LEFT OUTER JOIN category USING (CategoryIndex) " .
+						"WHERE mark.Username     = '$studentusername' " .
+						"AND   Hidden       = 0 ";
 		if($showtype == "u") {
-			$query .=	"AND   Score IS NULL " .
-						"AND   AverageType != $AVG_TYPE_NONE ";
+			$query .=	"AND   mark.Score IS NULL " .
+						"AND   subject.AverageType != $AVG_TYPE_NONE ";
 		} elseif($showtype == "m") {
-			$query .=	"AND   Score IS NOT NULL ";
+			$query .=	"AND   mark.Score IS NOT NULL ";
 		} elseif($showtype == "l") {
-			$query .=	"AND   Score = $MARK_LATE ";
-					"AND   AverageType == $AVG_TYPE_PERCENT ";
+			$query .=	"AND   mark.Score = $MARK_LATE ";
+						"AND   (subject.AverageType == $AVG_TYPE_PERCENT or subject.AverageType == $AVG_TYPE_GRADE) ";
 		} elseif($showtype == "t") {
-			$query .=	"AND   Score IS NULL " .
-					"AND   AverageType != $AVG_TYPE_NONE " .
-					"AND   Date = DATE(NOW()) ";
+			$query .=	"AND   mark.Score IS NULL " .
+						"AND   subject.AverageType != $AVG_TYPE_NONE " .
+						"AND   assignment.Date = DATE(NOW()) ";
 		}
 		$query .=		"AND   YearIndex = $yearindex " .
 						"AND   TermIndex = $termindex " .

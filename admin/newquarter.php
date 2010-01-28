@@ -1,6 +1,4 @@
 <?php
-	// FIX CLASS STUFF
-	
 	/*****************************************************************
 	 * admin/newquarter.php  (c) 2005-2008 Jonathan Dieter
 	 *
@@ -191,18 +189,8 @@
 		}
 	}
 
-	/* Update department_term */
-	$query =	"INSERT INTO department_term (DepartmentIndex, TermIndex, YearIndex, " .
-				"                             HasReport) " .
-				"SELECT DepartmentIndex, $newterm, $currentyear, HasReport " .
-				"       FROM department_term " .
-				"WHERE department_term.TermIndex = $currentterm " .
-				"AND   department_term.YearIndex = $currentyear";
-	$nres =&  $db->query($query);
-	if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
-
 	/* Update class_term */
-	$query =	"INSERT INTO class_term (ClassIndex, TermIndex, AverageType, ConductType, " .
+	$query =	"INSERT INTO classterm (ClassIndex, TermIndex, AverageType, ConductType, " .
 				"                        EffortType, AbsenceType, AverageTypeIndex, ConductTypeIndex, " .
 				"                        EffortTypeIndex, CTCommentType, HODCommentType, " .
 				"                        PrincipalCommentType, ReportTemplate, ReportTemplateType) " .
@@ -210,27 +198,39 @@
 				"       AverageTypeIndex, ConductTypeIndex, EffortTypeIndex, " .
 				"       CTCommentType, HODCommentType, PrincipalCommentType, " .
 				"       ReportTemplate, ReportTemplateType " .
-				"       FROM class_term " .
-				"WHERE class_term.TermIndex = $currentterm ";
+				"       FROM classterm " .
+				"WHERE classterm.TermIndex = $currentterm ";
 	$nres =&  $db->query($query);
 	if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
 
+	/* Get all old classterms and their new classterms */
+	$chkRes =&   $db->query("SELECT classterm.ClassTermIndex, newclassterm.ClassTermIndex AS " .
+							"       NewClassTermIndex FROM classterm, class, classterm AS newclassterm " .
+							"WHERE class.YearIndex      = $currentyear " .
+							"AND   classterm.ClassIndex = class.ClassIndex " .
+							"AND   classterm.TermIndex  = $currentterm " .
+							"AND   newclassterm.ClassIndex = class.ClassIndex " .
+							"AND   newclassterm.TermIndex = $newterm ");
+	if(DB::isError($chkRes)) die($chkRes->getDebugInfo());           // Check for errors in query
+	
+	while($chkRow =& $chkRes->fetchRow(DB_FETCHMODE_ASSOC)) {
+		$old_ctindex = $chkRow['ClassTermIndex'];
+		$new_ctindex = $chkRow['NewClassTermIndex'];
+		
+		$query =	"INSERT INTO classlist (Username, ClassTermIndex, ClassOrder) " .
+					"SELECT Username, $new_ctindex, ClassOrder FROM classlist " .
+					"WHERE  ClassTermIndex = $old_ctindex";
+		$nres =&  $db->query($query);
+		if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
+	}
+	
 	/* Insert conduct marks */
 	update_conduct_year_term($currentyear, $newterm);
-
-	/* Update classterm */
-	$query =	"INSERT INTO classterm (ClassListIndex, TermIndex) " .
-				"SELECT classlist.ClassListIndex, $newterm FROM classlist, class " .
-				"WHERE classlist.ClassIndex = class.ClassIndex " .
-				"AND   class.YearIndex = $currentyear " .
-				"AND   class.DepartmentIndex = $depindex ";
-	$nres =&  $db->query($query);
-	if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
 
 	/* Change current term */
 	$nwCurRes =& $db->query("UPDATE currentterm SET TermIndex = $newterm " .
 							"WHERE DepartmentIndex = $depindex");
-	if(DB::isError($nwCurRes)) die($nwCurRes->getMessage());          // Check for errors in query
+	if(DB::isError($nwCurRes)) die($nwCurRes->getDebugInfo());          // Check for errors in query
 
 	$currentterm           = $newterm;
 	$termindex             = $newterm;

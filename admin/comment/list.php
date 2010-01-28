@@ -68,8 +68,8 @@
 					echo "            <td>&nbsp;</td>\n";
 				}
 				$query =	"SELECT subjecttype.Title " .
-							"       FROM view_comment LEFT OUTER JOIN subjecttype USING (SubjectTypeIndex) " .
-							"WHERE view_comment.CommentIndex = {$row['CommentIndex']} " .
+							"       FROM comment LEFT OUTER JOIN commenttype USING (CommentIndex) LEFT OUTER JOIN subjecttype USING (SubjectTypeIndex) " .
+							"WHERE comment.CommentIndex = {$row['CommentIndex']} " .
 							"ORDER BY subjecttype.Title, subjecttype.SubjectTypeIndex ";
 				$aRes =& $db->query($query);
 				if(DB::isError($aRes)) die($aRes->getDebugInfo());

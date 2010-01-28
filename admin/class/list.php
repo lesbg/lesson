@@ -107,7 +107,7 @@
 					/* Check whether subject is open for report editing */
 					if($row['CanDoReport'] or $row['ReportDone']) {
 						$rptlink =  "index.php?location=" .  dbfuncString2Int("teacher/report/class_list.php") .
-									"&amp;key=" .            dbfuncString2Int($row['ClassIndex']) .
+									"&amp;key=" .            dbfuncString2Int($row['ClassTermIndex']) .
 									"&amp;keyname=" .        dbfuncString2Int($row['ClassName']);
 						if($row['ReportDone']) {
 							$rptbutton = dbfuncGetButton($rptlink,  "V", "small", "report", "View reports for class");

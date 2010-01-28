@@ -29,7 +29,7 @@
 		$average_type       = $row['AverageType'];
 		$average_type_index = $row['AverageTypeIndex'];
 
-		if($average_type == $AVG_TYPE_PERCENT and $_POST['category'] == "NULL") {
+		if(($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) and $_POST['category'] == "NULL") {
 			$res =&  $db->query("SELECT categorylist.CategoryListIndex FROM category, categorylist " .
 								"WHERE categorylist.SubjectIndex = $subjectindex " .
 								"AND   category.CategoryIndex = categorylist.CategoryIndex " .
@@ -41,7 +41,7 @@
 		}
 		$query =		"INSERT INTO assignment (Title, Description, DescriptionData, " .
 						"                        DescriptionFileType, Date, DueDate, ";
-		if($average_type == $AVG_TYPE_PERCENT) {
+		if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
 			$query .=	"                        Max, CategoryListIndex, " .
 						"                        CurveType, TopMark, " .
 						"                        BottomMark, Weight, ";
@@ -50,7 +50,7 @@
 						"                        SubjectIndex, Uploadable) " .
 						"VALUES ('$title' , $descr, $descr_data, " .
 						"        $descr_file_type, {$_POST['date']}, {$_POST['duedate']}, ";
-		if($average_type == $AVG_TYPE_PERCENT) {
+		if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
 			$query .=	"        {$_POST['max']}, {$_POST['category']}, " .
 						"        {$_POST['curve_type']}, {$_POST['top_mark']}, {$_POST['bottom_mark']}, " .
 						"        {$_POST['weight']}, ";
@@ -96,7 +96,7 @@
 			
 			$comment = $_POST["comment_{$row['Username']}"];        // Get comment for username from POST data
 			
-			if($average_type == $AVG_TYPE_PERCENT) {
+			if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
 				if(strtoupper($score) == 'A') {
 					$score   = "$MARK_ABSENT";                   // Change "A" for absent to $MARK_ABSENT.
 				} elseif(strtoupper($score) == 'E') {
@@ -153,7 +153,9 @@
 			}
 
 		}
-		update_marks($assignmentindex);
+		if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
+			update_marks($assignmentindex);
+		}
 
 		$asr =&  $db->query("SELECT subject.Name FROM subject " .
 							"WHERE subject.SubjectIndex = $subjectindex");

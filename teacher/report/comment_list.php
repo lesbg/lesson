@@ -44,11 +44,13 @@
 					" WHERE subject.SubjectIndex        = $subjectindex " .
 					" AND   department.DepartmentIndex  = subject.DepartmentIndex) " .
 					"UNION " .
-					"(SELECT class.ClassTeacherUsername FROM class, classlist " .
+					"(SELECT class.ClassTeacherUsername FROM class, classterm, classlist " .
 					" WHERE  classlist.Username         = '$student_username' " .
-					" AND    class.ClassIndex           = classlist.ClassIndex " .
+					" AND    classlist.ClassTermIndex   = classterm.ClassTermIndex " .
+					" AND    classterm.TermIndex        = $termindex " .
+					" AND    classterm.ClassIndex       = class.ClassIndex " .
 					" AND    class.ClassTeacherUsername = '$username' " .
-					" AND    class.YearIndex            = $yearindex)";
+					" AND    class.YearIndex            = $yearindex) ";
 	}
 	$res =& $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
@@ -137,10 +139,10 @@
 	echo "               <th>&nbsp;</th>\n";
 	echo "            </tr>\n";
 
-	$query =	"SELECT view_comment.CommentIndex, view_comment.Comment " .
-				"       FROM view_comment, subject " .
-				"WHERE (view_comment.SubjectTypeIndex IS NULL " .
-				"       OR view_comment.SubjectTypeIndex = subject.SubjectTypeIndex) " .
+	$query =	"SELECT comment.CommentIndex, comment.Comment " .
+				"       FROM comment LEFT OUTER JOIN commenttype USING (CommentIndex), subject " .
+				"WHERE (commenttype.SubjectTypeIndex IS NULL " .
+				"       OR commenttype.SubjectTypeIndex = subject.SubjectTypeIndex) " .
 				"AND   subject.SubjectIndex = $subjectindex " .
 				"ORDER BY CommentIndex";
 	$res =& $db->query($query);

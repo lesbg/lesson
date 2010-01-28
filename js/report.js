@@ -103,6 +103,31 @@ function recalc_comment(username) {
 	comment.value = comment.value.replace('}', ')');
 }
 
+/* Recalculate avg username */
+function recalc_avg(username) {
+	var indata = document.getElementById('avg_' + username).value.toUpperCase();
+	var avg = document.getElementById('aavg_' + username);
+/*	if(average_type == AVG_TYPE_PERCENT) {
+		if(indata == '' || isNaN(parseInt(indata))) {
+			avg.innerHTML = 'N/A';
+		} else if(indata < 0) {
+			avg.innerHTML = '0%';
+		} else if(indata > 100) {
+			avg.innerHTML = '100%';
+		} else {
+			avg.innerHTML = String(indata) + "%";
+		}*/
+	if(average_type == AVG_TYPE_INDEX) {
+		avg.innerHTML = 'N/A';
+		for(var x=0;x < avg_input_array.length; x++) {
+			if(avg_input_array[x] == indata) {
+				avg.innerHTML = avg_display_array[x];
+				break;
+			}
+		}
+	}
+}
+
 /* Recalculate effort username */
 function recalc_effort(username) {
 	var indata = document.getElementById('effort_' + username).value.toUpperCase();

@@ -43,7 +43,7 @@
 			$subjectindex = $next_subjectindex;
 		}
 		
-		if($average_type == $AVG_TYPE_PERCENT and $_POST['category'] == "NULL") {
+		if(($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) and $_POST['category'] == "NULL") {
 			$res =&  $db->query("SELECT categorylist.CategoryListIndex FROM assignment, category, " .
 								"       categorylist " .
 								"WHERE assignment.AssignmentIndex = $assignmentindex " .
@@ -76,7 +76,7 @@
 						"       DescriptionData = $descr_data, DescriptionFileType = $descr_file_type, " .
 						"       Date = {$_POST['date']}, DueDate = {$_POST['duedate']}, " .
 						"       UploadName = {$upload_name}, Uploadable = {$_POST['uploadable']}, ";
-		if($average_type == $AVG_TYPE_PERCENT) {
+		if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
 			$query .=	"       CurveType = {$_POST['curve_type']}, TopMark = {$_POST['top_mark']}, " .
 						"       BottomMark = {$_POST['bottom_mark']}, Weight = {$_POST['weight']}, " .
 						"       CategoryListIndex = {$_POST['category']}, Max = {$_POST['max']}, ";
@@ -105,7 +105,7 @@
 			
 			$comment = $_POST["comment_{$row['Username']}"];        // Get comment for username from POST data
 			
-			if($average_type == $AVG_TYPE_PERCENT) {
+			if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
 				if(strtoupper($score) == 'A') {
 					$score   = "$MARK_ABSENT";                   // Change "A" for absent to $MARK_ABSENT.
 				} elseif(strtoupper($score) == 'E') {
@@ -183,7 +183,7 @@
 				}
 			}
 		}
-		if($average_type == $AVG_TYPE_PERCENT) {
+		if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
 			update_marks($assignmentindex);
 		}
 

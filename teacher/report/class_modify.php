@@ -11,7 +11,7 @@
 	$class            = dbfuncInt2String($_GET['keyname']);
 	$student_name     = dbfuncInt2String($_GET['keyname2']);
 	$title            = "Report for " . $student_name;
-	$classindex       = safe(dbfuncInt2String($_GET['key']));
+	$classtermindex   = safe(dbfuncInt2String($_GET['key']));
 	$student_username = safe(dbfuncInt2String($_GET['key2']));
 
 	$link =	"index.php?location=" . dbfuncString2Int("teacher/report/class_modify_action.php") .
@@ -35,9 +35,8 @@
 				"       classterm.HODCommentType, classterm.PrincipalCommentType, " .
 				"       classterm.CanDoReport, classterm.AbsenceType, " .
 				"       MIN(classlist.ReportDone) AS ReportDone " .
-				"       FROM classterm, classlist, classlist " .
-				"WHERE classterm.ClassIndex    = $classindex " .
-				"AND   classterm.TermIndex     = $termindex " .
+				"       FROM classterm, classlist " .
+				"WHERE classterm.ClassTermIndex = $classtermindex " .
 				"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
 				"GROUP BY classterm.ClassIndex";
 	$res =& $db->query($query);
@@ -83,10 +82,11 @@
 	}
 
 	/* Check whether current user is a hod */
-	$res =&  $db->query("SELECT hod.Username FROM hod, class " .
+	$res =&  $db->query("SELECT hod.Username FROM hod, class, classterm " .
 						"WHERE hod.Username        = '$username' " .
 						"AND   hod.DepartmentIndex = class.DepartmentIndex " .
-						"AND   class.ClassIndex    = $classindex");
+						"AND   class.ClassIndex    = classterm.ClassIndex " .
+						"AND   classterm.ClassTermIndex = $classtermindex");
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
 	if($res->numRows() > 0) {
@@ -96,9 +96,10 @@
 	}
 
 	/* Check whether user is authorized to change scores */
-	$res =& $db->query("SELECT ClassIndex FROM class " .
-					   "WHERE ClassIndex           = $classindex " .
-					   "AND   ClassTeacherUsername = '$username'");
+	$res =& $db->query("SELECT class.ClassIndex FROM class, classterm " .
+					   "WHERE classterm.ClassTermIndex  = $classtermindex " .
+					   "AND   classterm.ClassIndex = class.ClassIndex " .
+					   "AND   class.ClassTeacherUsername = '$username'");
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 	
 	if($res->numRows() > 0) {
@@ -128,28 +129,30 @@
 	/*update_classterm($classindex, $termindex);
 	update_conduct_input($classindex, $termindex);*/
 
-	$query =	"SELECT user.Gender, user.FirstName, user.Surname, " .
-				"       classterm.Average, classterm.Conduct, classterm.Effort, " .
-				"       classterm.Rank, classterm.CTComment, classterm.HODComment, " .
-				"       classterm.CTCommentDone, classterm.HODCommentDone, " .
-				"       classterm.PrincipalComment, classterm.PrincipalCommentDone, " .
-				"       classterm.PrincipalUsername, classterm.HODUsername, " .
-				"       classterm.ReportDone, classterm.Absences, " .
-				"       average_index.Display AS AverageDisplay, " .
-				"       effort_index.Display AS EffortDisplay, " .
-				"       conduct_index.Display AS ConductDisplay " .
-				"       FROM user, classlist, classterm " .
-				"       LEFT OUTER JOIN nonmark_index AS average_index ON " .
-				"            classterm.Average = average_index.NonmarkIndex " .
-				"       LEFT OUTER JOIN nonmark_index AS effort_index ON " .
-				"            classterm.Effort = effort_index.NonmarkIndex " .
-				"       LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
-				"            classterm.Conduct = conduct_index.NonmarkIndex " .
-				"WHERE classlist.Username       = '$student_username' " .
-				"AND   user.Username            = '$student_username' " .
-				"AND   classterm.ClassListIndex = classlist.ClassListIndex " .
-				"AND   classlist.ClassIndex     = $classindex " .
-				"AND   classterm.TermIndex      = $termindex ";
+	$query =	"SELECT user.Gender, user.FirstName, user.Surname, user.Username, " .
+			"       classlist.Average, classlist.Conduct, classlist.Effort, " .
+			"       classlist.Rank, classlist.CTComment, classlist.HODComment, " .
+			"       classlist.CTCommentDone, classlist.HODCommentDone, " .
+			"       classlist.PrincipalComment, classlist.PrincipalCommentDone, " .
+			"       classlist.PrincipalUsername, classlist.HODUsername, " .
+			"       classlist.ReportDone, classlist.ReportProofread, " .
+			"       classlist.ReportPrinted, classlist.Absences, " .
+			"       classlist.ReportProofDone, " .
+			"       average_index.Display AS AverageDisplay, " .
+			"       effort_index.Display AS EffortDisplay, " .
+			"       conduct_index.Display AS ConductDisplay " .
+			"       FROM user, classlist " .
+			"       LEFT OUTER JOIN nonmark_index AS average_index ON " .
+			"            classlist.Average = average_index.NonmarkIndex " .
+			"       LEFT OUTER JOIN nonmark_index AS effort_index ON " .
+			"            classlist.Effort = effort_index.NonmarkIndex " .
+			"       LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
+			"            classlist.Conduct = conduct_index.NonmarkIndex " .
+			"WHERE user.Username            = classlist.Username " .
+			"AND   classlist.ClassTermIndex = $classtermindex " .
+			"AND   classlist.Username       = '$student_username' " .
+			"ORDER BY user.FirstName, user.Surname, user.Username";
+			
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 
@@ -171,18 +174,16 @@
 	if($is_proofreader) {
 		$query .=	"(SELECT user.Username, user.FirstName, user.Surname, class.Grade, " .
 					"        class.ClassName, term.TermNumber " .
-					"        FROM department, user, classlist, class, class_term, classterm, term " .
+					"        FROM department, user, classlist, class, classterm, term " .
 					" WHERE user.Username                  = classlist.Username " .
-					" AND   classterm.TermIndex            = class_term.TermIndex " .
-					" AND   classterm.ClassListIndex       = classlist.ClassListIndex " .
-					" AND   classterm.ReportProofread      = 1 " .
-					" AND   classterm.ReportProofDone      = 0 " .
-					" AND   class_term.ClassIndex          = classlist.ClassIndex " .
-					" AND   class_term.CanDoReport         = 1 " .
-					" AND   class.ClassIndex               = classlist.ClassIndex " .
+					" AND   classlist.ClassTermIndex       = classterm.ClassTermIndex " .
+					" AND   classlist.ReportProofread      = 1 " .
+					" AND   classlist.ReportProofDone      = 0 " .
+					" AND   classterm.CanDoReport          = 1 " .
+					" AND   class.ClassIndex               = classterm.ClassIndex " .
+					" AND   term.TermIndex                 = classterm.TermIndex " .
 					" AND   department.DepartmentIndex     = class.DepartmentIndex " .
-					" AND   department.ProofreaderUsername = '$username' " .
-					" AND   term.TermIndex                 = class_term.TermIndex) ";
+					" AND   department.ProofreaderUsername = '$username') ";
 	}
 	if($is_proofreader and ($is_ct or $is_hod or $is_principal or $is_admin)) {
 		$query .=	"UNION ";
@@ -191,12 +192,11 @@
 		$query =	"(SELECT user.Username, user.FirstName, user.Surname, class.Grade, " .
 					"         class.ClassName, term.TermNumber " .
 					"         FROM classterm, classlist, class, term, user " .
-					" WHERE classlist.ClassListIndex = classterm.ClassListIndex " .
-					" AND   classlist.ClassIndex     = $classindex " .
-					" AND   classterm.TermIndex      = $termindex " .
-					" AND   class.ClassIndex         = $classindex " .
-					" AND   term.TermIndex           = $termindex " .
-					" AND   user.Username            = classlist.Username) ";
+					" WHERE classlist.ClassTermIndex = $classtermindex " .
+					" AND   classterm.ClassTermIndex = classlist.ClassTermIndex " .
+					" AND   class.ClassIndex         = classterm.ClassIndex " .
+					" AND   user.Username            = classlist.Username " .
+					" AND   term.TermIndex           = classterm.TermIndex) ";
 	}
 	$query .=		"ORDER BY TermNumber, Grade, ClassName, FirstName, Surname, Username";
 
@@ -313,10 +313,13 @@
 		}
 	}
 
-	$query =	"SELECT class.ClassName, class.Grade FROM class, classlist " .
-				"WHERE classlist.Username   = '$student_username' " .
-				"AND   classlist.ClassIndex = class.ClassIndex " .
-				"AND   class.YearIndex      = $yearindex";
+	$query =	"SELECT class.ClassName, class.Grade FROM class, classterm, classlist " .
+				"WHERE classlist.Username       = '$student_username' " .
+				"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+				"AND   classterm.TermIndex      = $termindex " .
+				"AND   classterm.ClassIndex     = class.ClassIndex " .
+				"AND   class.YearIndex          = $yearindex ";
+				
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
@@ -420,6 +423,7 @@
 		echo "         var AVERAGE_TYPE_NONE      = $AVG_TYPE_NONE;\n";
 		echo "         var AVERAGE_TYPE_PERCENT   = $AVG_TYPE_PERCENT;\n";
 		echo "         var AVERAGE_TYPE_INDEX     = $AVG_TYPE_INDEX;\n";
+		echo "         var AVERAGE_TYPE_GRADE     = $AVG_TYPE_GRADE;\n";
 		echo "\n";
 		echo "         var average_type           = $average_type;\n";
 		if($average_type == $AVG_TYPE_INDEX) {
@@ -548,7 +552,7 @@
 						$score = round($row['Average']);
 						$score = "$score%";
 					}
-				} elseif($row['AverageType'] == $AVG_TYPE_INDEX) {
+				} elseif($row['AverageType'] == $AVG_TYPE_INDEX or $row['AverageType'] == $AVG_TYPE_GRADE) {
 					if(is_null($row['AverageDisplay'])) {
 						$score = "&nbsp;";
 					} else {
@@ -859,18 +863,11 @@
 						$score = "$scorestr%";
 					}
 				} elseif($conduct_type == $CLASS_CONDUCT_TYPE_PUN) {
-					$query =	"SELECT Score FROM conduct_mark " .
-								"WHERE YearIndex = $yearindex " .
-								"AND   TermIndex = $termindex " .
-								"AND   Username = '$student_username'";
-					$nres =& $db->query($query);
-					if(DB::isError($nres)) die($nres->getDebugInfo());
-	
-					if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-						$scorestr = round($nrow['Score']);
-						$score = "$scorestr%";
-					} else {
+					if($student_info['Conduct'] == -1) {
 						$score = "N/A";
+					} else {
+						$scorestr = round($student_info['Conduct']);
+						$score = "$scorestr%";
 					}
 				} else {
 					$score = "N/A";
@@ -910,13 +907,14 @@
 						}
 					}
 				} elseif($absence_type == $ABSENCE_TYPE_CALC) {
-					$nquery =   "SELECT AttendanceTypeIndex, COUNT(AttendanceIndex) AS Count " .
-								"       FROM view_attendance " .
-								"WHERE  Username = '$student_username' " .
-								"AND    YearIndex = $yearindex " .
-								"AND    TermIndex = $termindex " .
-								"AND    Period = 1 " .
-								"AND    AttendanceTypeIndex > 0 " .
+					$nquery =	"SELECT AttendanceTypeIndex, COUNT(AttendanceIndex) AS Count " .
+								"       FROM attendance INNER JOIN subject USING (SubjectIndex) " .
+								"       INNER JOIN period USING (PeriodIndex) " .
+								"WHERE  attendance.Username = '$student_username' " .
+								"AND    subject.YearIndex = $yearindex " .
+								"AND    subject.TermIndex = $termindex " .
+								"AND    period.Period = 1 " .
+								"AND    attendance.AttendanceTypeIndex > 0 " .
 								"GROUP BY AttendanceTypeIndex ";
 					$cRes =&   $db->query($nquery);
 					if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query

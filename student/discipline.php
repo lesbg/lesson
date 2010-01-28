@@ -21,8 +21,46 @@
 	
 	include "header.php";
 
+	/* Check whether current user is principal */
+	$res =&  $db->query("SELECT Username FROM principal " .
+						"WHERE Username=\"$username\" AND Level=1");
+	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
+
+	if($res->numRows() > 0) {
+		$is_principal = true;
+	} else {
+		$is_principal = false;
+	}
+
+	/* Check whether current user is a counselor */
+	$res =&  $db->query("SELECT Username FROM counselorlist " .
+						"WHERE Username=\"$username\"");
+	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
+
+	if($res->numRows() > 0) {
+		$is_counselor = true;
+	} else {
+		$is_counselor = false;
+	}
+
+	/* Check whether current user is a hod */
+	$query =	"SELECT hod.Username FROM hod, class, classterm, classlist " .
+				"WHERE hod.Username='$username' " .
+				"AND hod.DepartmentIndex = class.DepartmentIndex " .
+				"AND classlist.Username = '$studentusername' " .
+				"AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+				"AND classterm.ClassIndex = class.ClassIndex";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
+
+	if($res->numRows() > 0) {
+		$is_hod = true;
+	} else {
+		$is_hod = false;
+	}
+
 	/* Make sure user has permission to view student's marks for subject */
-	if($is_admin or $studentusername == $username) {
+	if($is_admin or $is_hod or $is_principal or $is_counselor or $studentusername == $username) {
 		include "core/settermandyear.php";
 
 			

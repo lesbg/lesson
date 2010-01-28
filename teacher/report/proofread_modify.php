@@ -11,7 +11,7 @@
 	$class            = dbfuncInt2String($_GET['keyname']);
 	$student_name     = dbfuncInt2String($_GET['keyname2']);
 	$title            = "Report for " . $student_name;
-	$classindex       = safe(dbfuncInt2String($_GET['key']));
+	$classtermindex   = safe(dbfuncInt2String($_GET['key']));
 	$student_username = safe(dbfuncInt2String($_GET['key2']));
 	$link          = "index.php?location=" . dbfuncString2Int("teacher/report/class_modify_action.php") .
 						"&amp;key=" .               $_GET['key'] .
@@ -78,10 +78,11 @@
 	}
 
 	/* Check whether current user is a hod */
-	$res =&  $db->query("SELECT hod.Username FROM hod, class " .
+	$res =&  $db->query("SELECT hod.Username FROM hod, class, classterm " .
 						"WHERE hod.Username        = '$username' " .
 						"AND   hod.DepartmentIndex = class.DepartmentIndex " .
-						"AND   class.ClassIndex    = $classindex");
+						"AND   class.ClassIndex    = classterm.ClassIndex " .
+						"AND   classterm.ClassTermIndex = $classtermindex");
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
 	if($res->numRows() > 0) {
@@ -91,17 +92,18 @@
 	}
 
 	/* Check whether user is authorized to change scores */
-	$res =& $db->query("SELECT ClassIndex FROM class " .
-					   "WHERE ClassIndex           = $classindex " .
-					   "AND   ClassTeacherUsername = '$username'");
+	$res =& $db->query("SELECT class.ClassIndex FROM class, classterm " .
+					   "WHERE class.ClassIndex           = classterm.ClassIndex " .
+					   "AND   classterm.ClassTermIndex   = $classtermindex " .
+					   "AND   class.ClassTeacherUsername = '$username'");
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
-	
+
 	if($res->numRows() > 0) {
 		$is_ct = true;
 	} else {
 		$is_ct = false;
 	}
-
+	
 	/* Check whether user is proofreader */
 	if($proof_username == $username) {
 		$is_proofreader = true;
@@ -119,9 +121,6 @@
 		include "footer.php";
 		exit(0);
 	}
-
-	update_classterm($classindex, $termindex);
-	update_conduct_input($classindex, $termindex);
 
 	$query =	"SELECT user.Gender, user.FirstName, user.Surname, " .
 				"       classterm.Average, classterm.Conduct, classterm.Effort, " .
@@ -476,7 +475,7 @@
 					$score = round($row['Average']);
 					$score = "$score%";
 				}
-			} elseif($row['AverageType'] == $AVG_TYPE_INDEX) {
+			} elseif($row['AverageType'] == $AVG_TYPE_INDEX or $row['AverageType'] == $AVG_TYPE_GRADE) {
 				if(is_null($row['AverageDisplay'])) {
 					$score = "&nbsp;";
 				} else {

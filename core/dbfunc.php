@@ -815,9 +815,20 @@
 	function update_subject($subject_index) {
 		global $db;
 		global $MARK_LATE;
+		global $AVG_TYPE_GRADE;
 		
 		$subject_index = safe($subject_index);
 
+		$query =	"SELECT AverageType, AverageTypeIndex FROM subject WHERE SubjectIndex = $subject_index";
+		$res =&  $db->query($query);
+		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+		if(!($row =& $res->fetchRow(DB_FETCHMODE_ASSOC))) {
+			return false;
+		}
+		
+		$avg_type = $row["AverageType"];
+		$avg_type_index = $row["AverageTypeIndex"];
+		
 		/* Clear student averages for subject */
 		$query =	"UPDATE subjectstudent " .
 					"SET Average = -1 " .
@@ -912,7 +923,23 @@
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 
 		update_classterm_from_subject($subject_index);
-
+		
+		if($avg_type == $AVG_TYPE_GRADE) {
+			$query =	"UPDATE subjectstudent, " .
+						"       (SELECT * FROM " .
+						"          (SELECT Username, NonmarkIndex, MinScore, Display FROM nonmark_index, subjectstudent " .
+						"           WHERE (nonmark_index.MinScore <= subjectstudent.Average OR nonmark_index.MinScore IS NULL) " .
+						"           AND nonmark_index.NonMarkTypeIndex = $avg_type_index " .
+						"           AND subjectstudent.SubjectIndex = $subject_index " .
+						"           AND subjectstudent.Average != -1 " .
+						"           ORDER BY MinScore DESC) AS score1 " .
+						"        GROUP BY Username) AS score " .
+						"SET subjectstudent.Average = score.NonMarkIndex " .
+						"WHERE subjectstudent.SubjectIndex = $subject_index " .
+						"AND   subjectstudent.Username = score.Username";
+			$res =&  $db->query($query);
+			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query						
+		}
 		return true;
 	}
 
@@ -1044,7 +1071,7 @@
 		} else {
 			$classterm = $row['ClassTermIndex'];
 			
-			if(!isset($classterm) or isnull($classterm)){
+			if(!isset($classterm) or is_null($classterm)){
 				return;
 			}
 			$query =	"UPDATE classlist SET Conduct=-1 " .
@@ -1090,14 +1117,17 @@
 		/* Set global parameters */
 		global $db;
 		global $yearindex;
+		global $termindex;
 
 		$query =	"SELECT user.FirstName, user.Surname, user.Gender, class.Grade, " .
-					"       comment.Comment, comment.Strength FROM user, comment, class, classlist " .
-					"WHERE user.Username        = '$username' " .
-					"AND   comment.CommentIndex = $comment_index " .
-					"AND   classlist.Username   = user.Username " .
-					"AND   classlist.ClassIndex = class.ClassIndex " .
-					"AND   class.YearIndex      = $yearindex ";
+					"       comment.Comment, comment.Strength FROM user, comment, class, classterm, classlist " .
+					"WHERE user.Username            = '$username' " .
+					"AND   comment.CommentIndex     = $comment_index " .
+					"AND   classlist.Username       = user.Username " .
+					"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+					"AND   classterm.TermIndex      = $termindex " .
+					"AND   classterm.ClassIndex     = class.ClassIndex " .
+					"AND   class.YearIndex          = $yearindex ";
 		$res =& $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());
 

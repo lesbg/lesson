@@ -34,7 +34,7 @@
 
 	/* Get variables */
 	if(!isset($_GET['next'])) $_GET['next'] = dbfuncString2Int($backLink);
-	$classindex       = safe(dbfuncInt2String($_GET['key']));
+	$classtermindex       = safe(dbfuncInt2String($_GET['key']));
 
 	$MAX_SIZE = 10*1024*1024;
 
@@ -42,24 +42,22 @@
 	if(isset($_GET['key3'])) $termindex = safe(dbfuncInt2String($_GET['key3']));
 
 	/* Check whether subject is open for report editing */
-	$query =	"SELECT class_term.AverageType, class_term.EffortType, class_term.ConductType, " .
-				"       class_term.AverageTypeIndex, class_term.EffortTypeIndex, " .
-				"       class_term.ConductTypeIndex, class_term.CTCommentType, " .
-				"       class_term.HODCommentType, class_term.PrincipalCommentType, " .
-				"       class_term.CanDoReport, class_term.AbsenceType, " .
-				"       class_term.ReportTemplate, class_term.ReportTemplateType, " .
+	$query =	"SELECT classterm.AverageType, classterm.EffortType, classterm.ConductType, " .
+				"       classterm.AverageTypeIndex, classterm.EffortTypeIndex, " .
+				"       classterm.ConductTypeIndex, classterm.CTCommentType, " .
+				"       classterm.HODCommentType, classterm.PrincipalCommentType, " .
+				"       classterm.CanDoReport, classterm.AbsenceType, " .
+				"       classterm.ReportTemplate, classterm.ReportTemplateType, " .
 				"       class.ClassName, " .
-				"       MIN(classterm.ReportDone) AS ReportDone " .
-				"       FROM class_term, class, classterm, classlist " .
-				"WHERE class_term.ClassIndex    = $classindex " .
-				"AND   class_term.TermIndex     = $termindex " .
-				"AND   classlist.ClassIndex     = $classindex " .
-				"AND   classterm.ClassListIndex = classlist.ClassListIndex " .
-				"AND   classterm.TermIndex      = $termindex " .
-				"AND   class.ClassIndex         = classlist.ClassIndex " .
-				"GROUP BY class_term.ClassIndex";
+				"       MIN(classlist.ReportDone) AS ReportDone " .
+				"       FROM classterm, class, classlist " .
+				"WHERE classterm.ClassTermIndex    = $classtermindex " .
+				"AND   classlist.ClassTermIndex    = classterm.ClassTermIndex " .
+				"AND   class.ClassIndex            = classterm.ClassIndex " .
+				"GROUP BY classterm.ClassIndex";
 	$res =& $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
+
 
 	if(!$row =& $res->fetchRow(DB_FETCHMODE_ASSOC) or (!$row['CanDoReport'] and !$row['ReportDone'])) {
 		/* Print error message */
@@ -107,16 +105,30 @@
 	}
 
 	/* Check whether current user is a hod */
-	$res =&  $db->query("SELECT hod.Username FROM hod, class " .
+	$res =&  $db->query("SELECT hod.Username FROM hod, class, classterm " .
 						"WHERE hod.Username        = '$username' " .
 						"AND   hod.DepartmentIndex = class.DepartmentIndex " .
-						"AND   class.ClassIndex    = $classindex");
+						"AND   class.ClassIndex    = classterm.ClassIndex " .
+						"AND   classterm.ClassTermIndex = $classtermindex");
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
 	if($res->numRows() > 0) {
 		$is_hod = true;
 	} else {
 		$is_hod = false;
+	}
+
+	/* Check whether user is authorized to change scores */
+	$res =& $db->query("SELECT class.ClassIndex FROM class, classterm " .
+					   "WHERE classterm.ClassTermIndex  = $classtermindex " .
+					   "AND   classterm.ClassIndex = class.ClassIndex " .
+					   "AND   class.ClassTeacherUsername = '$username'");
+	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
+	
+	if($res->numRows() > 0) {
+		$is_ct = true;
+	} else {
+		$is_ct = false;
 	}
 
 	if(!$is_hod and !$is_principal and !$is_admin) {
@@ -161,7 +173,7 @@
 	$footer = substr($orig_data, strpos($orig_data, "</office:body>"));
 	$orig_data = substr($orig_data, strlen($header), strlen($orig_data) - (strlen($header)+strlen($footer)));
 
-	$query =	"SELECT user.Gender, user.Username, user.FirstName, user.Surname, term.TermName, " .
+	$query =	"SELECT user.Username, user.Gender, user.FirstName, user.Surname, term.TermName, " .
 				"       huser.Title AS HODTitle, huser.FirstName AS HODFirstName, " .
 				"       huser.Surname AS HODSurname, " .
 				"       tuser.Title AS CTTitle, tuser.FirstName AS CTFirstName, " .
@@ -169,34 +181,34 @@
 				"       puser.Title AS PrincipalTitle, puser.FirstName AS PrincipalFirstName, " .
 				"       puser.Surname AS PrincipalSurname, " .
 				"       year.Year, " .
-				"       classterm.Average, classterm.Conduct, classterm.Effort, " .
-				"       classterm.Rank, classterm.CTComment, classterm.HODComment, " .
-				"       classterm.CTCommentDone, classterm.HODCommentDone, " .
-				"       classterm.PrincipalComment, classterm.PrincipalCommentDone, " .
-				"       classterm.PrincipalUsername, classterm.HODUsername, " .
-				"       classterm.ReportDone, classterm.ReportProofread, " .
-				"       classterm.ReportProofDone, classterm.Absences, " .
+				"       classlist.Average, classlist.Conduct, classlist.Effort, " .
+				"       classlist.Rank, classlist.CTComment, classlist.HODComment, " .
+				"       classlist.CTCommentDone, classlist.HODCommentDone, " .
+				"       classlist.PrincipalComment, classlist.PrincipalCommentDone, " .
+				"       classlist.PrincipalUsername, classlist.HODUsername, " .
+				"       classlist.ReportDone, classlist.ReportProofread, " .
+				"       classlist.ReportProofDone, classlist.Absences, " .
 				"       average_index.Display AS AverageDisplay, " .
 				"       effort_index.Display AS EffortDisplay, " .
 				"       conduct_index.Display AS ConductDisplay " .
-				"       FROM user, term, year, principal INNER JOIN user AS puser ON " .
-				"            (principal.Username = puser.Username), " .
-				"            (class INNER JOIN classlist ON class.ClassIndex = $classindex " .
-				"                                        AND classlist.ClassIndex = $classindex) " .
-				"             INNER JOIN classterm USING (ClassListIndex) " .
-				"       INNER JOIN hod ON (hod.DepartmentIndex = class.DepartmentIndex) " .
-				"       INNER JOIN user AS huser ON (hod.Username = huser.Username) " .
+				"       FROM user, term, year, " .
+				"            (classterm INNER JOIN classlist ON classterm.ClassTermIndex = $classtermindex " .
+				"                                        AND classlist.ClassTermIndex = $classtermindex) " .
+				"             INNER JOIN class USING (ClassIndex) " .
 				"       LEFT OUTER JOIN nonmark_index AS average_index ON " .
-				"            classterm.Average = average_index.NonmarkIndex " .
+				"            classlist.Average = average_index.NonmarkIndex " .
 				"       LEFT OUTER JOIN nonmark_index AS effort_index ON " .
-				"            classterm.Effort = effort_index.NonmarkIndex " .
+				"            classlist.Effort = effort_index.NonmarkIndex " .
 				"       LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
-				"            classterm.Conduct = conduct_index.NonmarkIndex " .
+				"            classlist.Conduct = conduct_index.NonmarkIndex " .
+				"       LEFT OUTER JOIN user AS huser ON " .
+				"            classlist.HODUsername = huser.Username " .
+				"       LEFT OUTER JOIN user AS puser ON " .
+				"            classlist.PrincipalUsername = puser.Username " .
 				"       LEFT OUTER JOIN user AS tuser ON " .
 				"            class.ClassTeacherUsername = tuser.Username " .
-				"WHERE classlist.Username       = user.Username " .
-				"AND   classterm.TermIndex      = $termindex " .
-				"AND   term.TermIndex           = $termindex " .
+				"WHERE user.Username            = classlist.Username " .
+				"AND   term.TermIndex           = classterm.TermIndex " .
 				"AND   year.YearIndex           = class.YearIndex " .
 				"ORDER BY user.FirstName, user.Surname, user.Username";
 	$sres =& $db->query($query);
@@ -260,7 +272,7 @@
 	
 		if($conduct_type == $CLASS_CONDUCT_TYPE_NONE) {
 			$conduct = "N/A";
-		} elseif($conduct_type == $CLASS_CONDUCT_TYPE_PERCENT or $conduct_type == $CLASS_CONDUCT_TYPE_CALC) {
+		} elseif($conduct_type == $CLASS_CONDUCT_TYPE_PERCENT or $conduct_type == $CLASS_CONDUCT_TYPE_CALC or $conduct_type == $CLASS_CONDUCT_TYPE_PERCENT or $conduct_type == $CLASS_CONDUCT_TYPE_CALC or $conduct_type == $CLASS_CONDUCT_TYPE_PUN) {
 			if($student_info['Conduct'] == -1) {
 				$conduct = "N/A";
 			} else {
@@ -276,22 +288,6 @@
 	
 			if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
 				$conduct = $nrow['Display'];
-			} else {
-				$conduct = "N/A";
-			}
-		} elseif($conduct_type == $CLASS_CONDUCT_TYPE_PUN) {
-			$query =	"SELECT Conduct FROM classlist, classterm, class " .
-						"WHERE class.YearIndex = $yearindex " .
-						"AND   classterm.ClassIndex = class.ClassIndex " .
-						"AND   classterm.TermIndex = $termindex " .
-						"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
-						"AND   classlist.Username = '{$student_info['Username']}'";
-			$nres =& $db->query($query);
-			if(DB::isError($nres)) die($nres->getDebugInfo());
-	
-			if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-				$scorestr = round($nrow['Conduct']);
-				$conduct = "$scorestr%";
 			} else {
 				$conduct = "N/A";
 			}
@@ -313,13 +309,14 @@
 				$late      = 0;
 				$suspended = 0;
 
-				$nquery =   "SELECT AttendanceTypeIndex, COUNT(AttendanceIndex) AS Count " .
-							"       FROM view_attendance " .
-							"WHERE  Username = '{$student_info['Username']}' " .
-							"AND    YearIndex = $yearindex " .
-							"AND    TermIndex = $termindex " .
-							"AND    Period = 1 " .
-							"AND    AttendanceTypeIndex > 0 " .
+				$nquery =	"SELECT AttendanceTypeIndex, COUNT(AttendanceIndex) AS Count " .
+							"       FROM attendance INNER JOIN subject USING (SubjectIndex) " .
+							"       INNER JOIN period USING (PeriodIndex) " .
+							"WHERE  attendance.Username = '{$student_info['Username']}' " .
+							"AND    subject.YearIndex = $yearindex " .
+							"AND    subject.TermIndex = $termindex " .
+							"AND    period.Period = 1 " .
+							"AND    attendance.AttendanceTypeIndex > 0 " .
 							"GROUP BY AttendanceTypeIndex ";
 				$cRes =&   $db->query($nquery);
 				if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
@@ -360,20 +357,20 @@
 		$hod_name = "{$student_info['HODTitle']} {$student_info['HODFirstName']} {$student_info['HODSurname']}";
 		$pr_name  = "{$student_info['PrincipalTitle']} {$student_info['PrincipalFirstName']} " .
 					"{$student_info['PrincipalSurname']}";
-		$data = str_replace("&lt;&lt;name&gt;&gt;", "$student_name", $data);
-		$data = str_replace("&lt;&lt;term&gt;&gt;", $student_info['TermName'], $data);
-		$data = str_replace("&lt;&lt;year&gt;&gt;", $student_info['Year'], $data);
-		$data = str_replace("&lt;&lt;class&gt;&gt;", $class_name, $data);
-		$data = str_replace("&lt;&lt;average&gt;&gt;", $average, $data);
-		$data = str_replace("&lt;&lt;conduct&gt;&gt;", $conduct, $data);
-		$data = str_replace("&lt;&lt;effort&gt;&gt;", $effort, $data);
-		$data = str_replace("&lt;&lt;absences&gt;&gt;", $absences, $data);
-		$data = str_replace("&lt;&lt;class_teacher&gt;&gt;", $ct_name, $data);
-		$data = str_replace("&lt;&lt;head_of_department&gt;&gt;", $hod_name, $data);
-		$data = str_replace("&lt;&lt;principal&gt;&gt;", $pr_name, $data);
-		$data = str_replace("&lt;&lt;class_teacher_comment&gt;&gt;", $ct_comment, $data);
-		$data = str_replace("&lt;&lt;head_of_department_comment&gt;&gt;", $hod_comment, $data);
-		$data = str_replace("&lt;&lt;principal_comment&gt;&gt;", $pr_comment, $data);
+		$data = str_replace("&lt;&lt;name&gt;&gt;", htmlspecialchars($student_name), $data);
+		$data = str_replace("&lt;&lt;term&gt;&gt;", htmlspecialchars($student_info['TermName']), $data);
+		$data = str_replace("&lt;&lt;year&gt;&gt;", htmlspecialchars($student_info['Year']), $data);
+		$data = str_replace("&lt;&lt;class&gt;&gt;", htmlspecialchars($class_name), $data);
+		$data = str_replace("&lt;&lt;average&gt;&gt;", htmlspecialchars($average), $data);
+		$data = str_replace("&lt;&lt;conduct&gt;&gt;", htmlspecialchars($conduct), $data);
+		$data = str_replace("&lt;&lt;effort&gt;&gt;", htmlspecialchars($effort), $data);
+		$data = str_replace("&lt;&lt;absences&gt;&gt;", htmlspecialchars($absences), $data);
+		$data = str_replace("&lt;&lt;class_teacher&gt;&gt;", htmlspecialchars($ct_name), $data);
+		$data = str_replace("&lt;&lt;head_of_department&gt;&gt;", htmlspecialchars($hod_name), $data);
+		$data = str_replace("&lt;&lt;principal&gt;&gt;", htmlspecialchars($pr_name), $data);
+		$data = str_replace("&lt;&lt;class_teacher_comment&gt;&gt;", htmlspecialchars($ct_comment), $data);
+		$data = str_replace("&lt;&lt;head_of_department_comment&gt;&gt;", htmlspecialchars($hod_comment), $data);
+		$data = str_replace("&lt;&lt;principal_comment&gt;&gt;", htmlspecialchars($pr_comment), $data);
 	
 		// Grab table row for first table that contains <<subject>>
 		$pos = strpos($data, "&lt;&lt;subject_name&gt;&gt;");
@@ -402,7 +399,7 @@
 						"       subject.ConductTypeIndex, subject.CommentType, " .
 						"       subjectstudent.Comment, subjectstudent.CommentValue, " .
 						"       subjectstudent.ReportDone " .
-						"       FROM subject, subjecttype, class, subjectstudent " .
+						"       FROM subject, subjecttype, class, classterm, subjectstudent " .
 						"       LEFT OUTER JOIN nonmark_index AS average_index ON " .
 						"            subjectstudent.Average = average_index.NonmarkIndex " .
 						"       LEFT OUTER JOIN nonmark_index AS effort_index ON " .
@@ -411,14 +408,15 @@
 						"            subjectstudent.Conduct = conduct_index.NonmarkIndex " .
 						"WHERE subjectstudent.Username      = '{$student_info['Username']}' " .
 						"AND   subjectstudent.SubjectIndex  = subject.SubjectIndex " .
-						"AND   subject.TermIndex            = $termindex " .
+						"AND   subject.TermIndex            = classterm.TermIndex " .
 						"AND   subject.YearIndex            = class.YearIndex " .
 						"AND   subject.ShowInList           = 1 " .
-						"AND   class.ClassIndex             = $classindex " .
+						"AND   (subject.AverageType != $AVG_TYPE_NONE OR subject.EffortType != $EFFORT_TYPE_NONE OR subject.ConductType != $CONDUCT_TYPE_NONE OR subject.CommentType != $COMMENT_TYPE_NONE) " .
+						"AND   class.ClassIndex             = classterm.ClassIndex " .
+						"AND   classterm.ClassTermIndex     = $classtermindex " .
 						"AND   subjecttype.SubjectTypeIndex = subject.SubjectTypeIndex " .
 						"ORDER BY subject.AverageType DESC, subjecttype.Weight DESC, " .
 						"         subjecttype.Title, subject.Name, subject.SubjectIndex";
-		
 			$res =&  $db->query($query);
 			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		
@@ -439,7 +437,7 @@
 						$subject_average = round($row['SubjectAverage']);
 						$subject_average = "$subject_average%";
 					}
-				} elseif($row['AverageType'] == $AVG_TYPE_INDEX) {
+				} elseif($row['AverageType'] == $AVG_TYPE_INDEX or $row['AverageType'] == $AVG_TYPE_GRADE) {
 					if(is_null($row['AverageDisplay'])) {
 						$average = "N/A";
 					} else {
@@ -504,14 +502,14 @@
 	
 				$stripped_name = trim(str_replace($class_name, "", $row['SubjectName']));
 	
-				$reprow = str_replace("&lt;&lt;subject_name&gt;&gt;",         $row['SubjectName'], $data_row);
-				$reprow = str_replace("&lt;&lt;subject_shortname&gt;&gt;",    $row['ShortName'],   $reprow);
-				$reprow = str_replace("&lt;&lt;subject_strippedname&gt;&gt;", $stripped_name,      $reprow);
-				$reprow = str_replace("&lt;&lt;subject_average&gt;&gt;",      $subject_average,    $reprow);
-				$reprow = str_replace("&lt;&lt;subject_mark&gt;&gt;",         $average,            $reprow);
-				$reprow = str_replace("&lt;&lt;subject_effort&gt;&gt;",       $effort,             $reprow);
-				$reprow = str_replace("&lt;&lt;subject_conduct&gt;&gt;",      $conduct,            $reprow);
-				$reprow = str_replace("&lt;&lt;subject_comment&gt;&gt;",      $comment,            $reprow);
+				$reprow = str_replace("&lt;&lt;subject_name&gt;&gt;",         htmlspecialchars($row['SubjectName']), $data_row);
+				$reprow = str_replace("&lt;&lt;subject_shortname&gt;&gt;",    htmlspecialchars($row['ShortName']),   $reprow);
+				$reprow = str_replace("&lt;&lt;subject_strippedname&gt;&gt;", htmlspecialchars($stripped_name),      $reprow);
+				$reprow = str_replace("&lt;&lt;subject_average&gt;&gt;",      htmlspecialchars($subject_average),    $reprow);
+				$reprow = str_replace("&lt;&lt;subject_mark&gt;&gt;",         htmlspecialchars($average),            $reprow);
+				$reprow = str_replace("&lt;&lt;subject_effort&gt;&gt;",       htmlspecialchars($effort),             $reprow);
+				$reprow = str_replace("&lt;&lt;subject_conduct&gt;&gt;",      htmlspecialchars($conduct),            $reprow);
+				$reprow = str_replace("&lt;&lt;subject_comment&gt;&gt;",      htmlspecialchars($comment),            $reprow);
 				$rep .= $reprow;
 			}
 			$data = str_replace($data_row, $rep, $data);

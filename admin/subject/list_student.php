@@ -12,14 +12,53 @@
 	
 	include "header.php";                                        // Show header
 
-	if(dbfuncGetPermission($permissions, $PERM_ADMIN)) {         // Make sure user has permission to view student's
+	/* Check whether current user is principal */
+	$res =&  $db->query("SELECT Username FROM principal " .
+						"WHERE Username=\"$username\" AND Level=1");
+	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
+
+	if($res->numRows() > 0) {
+		$is_principal = true;
+	} else {
+		$is_principal = false;
+	}
+
+	/* Check whether current user is a counselor */
+	$res =&  $db->query("SELECT Username FROM counselorlist " .
+						"WHERE Username=\"$username\"");
+	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
+
+	if($res->numRows() > 0) {
+		$is_counselor = true;
+	} else {
+		$is_counselor = false;
+	}
+
+	/* Check whether current user is a hod */
+	$query =	"SELECT hod.Username FROM hod, class, classterm, classlist " .
+				"WHERE hod.Username='$username' " .
+				"AND hod.DepartmentIndex = class.DepartmentIndex " .
+				"AND classlist.Username = '$studentusername' " .
+				"AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+				"AND classterm.ClassIndex = class.ClassIndex";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
+
+	if($res->numRows() > 0) {
+		$is_hod = true;
+	} else {
+		$is_hod = false;
+	}
+
+	if($is_admin or $is_principal or $is_hod or $is_counselor) {         // Make sure user has permission to view student's
 		$showalldeps = true;                                     //  subject list
 		$showdeps    = false;
 		include "core/settermandyear.php";
 		include "core/titletermyear.php";
 		
 		/* Get classes */
-		$query =	"SELECT subject.Name, subject.SubjectIndex, subject.Period, " .
+		$query =	"SELECT subject.Name, subject.AverageType, subject.AverageTypeIndex, " .
+				    "       subject.SubjectIndex, subject.Period, " .
 					"       subject.ShowAverage, subjectstudent.Average FROM subject, subjectstudent " .
 					"WHERE subjectstudent.SubjectIndex = subject.SubjectIndex " .
 					"AND   subject.AverageType         > 0 " .
@@ -48,7 +87,7 @@
 			$allbutton = dbfuncGetButton($alllink, "View all assignments", "medium", "", "");
 			$hwbutton  = dbfuncGetButton($hwlink,  "View homework", "medium", "", "");
 			echo "      <p align=\"center\">$hwbutton $allbutton</p>";
-			
+						
 			echo "      <table align=\"center\" border=\"1\">\n"; // Table headers
 			echo "         <tr>\n";
 			echo "            <th>Subject</th>\n";
@@ -73,6 +112,9 @@
 				echo "         <tr$alt>\n";
 				echo "            <td><a href=\"$namelink\">{$row['Name']}</a></td>\n";
 				echo "            <td>";
+
+				$average_type       = $row['AverageType'];
+				$average_type_index = $row['AverageTypeIndex'];
 				
 				/* Get information about teacher(s) */
 				$teacherRes =& $db->query("SELECT user.Title, user.FirstName, user.Surname FROM user, subjectteacher " .
@@ -89,15 +131,33 @@
 					}
 				}
 				echo "            </td>\n";    // Table footers
-				if($row['ShowAverage'] == "1") {
-					if($row['Average'] == "-1") {
-						echo "            <td><i>N/A</i></td>\n";
+				if($average_type != $AVG_TYPE_NONE) {
+					if($row['ShowAverage'] == "1") {
+						if($row['Average'] == "-1") {
+							echo "            <td><i>N/A</i></td>\n";
+						} else {
+							if($average_type == $AVG_TYPE_PERCENT) {
+								$average = round($row['Average']);
+								echo "            <td>$average%</td>\n";
+							} elseif($average_type == $AVG_TYPE_INDEX or $average_type == $AVG_TYPE_GRADE) {
+								$query =	"SELECT Input, Display FROM nonmark_index " .
+											"WHERE NonmarkTypeIndex = $average_type_index " .
+											"AND   NonmarkIndex     = {$row['Average']}";
+								$sres =& $db->query($query);
+								if(DB::isError($sres)) die($sres->getDebugInfo());           // Check for errors in query
+								if($srow =& $sres->fetchRow(DB_FETCHMODE_ASSOC)) {
+									$average = $srow['Display'];
+								} else {
+									$average = "?";
+								}
+								echo "            <td>$average</td>\n";
+							}
+						}
 					} else {
-						$average = round($row['Average']);
-						echo "            <td>$average%</td>\n";
+						echo "            <td><i>Hidden</i></td>\n";
 					}
 				} else {
-					echo "            <td><i>Hidden</i></td>\n";
+					echo "            <td><i>N/A</i></td>\n";
 				}
 				echo "         </tr>\n";
 			}

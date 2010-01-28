@@ -166,6 +166,11 @@
 			} else {
 				$aind_checked = "";
 			}
+			if($_POST['average_type'] == $AVG_TYPE_GRADE) {
+				$agrd_checked = "checked";
+			} else {
+				$agrd_checked = "";
+			}
 			echo "               <td>\n";
 			echo "                   <label for='average_none'>\n";
 			echo "                      <input type='radio' name='average_type' id='average_none' value='$AVG_TYPE_NONE' $anul_checked>No marks for students\n";
@@ -175,6 +180,9 @@
 			echo "                   </label><br>\n";
 			echo "                   <label for='average_index'>\n";
 			echo "                      <input type='radio' name='average_type' id='average_index' value='$AVG_TYPE_INDEX' $aind_checked>Student mark is non-numeric\n";
+			echo "                   </label><br>\n";
+			echo "                   <label for='average_grade'>\n";
+			echo "                      <input type='radio' name='average_type' id='average_grade' value='$AVG_TYPE_GRADE' $agrd_checked>Student mark is grade based on their percentage\n";
 			echo "                   </label><br>\n";
 			echo "               </td>\n";
 			echo "            </tr>\n";

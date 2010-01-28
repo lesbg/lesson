@@ -83,11 +83,13 @@
 	}
 
 	/* Check whether user is class teacher */
-	$query =	"SELECT class.ClassTeacherUsername FROM class, classlist " .
+	$query =	"SELECT class.ClassTeacherUsername FROM class, classterm, classlist " .
 				"WHERE  classlist.Username         = '$student_username' " .
-				"AND    class.ClassIndex           = classlist.ClassIndex " .
+				"AND    classlist.ClassTermIndex   = classterm.ClassTermIndex " .
+				"AND    classterm.TermIndex        = $termindex " .
+				"AND    classterm.ClassIndex       = class.ClassIndex " .
 				"AND    class.ClassTeacherUsername = '$username' " .
-				"AND    class.YearIndex            = $yearindex";
+				"AND    class.YearIndex            = $yearindex ";
 	$res =& $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
@@ -147,6 +149,25 @@
 	if($student_username != "") $report_done = 0;
 
 	
+	if(!is_null($average_type_index)) {
+		$query =	"SELECT Input, Display FROM nonmark_index " .
+					"WHERE  NonmarkTypeIndex=$average_type_index ";
+		$res =&  $db->query($query);
+		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+	
+		if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+			$input = strtoupper($row['Input']);
+			$ainput_array   = "'$input'";
+			$adisplay_array = "'{$row['Display']}'";
+			while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+				$ainput_array   .= ", '{$row['Input']}'";
+				$adisplay_array .= ", '{$row['Display']}'";
+			}
+		}
+	} else {
+		$ainput_array   = "";
+		$adisplay_array = "";
+	}
 	if(!is_null($effort_type_index)) {
 		$query =	"SELECT Input, Display FROM nonmark_index " .
 					"WHERE  NonmarkTypeIndex=$effort_type_index ";
@@ -231,10 +252,12 @@
 					"       subjectstudent.Comment, subjectstudent.CommentValue, " .
 					"       query.ClassOrder FROM user, subjectstudent LEFT OUTER JOIN " .
 					"       (SELECT classlist.ClassOrder, classlist.Username " .
-					"               FROM class, classlist, subject " .
-					"        WHERE classlist.ClassIndex       = class.ClassIndex " .
-					"        AND   class.YearIndex            = subject.YearIndex " .
-					"        AND   subject.SubjectIndex       = $subjectindex) AS query " .
+					"               FROM classterm, class, classlist, subject " .
+					"        WHERE classlist.ClassTermIndex       = classterm.ClassTermIndex " .
+					"        AND   classterm.TermIndex            = subject.TermIndex " .
+					"        AND   classterm.ClassIndex           = class.ClassIndex " .
+					"        AND   class.YearIndex                = subject.YearIndex " .
+					"        AND   subject.SubjectIndex           = $subjectindex) AS query " .
 					"       ON subjectstudent.Username = query.Username " .
 					"       LEFT OUTER JOIN nonmark_index ON " .
 					"            subjectstudent.Average = nonmark_index.NonmarkIndex " .
@@ -256,6 +279,10 @@
 	if($report_done == 0) {
 		echo "      <script language='JavaScript' type='text/javascript'>\n";
 		echo "\n";
+		echo "         var AVG_TYPE_NONE          = $AVG_TYPE_NONE;\n";
+		echo "         var AVG_TYPE_PERCENT       = $AVG_TYPE_PERCENT;\n";
+		echo "         var AVG_TYPE_INDEX         = $AVG_TYPE_INDEX;\n";
+		echo "         var AVG_TYPE_GRADE         = $AVG_TYPE_GRADE;\n";
 		echo "         var CONDUCT_TYPE_NONE      = $CONDUCT_TYPE_NONE;\n";
 		echo "         var CONDUCT_TYPE_PERCENT   = $CONDUCT_TYPE_PERCENT;\n";
 		echo "         var CONDUCT_TYPE_INDEX     = $CONDUCT_TYPE_INDEX;\n";
@@ -265,6 +292,12 @@
 		echo "         var COMMENT_TYPE_NONE      = $COMMENT_TYPE_NONE;\n";
 		echo "         var COMMENT_TYPE_MANDATORY = $COMMENT_TYPE_MANDATORY;\n";
 		echo "         var COMMENT_TYPE_OPTIONAL  = $COMMENT_TYPE_OPTIONAL;\n";
+		echo "\n";
+		echo "         var average_type           = $average_type;\n";
+		if($average_type == $AVG_TYPE_INDEX) {
+			echo "         var avg_input_array        = new Array($ainput_array);\n";
+			echo "         var avg_display_array      = new Array($adisplay_array);\n";
+		}
 		echo "\n";
 		echo "         var effort_type            = $effort_type;\n";
 		if($effort_type == $EFFORT_TYPE_INDEX) {
@@ -340,6 +373,7 @@
 		echo "               <td>{$row['FirstName']} {$row['Surname']} ({$row['Username']})<input type='hidden' name='firstname_{$row['Username']}' id='firstname_{$row['Username']}' value='{$row['FirstName']}'><input type='hidden' name='fullname_{$row['Username']}' id='fullname_{$row['Username']}' value='{$row['FirstName']} {$row['Surname']}'><input type='hidden' name='gender_{$row['Username']}' id='gender_{$row['Username']}' value='{$row['Gender']}'></td>\n";
 
 		if($is_st or $is_ct or $is_hod or $is_principal or $is_admin) {
+			/* Check for type of average and put in appropriate information */
 			if($average_type != $AVG_TYPE_NONE) {
 				if($average_type == $AVG_TYPE_PERCENT) {
 					if($row['Average'] == -1) {
@@ -349,15 +383,54 @@
 						$score = "$score%";
 					}
 				} elseif($average_type == $AVG_TYPE_INDEX) {
+					if(isset($_POST["avg_{$row['Username']}"])) {
+						$scorestr = safe($_POST["avg_{$row['Username']}"]);
+						$query =	"SELECT Display FROM nonmark_index " .
+									"WHERE Input='$scorestr' " .
+									"AND   NonmarkTypeIndex=$average_type_index";
+						$nres =& $db->query($query);
+						if(DB::isError($nres)) die($nres->getDebugInfo());
+	
+						if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
+							$score = $nrow['Display'];
+						} else {
+							$score = "N/A";
+						}
+					} else {
+						$scoreindex = $row['Average'];
+						$query =	"SELECT Input, Display FROM nonmark_index " .
+									"WHERE NonmarkIndex=$scoreindex";
+						$nres =& $db->query($query);
+						if(DB::isError($nres)) die($nres->getDebugInfo());
+	
+						if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
+							$scorestr = $nrow['Input'];
+							$score    = $nrow['Display'];
+						} else {
+							$scorestr = "";
+							$score    = "N/A";
+						}
+					}
+				} elseif($average_type == $AVG_TYPE_GRADE) {
 					if(is_null($row['Display'])) {
 						$score = "N/A";
 					} else {
 						$score = $row['Display'];
 					}
 				} else {
+					if(isset($_POST["avg_{$row['Username']}"])) {
+						$scorestr = $_POST["avg_{$row['Username']}"];
+					} else {
+						$scorestr = "";
+					}
 					$score = "N/A";
 				}
-				echo "               <td>$score</td>\n";
+				if(($row['ReportDone'] == 0 or $student_username != "") and ($average_type == $AVG_TYPE_INDEX)) {
+					echo "               <td><input type='text' name='avg_{$row['Username']}' " .
+										"id='avg_{$row['Username']}' value='$scorestr' size='4' onChange='recalc_avg(&quot;{$row['Username']}&quot;);'> = <label name='aavg_{$row['Username']}' id='aavg_{$row['Username']}' for='avg_{$row['Username']}'>$score</label></td>\n";
+				} else {
+					echo "               <td>$score</td>\n";
+				}
 			}
 	
 			/* Check for type of effort mark and put in appropriate information */
@@ -422,7 +495,7 @@
 				}
 				if($row['ReportDone'] == 0 or $student_username != "") {
 					echo "               <td><input type='text' name='effort_{$row['Username']}' " .
-										"id='effort_{$row['Username']}' value='$scorestr' size='4' onChange='recalc_effort(&quot;{$row['Username']}&quot;);'> = <label name='eavg_{$row['Username']}' id='eavg_{$row['Username']}' for='effort_{$row['Username']}'>$score</label</td>\n";
+										"id='effort_{$row['Username']}' value='$scorestr' size='4' onChange='recalc_effort(&quot;{$row['Username']}&quot;);'> = <label name='eavg_{$row['Username']}' id='eavg_{$row['Username']}' for='effort_{$row['Username']}'>$score</label></td>\n";
 				} else {
 					echo "               <td>$score</td>\n";
 				}

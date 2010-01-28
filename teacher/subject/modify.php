@@ -102,11 +102,11 @@
 				}
 				echo "            <tr><td colspan='4'><b>Categories</b></td></tr>\n";
 				/* Get all available categories for this subject and store in $options */
-				$query =	"SELECT view_categories.CategoryIndex, view_categories.CategoryName " .
-							"       FROM view_categories  " .
-							"WHERE  view_categories.SubjectTypeIndex IS NULL " .
-							"OR     view_categories.SubjectTypeIndex=$subjecttypeindex " .
-							"ORDER BY view_categories.CategoryName, view_categories.CategoryIndex";
+				$query =	"SELECT category.CategoryIndex, category.CategoryName " .
+							"       FROM category LEFT OUTER JOIN categorytype USING (CategoryIndex) " .
+							"WHERE  categorytype.SubjectTypeIndex IS NULL " .
+							"OR     categorytype.SubjectTypeIndex=$subjecttypeindex " .
+							"ORDER BY category.CategoryName, category.CategoryIndex";
 				$res =&  $db->query($query);
 				if(DB::isError($res)) die($res->getDebugInfo());
 				

@@ -69,8 +69,8 @@
 				echo "            <td>{$row['Count']}</td>\n";
 
 				$query =	"SELECT subjecttype.Title " .
-							"       FROM view_categories LEFT OUTER JOIN subjecttype USING (SubjectTypeIndex) " .
-							"WHERE view_categories.CategoryIndex = {$row['CategoryIndex']} " .
+							"       FROM categorytype LEFT OUTER JOIN subjecttype USING (SubjectTypeIndex) " .
+							"WHERE categorytype.CategoryIndex = {$row['CategoryIndex']} " .
 							"ORDER BY subjecttype.Title, subjecttype.SubjectTypeIndex ";
 				$aRes =& $db->query($query);
 				if(DB::isError($aRes)) die($aRes->getDebugInfo());

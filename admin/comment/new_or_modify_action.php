@@ -6,7 +6,11 @@
 	 *****************************************************************/
 
 	/* Get variables */
-	$key          = dbfuncInt2String($_GET['key']);                    // Key
+	if(isset($_GET['key'])) {
+		$key = dbfuncInt2String($_GET['key']);                    // Key
+	} else {
+		$key = NULL;
+	}
 	$nextLink     = dbfuncInt2String($_GET['next']);                   // Link to next page
 	
 	if(!isset($_POST['strength']) or is_null($_POST['strength']) or $_POST['strength'] == "") {
@@ -43,7 +47,7 @@
 			$format_error    = True;
 		}
 
-		if($_POST['number'] != "") {
+		if($_POST['number'] != "" and ($_POST['action'] == "Save" or ($_POST['action'] == "Update" and $key != $_POST['number']))) {
 			$query =	"SELECT CommentIndex FROM comment WHERE CommentIndex = {$_POST['number']}";
 			if($_POST["action"] == "Update") {
 				$query .=	" AND CommentIndex != $key";
@@ -137,7 +141,7 @@
 			}
 		}
 
-		if($_POST['type'] == "new") {
+		if(is_null($key)) {
 			include "admin/comment/new.php";
 		} else {
 			include "admin/comment/modify.php";

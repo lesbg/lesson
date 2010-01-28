@@ -53,11 +53,13 @@
 					" AND   subjectteacher.Username     = '$username')";
 	if($student_username != "") {
 		$query .=	"UNION " .
-					"(SELECT class.ClassTeacherUsername FROM class, classlist " .
+					"(SELECT class.ClassTeacherUsername FROM class, classterm, classlist " .
 					" WHERE  classlist.Username         = '$student_username' " .
-					" AND    class.ClassIndex           = classlist.ClassIndex " .
+					" AND    classlist.ClassTermIndex   = classterm.ClassTermIndex " .
+					" AND    classterm.TermIndex        = $termindex " .
+					" AND    classterm.ClassIndex       = class.ClassIndex " .
 					" AND    class.ClassTeacherUsername = '$username' " .
-					" AND    class.YearIndex            = $yearindex)";
+					" AND    class.YearIndex            = $yearindex) ";
 	}
 	$res =& $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
@@ -122,7 +124,7 @@
 		echo "      <p align='center'>Saving changes...";
 
 		while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-			if(is_null($row['Comment']) and $row['CommentType'] == $COMMENT_TYPE_MANDATORY and ($row['Average'] != -1 or $row['AverageType'] != $AVG_TYPE_PERCENT)) {
+			if(is_null($row['Comment']) and $row['CommentType'] == $COMMENT_TYPE_MANDATORY and ($row['Average'] != -1 or ($row['AverageType'] != $AVG_TYPE_PERCENT and $row['AverageType'] != $AVG_TYPE_GRADE))) {
 				echo "</p><p align='center'>You must set a comment for {$row['FirstName']} {$row['Surname']}.</p><p align='center'>";
 				$is_error = true;
 			} else {

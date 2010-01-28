@@ -8,7 +8,7 @@
 	/* Get variables */
 	if(!isset($_GET['next'])) $_GET['next'] = dbfuncString2Int($backLink);
 	$class            = dbfuncInt2String($_GET['keyname']);
-	$classindex       = safe(dbfuncInt2String($_GET['key']));
+	$classtermindex       = safe(dbfuncInt2String($_GET['key']));
 	$nextLink         = dbfuncInt2String($_GET['next']);              // Link to next page
 	
 	/* Check whether subject is open for report editing */
@@ -16,9 +16,8 @@
 				"       classterm.HODCommentType, classterm.PrincipalCommentType, " .
 				"       classterm.CanDoReport, department.ProofreaderUsername " .
 				"       FROM classterm, class, department " .
-				"WHERE classterm.ClassIndex      = class.ClassIndex " .
-				"AND   classterm.TermIndex       = $termindex " .
-				"AND   class.ClassIndex           = $classindex " .
+				"WHERE classterm.ClassTermIndex      = $classtermindex " .
+				"AND   class.ClassIndex           = classterm.ClassIndex " .
 				"AND   department.DepartmentIndex = class.DepartmentIndex ";
 	$res =& $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
@@ -54,10 +53,11 @@
 	}
 
 	/* Check whether current user is a hod */
-	$res =&  $db->query("SELECT hod.Username FROM hod, class " .
+	$res =&  $db->query("SELECT hod.Username FROM hod, class, classterm " .
 						"WHERE hod.Username        = '$username' " .
 						"AND   hod.DepartmentIndex = class.DepartmentIndex " .
-						"AND   class.ClassIndex    = $classindex");
+						"AND   class.ClassIndex    = classterm.ClassIndex " .
+						"AND   classterm.ClassTermIndex = $classtermindex");
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
 	if($res->numRows() > 0) {
@@ -67,9 +67,10 @@
 	}
 
 	/* Check whether user is authorized to change scores */
-	$res =& $db->query("SELECT ClassIndex FROM class " .
-					   "WHERE ClassIndex           = $classindex " .
-					   "AND   ClassTeacherUsername = '$username'");
+	$res =& $db->query("SELECT class.ClassIndex FROM class, classterm " .
+					   "WHERE class.ClassIndex           = classterm.ClassIndex " .
+					   "AND   classterm.ClassTermIndex   = $classtermindex " .
+					   "AND   class.ClassTeacherUsername = '$username'");
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
 	if($res->numRows() > 0) {
@@ -116,10 +117,8 @@
 						"       classlist.PrincipalComment, classlist.PrincipalCommentDone, " .
 						"       classlist.PrincipalUsername, classlist.HODUsername, " .
 						"       classlist.ReportDone " .
-						"       FROM user, classterm, classlist, classlist " .
-						"WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
-						"AND   classterm.ClassIndex     = $classindex " .
-						"AND   classlist.TermIndex      = $termindex " .
+						"       FROM user, classlist " .
+						"WHERE classlist.ClassTermIndex = $classtermindex " .
 						"AND   classlist.Username       = user.Username ";
 			$res =&  $db->query($query);
 			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
@@ -180,10 +179,8 @@
 						"       classlist.PrincipalComment, classlist.PrincipalCommentDone, " .
 						"       classlist.PrincipalUsername, classlist.HODUsername, " .
 						"       classlist.ReportDone " .
-						"       FROM user, classterm, classlist, classlist " .
-						"WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
-						"AND   classterm.ClassIndex     = $classindex " .
-						"AND   classlist.TermIndex      = $termindex " .
+						"       FROM user, classlist " .
+						"WHERE classlist.ClassTermIndex = $classtermindex " .
 						"AND   classlist.Username       = user.Username " .
 						"AND   classlist.ReportDone     = 0";
 			$res =&  $db->query($query);
@@ -199,9 +196,10 @@
 							"       FROM subject, subjectstudent, class " .
 							"WHERE subjectstudent.Username      = '{$row['Username']}' " .
 							"AND   subjectstudent.SubjectIndex  = subject.SubjectIndex " .
-							"AND   subject.TermIndex            = $termindex " .
+							"AND   subject.TermIndex            = classterm.TermIndex " .
 							"AND   subject.YearIndex            = class.YearIndex " .
-							"AND   class.ClassIndex             = $classindex " .
+							"AND   class.ClassIndex             = classterm.ClassIndex " .
+							"AND   classterm.ClassTermIndex     = $classtermindex " .
 							"GROUP BY subjectstudent.Username";
 				$nres =&  $db->query($query);
 				if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
@@ -245,7 +243,7 @@
 					$query .=	"       ReportProofread = 1, ";
 				}
 				$query .=		"       ReportDone = 1 " .
-								" WHERE classlist.ClassTermIndex = {$row['ClassTermIndex']} ";
+								" WHERE classlist.ClassTermIndex = $classtermindex ";
 				$nres =& $db->query($query);
 				if(DB::isError($nres)) die($nres->getDebugInfo());
 			}

@@ -11,7 +11,7 @@
 				"AND    subject.SubjectIndex    = subjectstudent.SubjectIndex " .
 				"AND    subject.YearIndex       = $yearindex " .
 				"AND    subject.TermIndex       = $termindex " .
-				"AND    subject.AverageType     = $AVG_TYPE_PERCENT " .
+				"AND    (subject.AverageType     = $AVG_TYPE_PERCENT OR subject.AverageType = $AVG_TYPE_GRADE) " .
 				"AND    assignment.CategoryListIndex IS NOT NULL";
 	$pres =&  $db->query($query);
 	if(DB::isError($pres)) die($pres->getDebugInfo());           // Check for errors in query
@@ -23,15 +23,20 @@
 	}
 
 	$query =	"SELECT Title, Date, DueDate, AssignmentIndex, Description, DescriptionData, " .
-				"       DescriptionFileType, ShowAverage, " .
-				"       Uploadable, Weight, Score, Percentage, Comment, StudentSubjectAverage, " .
-				"       CanModify, CategoryName FROM view_marks " .
-				"WHERE Username = '$username' " .
-				"AND   Hidden    = 0 " .
-				"AND   Score     = $MARK_LATE " .
-				"AND   CanModify = 1 " .
-				"AND   YearIndex = $yearindex " .
-				"AND   TermIndex = $termindex " .
+				"       DescriptionFileType, AverageType, ShowAverage, " .
+				"       Uploadable, assignment.Weight, Score, Percentage, mark.Comment, " .
+				"       subjectstudent.Average AS StudentSubjectAverage, " .
+				"       CanModify, CategoryName, subject.SubjectIndex " .
+				"       FROM subject INNER JOIN assignment USING (SubjectIndex) " .
+				"       INNER JOIN mark USING (AssignmentIndex) INNER JOIN subjectstudent " .
+				"       ON (subjectstudent.SubjectIndex = subject.SubjectIndex AND subjectstudent.Username = mark.Username) " .
+				"       LEFT OUTER JOIN categorylist USING (CategoryListIndex) LEFT OUTER JOIN category USING (CategoryIndex) " .
+				"WHERE mark.Username     = '$studentusername' " .
+				"AND   Hidden       = 0 " .
+				"AND   mark.Score   = $MARK_LATE " .
+				"AND   subject.CanModify = 1 " .
+				"AND   YearIndex    = $yearindex " .
+				"AND   TermIndex    = $termindex " .
 				"ORDER BY Date DESC, AssignmentIndex DESC";
 
 	$pres =&  $db->query($query);

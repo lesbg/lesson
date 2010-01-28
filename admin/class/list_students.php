@@ -63,15 +63,15 @@
 		$query =	"SELECT user.FirstName, user.Surname, user.Username, user.User1, user.User2, " .
 					"       classlist.Conduct, classlist.Average, classlist.Rank, " .
 					"       COUNT(subjectstudent.SubjectIndex) AS SubjectCount " .
-					"       FROM classterm INNER JOIN currentterm USING (TermIndex) " .
-					"            INNER JOIN classlist USING (ClassTermIndex) " .
+					"       FROM classterm INNER JOIN classlist USING (ClassTermIndex) " .
 					"            INNER JOIN user USING (Username) " .
 					"            LEFT OUTER JOIN (subjectstudent " .
 					"               INNER JOIN subject USING (SubjectIndex)) ON " .
 					"               (subjectstudent.Username = user.Username " .
 					"                AND subject.YearIndex = $yearindex " .
-					"                AND subject.TermIndex = currentterm.TermIndex) " .
+					"                AND subject.TermIndex = $termindex) " .
 					"WHERE classterm.ClassIndex = $classindex " .
+					"AND   classterm.TermIndex = $termindex " .
 					"GROUP BY user.Username " .
 					"ORDER BY user.FirstName, user.Surname, user.Username";
 		$res =&  $db->query($query);
@@ -90,7 +90,7 @@
 				echo "            <th>Special</th>\n";
 				echo "            <th>Subjects</th>\n";
 			}
-			if($is_admin or $is_hod or $is_principal) {
+			if($is_admin or $is_hod or $is_counselor or $is_principal) {
 				echo "            <th>Average</th>\n";
 				echo "            <th>Rank</th>\n";
 			}
@@ -125,13 +125,14 @@
 				$late      = "-";
 				$suspended = "-";
 				// TODO: Clean this up for speed improvement
-				$query =    "SELECT AttendanceTypeIndex, COUNT(AttendanceIndex) AS Count " .
-							"       FROM view_attendance " .
-							"WHERE  Username = '{$row['Username']}' " .
-							"AND    YearIndex = $yearindex " .
-							"AND    TermIndex = $termindex " .
-							"AND    Period = 1 " .
-							"AND    AttendanceTypeIndex > 0 " .
+				$query =	"SELECT AttendanceTypeIndex, COUNT(AttendanceIndex) AS Count " .
+							"       FROM attendance INNER JOIN subject USING (SubjectIndex) " .
+							"       INNER JOIN period USING (PeriodIndex) " .
+							"WHERE  attendance.Username = '{$row['Username']}' " .
+							"AND    subject.YearIndex = $yearindex " .
+							"AND    subject.TermIndex = $termindex " .
+							"AND    period.Period = 1 " .
+							"AND    attendance.AttendanceTypeIndex > 0 " .
 							"GROUP BY AttendanceTypeIndex ";
 				$cRes =&   $db->query($query);
 				if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
@@ -194,13 +195,13 @@
 					$abutton    = dbfuncGetButton($alink,    "A", "small", "view", "Student's absence history");
 					$repbutton  = dbfuncGetButton($replink,  "R", "small", "home", "Student's report");
 				} else {
-					$viewbutton = "";
-					$ttbutton   = "";
+					$viewbutton = dbfuncGetButton($viewlink, "V", "small", "view", "View student's subjects");
+					$ttbutton   = dbfuncGetButton($ttlink,   "T", "small", "tt",   "View student's timetable");
 					$subbutton  = "";
 					$editbutton = "";
 					$mbutton    = "";
-					$hbutton    = "";
-					$abutton    = "";
+					$hbutton    = dbfuncGetButton($hlink,    "H", "small", "view", "Student's conduct history");
+					$abutton    = dbfuncGetButton($alink,    "A", "small", "view", "Student's absence history");
 					$repbutton  = "";
 				}
 
@@ -221,7 +222,7 @@
 					}
 					echo "            <td>{$row['SubjectCount']}</td>\n";
 				}
-				if($is_admin or $is_principal or $is_hod) {
+				if($is_admin or $is_principal or $is_hod or $is_counselor) {
 					echo "             <td>$average</td>\n";
 					echo "             <td>$rank</td>\n";
 				}

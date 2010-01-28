@@ -52,6 +52,7 @@
 							"       user, classlist, classterm " .
 							"WHERE classlist.Username = user.Username " .
 							"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+							"AND   classterm.TermIndex = $termindex " .
 							"AND   classterm.ClassIndex = $classindex " .
 							"ORDER BY user.Username");
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query

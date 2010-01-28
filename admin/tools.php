@@ -36,6 +36,7 @@
 		$ctermListLink   = "index.php?location=" . dbfuncString2Int("admin/class_term/list.php");
 		$newUserLink     = "index.php?location=" . dbfuncString2Int("admin/user/new.php");
 		$newQuarterLink  = "index.php?location=" . dbfuncString2Int("admin/newquarter.php");
+		$openreportLink  = "index.php?location=" . dbfuncString2Int("admin/open_reports.php");
 		$viewLogLink     = "index.php?location=" . dbfuncString2Int("admin/viewlog.php");
 		$counselorLink   = "index.php?location=" . dbfuncString2Int("admin/counselor/modify.php");
 		$principalLink   = "index.php?location=" . dbfuncString2Int("admin/principal/modify.php");
@@ -60,6 +61,7 @@
 		echo "      <p><a href='$proofLink'>Proofreader List</a></p>\n";
 		echo "      <p><a href='$newUserLink'>New user</a></p>\n";
 		echo "      <p><a href='$newQuarterLink'>Generate new quarter</a></p>\n";
+		echo "      <p><a href='$openreportLink'>Open reports</a></p>\n";
 		echo "      <p><a href='$messageLink'>Messages</a></p>\n";
 		/*echo "      <p><a href='$stypePrintLink'>Print marks for a subject type</a></p>\n";*/
 		echo "      <p><a href='$supportLink'>Support teachers\n";

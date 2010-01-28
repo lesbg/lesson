@@ -11,9 +11,12 @@
 	$studentusername = safe(dbfuncInt2String($_GET['key2']));
 	$subject         = dbfuncInt2String($_GET['key2name']);
 	
-	$query =	"SELECT SubjectIndex, Score, Uploadable, UploadName FROM view_marks " .
-				"WHERE Username        = '$studentusername' " .
-				"AND   AssignmentIndex = $assignmentindex ";
+	$query =	"SELECT subject.SubjectIndex, Score, Uploadable, UploadName FROM subject INNER JOIN assignment " .
+				"       USING (SubjectIndex) INNER JOIN subjectstudent USING (SubjectIndex) " .
+				"       LEFT OUTER JOIN mark ON (mark.Username = subjectstudent.Username " .
+				"       AND mark.AssignmentIndex = assignment.AssignmentIndex) " .
+				"WHERE subjectstudent.Username        = '$studentusername' " .
+				"AND   assignment.AssignmentIndex = $assignmentindex ";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query	
 

@@ -31,7 +31,7 @@
 		exit(0);
 	}
 
-	$query =	"SELECT classterm.AverageType, " .
+	$query =	"SELECT classterm.AverageType, classterm.ClassTermIndex, " .
 				"       classterm.EffortType, classterm.ConductType, " .
 				"       classterm.AbsenceType, " .
 				"       classterm.CTCommentType, classterm.HODCommentType, " .
@@ -120,7 +120,10 @@
 	if(is_null($row['ReportTemplateType'])) {
 		$report_type = "<i>None</i>";
 	} elseif($row['ReportTemplateType'] == "application/vnd.oasis.opendocument.text") {
-		$report_type = "OpenDocument Text";
+		$nlink =	"index.php?location=" . dbfuncString2Int("admin/class_term/show.php") .
+				"&amp;key=" .           dbfuncString2Int($row['ClassTermIndex']);		
+		$report_type = "<a href='$nlink'>OpenDocument Text</a>";
+		print $row['ClassTermIndex'];
 	} else {
 		$report_type = "<b>Unknown</b>";
 	}
@@ -149,6 +152,11 @@
 	} else {
 		$aclc_checked = "";
 	}
+	if($_POST['average_type'] == $CLASS_AVG_TYPE_GRADE) {
+		$agrd_checked = "checked";
+	} else {
+		$agrd_checked = "";
+	}
 	echo "               <td>\n";
 	echo "                   <label for='average_none'>\n";
 	echo "                      <input type='radio' name='average_type' id='average_none' value='$CLASS_AVG_TYPE_NONE' $anul_checked>No total mark for students\n";
@@ -161,6 +169,9 @@
 	echo "                   </label><br>\n";
 	echo "                   <label for='average_calc'>\n";
 	echo "                      <input type='radio' name='average_type' id='average_calc' value='$CLASS_AVG_TYPE_CALC' $aclc_checked>Student mark is calculated from subject marks\n";
+	echo "                   </label><br>\n";
+	echo "                   <label for='average_grade'>\n";
+	echo "                      <input type='radio' name='average_type' id='average_grade' value='$CLASS_AVG_TYPE_GRADE' $agrd_checked>Student mark is a grade given based on subject marks\n";
 	echo "                   </label><br>\n";
 	echo "               </td>\n";
 	echo "            </tr>\n";

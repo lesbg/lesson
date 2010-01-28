@@ -93,6 +93,8 @@
 			echo "            <td>Value set by Class Teacher</td>\n";
 		} elseif($row['AverageType'] == $CLASS_AVG_TYPE_CALC) {
 			echo "            <td>Percentage calculated from subjects</td>\n";
+		} elseif($row['AverageType'] == $CLASS_AVG_TYPE_GRADE) {
+			echo "            <td>Grade calculated from subjects</td>\n";
 		} else {
 			echo "            <td><b>Unknown</b></td>\n";
 		}

@@ -85,7 +85,8 @@
 	$AVG_TYPE_NONE           = 0;
 	$AVG_TYPE_PERCENT        = 1;
 	$AVG_TYPE_INDEX          = 2;
-	$AVG_TYPE_MAX            = 3;
+	$AVG_TYPE_GRADE          = 3;
+	$AVG_TYPE_MAX            = 4;
 
 	$CONDUCT_TYPE_NONE       = 0;
 	$CONDUCT_TYPE_PERCENT    = 1;
@@ -106,7 +107,9 @@
 	$CLASS_AVG_TYPE_PERCENT        = 1;
 	$CLASS_AVG_TYPE_INDEX          = 2;
 	$CLASS_AVG_TYPE_CALC           = 3;
-	$CLASS_AVG_TYPE_MAX            = 4;
+	$CLASS_AVG_TYPE_GRADE          = 4;
+	$CLASS_AVG_TYPE_MAX            = 5;
+	
 
 	$CLASS_CONDUCT_TYPE_NONE       = 0;
 	$CLASS_CONDUCT_TYPE_PERCENT    = 1;

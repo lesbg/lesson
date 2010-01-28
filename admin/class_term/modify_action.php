@@ -166,7 +166,7 @@
 			$report_handle = fopen($report_file, "r");
 			$data = safe(fread($report_handle, filesize($report_file)));
 		
-			$query =	"UPDATE class_term SET " .
+			$query =	"UPDATE classterm SET " .
 						"       ReportTemplate='$data', " .
 						"       ReportTemplateType='$report_type' " .
 						"WHERE  ClassIndex = $classindex " .

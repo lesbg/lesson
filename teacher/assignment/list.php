@@ -121,7 +121,7 @@
 					echo "            <th$headtype width=10px>{$row['Title']}<br>($dateinfo){$catinfo}</th>\n";
 				}
 			}
-			if($average_type == $AVG_TYPE_PERCENT) {
+			if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
 				echo "            <th width=10px>Total</th>\n"; // Show total percentage if desired
 			}
 		}
@@ -222,7 +222,7 @@
 						$alt = " class=\"hidden-$alt_step\"";
 					}
 					
-					if($average_type == $AVG_TYPE_PERCENT) {
+					if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
 						if($mRow['Score'] == $MARK_LATE) {
 							if($can_modify == 1) {
 								if($hidden == 0) {
@@ -280,13 +280,29 @@
 						$average = round($row['Average']);
 						echo "            <td nowrap><b>$average%</b></td>\n";
 					}
+				} elseif($average_type == $AVG_TYPE_GRADE) {  // Show average percentage for all students
+					if($row['Average'] == -1) {
+						echo "            <td nowrap><b>N/A</b></td>\n";
+					} else {
+						$query =	"SELECT Input, Display FROM nonmark_index " .
+									"WHERE NonmarkIndex = {$row['Average']}";
+						$sres =& $db->query($query);
+						if(DB::isError($sres)) die($sres->getDebugInfo());           // Check for errors in query
+						if($srow =& $sres->fetchRow(DB_FETCHMODE_ASSOC)) {
+							$average = $srow['Display'];
+						} else {
+							$average = "?";
+						}
+						echo "            <td nowrap><b>$average</b></td>\n";
+					}
 				}
+				
 			} else {
 				echo "            <td nowrap>{$row['FirstName']} {$row['Surname']} ({$row['Username']})</td>\n";
 			}
 			echo "         </tr>\n";
 		}
-		if($no_marks == 0) {
+		if($no_marks == 0 and ($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE)) {  // Show average percentage for all students
 			$alt_count += 1;
 			if($alt_count % 2 == 0) {
 				$alt_step = "alt";
@@ -320,7 +336,7 @@
 				echo "            <td$alt nowrap><i>$average</i></td>\n";
 			}
 			
-			if($average_type == $AVG_TYPE_PERCENT) {
+			if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
 				/* Get total subject average */
 				$query =	"SELECT Average FROM subject " .
 							"WHERE SubjectIndex = $subjectindex ";

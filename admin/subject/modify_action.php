@@ -31,7 +31,7 @@
 		}
 		if(!is_null($_POST['average_type'])) {
 			$_POST['average_type'] = intval($_POST['average_type']);
-			if($_POST['average_type'] >= $EFFORT_TYPE_MAX) $_POST['average_type'] = $AVG_TYPE_NONE;
+			if($_POST['average_type'] >= $AVG_TYPE_MAX) $_POST['average_type'] = $AVG_TYPE_NONE;
 		} else {
 			$_POST['average_type'] = $AVG_TYPE_NONE;
 		}

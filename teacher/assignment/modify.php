@@ -121,7 +121,7 @@
 		}
 
 		/* Get max and minimum mark */
-		if($average_type == $AVG_TYPE_PERCENT) {
+		if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
 			$top_mark      = $aRow['TopMark'];
 			$bottom_mark   = $aRow['BottomMark'];
 			$bsr =&  $db->query("SELECT MAX(Score) AS MaxScore, MIN(Score) AS MinScore FROM mark " .
@@ -199,6 +199,7 @@
 		echo "         var AVERAGE_TYPE_NONE      = $AVG_TYPE_NONE;\n";
 		echo "         var AVERAGE_TYPE_PERCENT   = $AVG_TYPE_PERCENT;\n";
 		echo "         var AVERAGE_TYPE_INDEX     = $AVG_TYPE_INDEX;\n";
+		echo "         var AVERAGE_TYPE_GRADE     = $AVG_TYPE_GRADE;\n";
 		echo "\n";
 		echo "         var average_type           = $average_type;\n";
 		if($average_type == $AVG_TYPE_INDEX) {
@@ -225,7 +226,7 @@
 		echo "               <td colspan='2'><input type='text' name='duedate' value='{$duedateinfo}' " .
 														"tabindex='3' size='50'></td>\n";
 		echo "            </tr>\n";
-		if($average_type == $AVG_TYPE_PERCENT) {
+		if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
 			echo "            <tr>\n";
 			echo "               <td>Maximum score:</td>\n";
 			echo "               <td colspan='2'><input type='text' name='max' id='max' onChange='recalc_all();' " .
@@ -245,7 +246,7 @@
 								"<label id='uploadable_lbl' for='uploadable'>Allow students to upload files so you can access them</label></td>\n";
 		echo "            </tr>\n";
 
-		if($average_type == $AVG_TYPE_PERCENT) {
+		if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
 			/* Get category info */
 			$bsr =&  $db->query("SELECT category.CategoryName, categorylist.CategoryListIndex, " .
 								"       categorylist.Weight, categorylist.TotalWeight FROM category, " .
@@ -297,7 +298,7 @@
 		echo "                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Current file: <i>$currentdata</i>\n";
 		echo "               </td>\n";
 		echo "            </tr>\n";
-		if($average_type == $AVG_TYPE_PERCENT) {
+		if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
 			echo "            <tr>\n";
 			echo "               <td>Curve Type:</td>\n";
 			echo "               <td>\n";
@@ -359,7 +360,7 @@
 					$alt = " class='std'";
 				}
 
-				if($average_type == $AVG_TYPE_PERCENT) {
+				if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
 					if($row['Score'] == $MARK_ABSENT) {
 						$row['Score'] = 'A';
 						$avg = "N/A";

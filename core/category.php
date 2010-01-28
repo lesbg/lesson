@@ -53,11 +53,11 @@
 		$subjecttypeindex   = $row['SubjectTypeIndex'];
 
 		// Check whether category is available for this subject
-		$query =	"SELECT view_categories.CategoryIndex, view_categories.CategoryName " .
-					"       FROM view_categories " .
-					"WHERE  (view_categories.SubjectTypeIndex IS NULL " .
-					"        OR view_categories.SubjectTypeIndex=$subjecttypeindex) " .
-					"AND    view_categories.CategoryIndex = $categoryindex";
+		$query =	"SELECT category.CategoryIndex, category.CategoryName " .
+					"       FROM category LEFT OUTER JOIN categorytype USING (CategoryIndex) " .
+					"WHERE  categorytype.SubjectTypeIndex IS NULL " .
+					"OR     categorytype.SubjectTypeIndex=$subjecttypeindex " .
+					"AND    category.CategoryIndex = $categoryindex ";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());
 		if($res->numRows() == 0) {

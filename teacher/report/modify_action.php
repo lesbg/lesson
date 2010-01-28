@@ -74,11 +74,13 @@
 	}
 
 	/* Check whether user is class teacher */
-	$query =	"SELECT class.ClassTeacherUsername FROM class, classlist " .
+	$query =	"SELECT class.ClassTeacherUsername FROM class, classterm, classlist " .
 				"WHERE  classlist.Username         = '$student_username' " .
-				"AND    class.ClassIndex           = classlist.ClassIndex " .
+				"AND    classlist.ClassTermIndex   = classterm.ClassTermIndex " .
+				"AND    classterm.TermIndex        = $termindex " .
+				"AND    classterm.ClassIndex       = class.ClassIndex " .
 				"AND    class.ClassTeacherUsername = '$username' " .
-				"AND    class.YearIndex            = $yearindex";
+				"AND    class.YearIndex            = $yearindex ";
 	$res =& $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
@@ -253,6 +255,35 @@
 		while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 			/* Check for type of effort mark and put in appropriate information */
 			if($is_st or $is_ct or $is_hod or $is_principal or $is_admin) {
+				$average = "-1";
+				if($average_type != $AVG_TYPE_NONE and isset($_POST["avg_{$row['Username']}"])) {
+/*					if($effort_type == $EFFORT_TYPE_PERCENT) {
+						$scorestr = $_POST["effort_{$row['Username']}"];
+						if(strval(intval($scorestr)) != $scorestr) {
+							$effort = "-1";
+						} elseif(intval($scorestr) > 100) {
+							$effort = "100";
+						} elseif(intval($scorestr) < 0) {
+							$effort = "0";
+						} else {
+							$effort = $scorestr;
+						}*/
+					if($average_type == $AVG_TYPE_INDEX) {
+						$scorestr = safe($_POST["avg_{$row['Username']}"]);
+						$query =	"SELECT NonmarkIndex FROM nonmark_index " .
+									"WHERE Input='$scorestr' " .
+									"AND   NonmarkTypeIndex=$average_type_index";
+						$nres =& $db->query($query);
+						if(DB::isError($nres)) die($nres->getDebugInfo());
+	
+						if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
+							$average = "{$nrow['NonmarkIndex']}";
+						}
+					}
+				} else {
+					$average = NULL;
+				}
+
 				$effort = "-1";
 				if($effort_type != $EFFORT_TYPE_NONE and isset($_POST["effort_{$row['Username']}"])) {
 					if($effort_type == $EFFORT_TYPE_PERCENT) {
@@ -340,6 +371,9 @@
 			}
 
 			$query =		"UPDATE subjectstudent SET ";
+			if(!is_null($average)) {
+				$query .=	"       Average=$average, ";
+			}
 			if(!is_null($effort)) {
 				$query .=	"       Effort=$effort, ";
 			}

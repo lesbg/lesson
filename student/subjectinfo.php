@@ -22,6 +22,43 @@
 	}
 	
 	include "header.php";
+		/* Check whether current user is principal */
+	$res =&  $db->query("SELECT Username FROM principal " .
+						"WHERE Username=\"$username\" AND Level=1");
+	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
+
+	if($res->numRows() > 0) {
+		$is_principal = true;
+	} else {
+		$is_principal = false;
+	}
+
+	/* Check whether current user is a counselor */
+	$res =&  $db->query("SELECT Username FROM counselorlist " .
+						"WHERE Username=\"$username\"");
+	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
+
+	if($res->numRows() > 0) {
+		$is_counselor = true;
+	} else {
+		$is_counselor = false;
+	}
+
+	/* Check whether current user is a hod */
+	$query =	"SELECT hod.Username FROM hod, class, classterm, classlist " .
+				"WHERE hod.Username='$username' " .
+				"AND hod.DepartmentIndex = class.DepartmentIndex " .
+				"AND classlist.Username = '$studentusername' " .
+				"AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+				"AND classterm.ClassIndex = class.ClassIndex";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
+
+	if($res->numRows() > 0) {
+		$is_hod = true;
+	} else {
+		$is_hod = false;
+	}
 	
 	/* See whether $username is teacher for this subject */
 	$res =& $db->query("SELECT Username FROM subjectteacher " .
@@ -30,7 +67,7 @@
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 	
 	/* Make sure user has permission to view student's marks for subject */
-	if($is_admin or $studentusername == $username or $res->numRows() > 0) {
+	if($is_admin or $is_hod or $is_principal or $is_counselor or $studentusername == $username or $res->numRows() > 0) {
 		$query =	"SELECT subject.SubjectIndex, subject.AverageType, subject.AverageTypeIndex " .
 					"       FROM subject " .
 					"WHERE subject.SubjectIndex = $subjectindex";
@@ -56,10 +93,14 @@
 		
 		$query =	"SELECT Title, Date, DueDate, AssignmentIndex, Description, DescriptionData, " .
 					"       DescriptionFileType, AverageType, ShowAverage, " .
-					"       Uploadable, Weight, Score, Percentage, Comment, StudentSubjectAverage, " .
-					"       CanModify, CategoryName FROM view_marks " .
-					"WHERE Username     = '$studentusername' " .
-					"AND   SubjectIndex = $subjectindex " .
+					"       Uploadable, assignment.Weight, Score, Percentage, mark.Comment, " .
+					"       subjectstudent.Average AS StudentSubjectAverage, " .
+					"       CanModify, CategoryName FROM subject INNER JOIN assignment USING (SubjectIndex) " .
+					"       INNER JOIN mark USING (AssignmentIndex) INNER JOIN subjectstudent " .
+					"       ON (subjectstudent.SubjectIndex = subject.SubjectIndex AND subjectstudent.Username = mark.Username) " .
+					"       LEFT OUTER JOIN categorylist USING (CategoryListIndex) LEFT OUTER JOIN category USING (CategoryIndex) " .
+					"WHERE mark.Username     = '$studentusername' " .
+					"AND   subject.SubjectIndex = $subjectindex " .
 					"AND   Hidden       = 0 " .
 					"AND   YearIndex    = $yearindex " .
 					"AND   TermIndex    = $termindex " .
@@ -87,13 +128,13 @@
 				echo "            <th>&nbsp;</th>\n";
 			}
 			echo "            <th>Title</th>\n";
-			if($average_type == $AVG_TYPE_PERCENT and $has_categories) {
+			if(($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) and $has_categories) {
 				echo "            <th>Category</th>\n";
 			}
 			echo "            <th>Date</th>\n";
 			echo "            <th>Due Date</th>\n";
 			echo "            <th>Score</th>\n";
-			if($average_type == $AVG_TYPE_PERCENT) {
+			if(($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE)) {
 				echo "            <th>Weight</th>\n";
 			}
 			echo "            <th>Comment</th>\n";
@@ -113,7 +154,7 @@
 					$alt_step = "std";
 				}
 				$alt = " class='$alt_step'";
-				if($row['AverageType'] == $AVG_TYPE_PERCENT) {
+				if($row['AverageType'] == $AVG_TYPE_PERCENT or $row['AverageType'] == $AVG_TYPE_GRADE) {
 					if($row['Score'] == $MARK_LATE and $can_modify == 1) {
 						$alt = " class='late-$alt_step'";
 					} elseif(is_null($row['Score']) and $can_modify == 1) {
@@ -145,7 +186,7 @@
 					}
 				}
 				$aclass = "";
-				if($average_type == $AVG_TYPE_PERCENT) {
+				if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
 					if($row['Score'] == $MARK_LATE and $can_modify == 1) {
 						$aclass = " class='late'";
 					} elseif(is_null($row['Score']) and $can_modify == 1) {
@@ -170,7 +211,7 @@
 							"&amp;key=" .               dbfuncString2Int($row['AssignmentIndex']);
 					echo "          <td><a$aclass href='$newwin'>{$row['Title']}</a></td>\n";
 				}
-				if($average_type == $AVG_TYPE_PERCENT and $has_categories) {
+				if(($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) and $has_categories) {
 					if(is_null($row['CategoryName'])) {
 						echo "<td><i>None</i></td>\n";
 					} else {
@@ -179,7 +220,7 @@
 				}
 				echo "            <td>{$dateinfo}</td>\n";
 				echo "            <td>{$duedateinfo}</td>\n";
-				if($average_type == $AVG_TYPE_PERCENT) {
+				if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
 					if($row['Score'] == $MARK_LATE) {
 						if($can_modify == 1) {
 							echo "            <td>&nbsp;</td>\n";

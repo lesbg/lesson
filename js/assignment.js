@@ -20,7 +20,7 @@ function recalc_avg(username, max, min, m, b) {
 	if(document.getElementById('hidden').checked == true) {
 		is_hidden = true;
 	}
-	if(average_type == AVERAGE_TYPE_PERCENT) {
+	if(average_type == AVERAGE_TYPE_PERCENT || average_type == AVERAGE_TYPE_GRADE) {
 		var max_score = document.getElementById('max').value;
 
 		if(document.getElementById('curve_type1').checked == true) {
@@ -169,7 +169,7 @@ function recalc_all() {
 	check_style();
 	descr_check();
 
-	if(average_type == AVERAGE_TYPE_PERCENT) {
+	if(average_type == AVERAGE_TYPE_PERCENT || average_type == AVERAGE_TYPE_GRADE) {
 		mark_boxes_visible();
 		var max         = 0;
 		var min         = -1;

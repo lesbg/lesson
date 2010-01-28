@@ -150,7 +150,7 @@
 		$title = safe($_POST['title']);
 		
 		/* Check whether maximum score was included, and set to 0 if it wasn't */
-		if($averagetype == $AVG_TYPE_PERCENT) {
+		if($averagetype == $AVG_TYPE_PERCENT or $averagetype == $AVG_TYPE_GRADE) {
 			if(!isset($_POST['max']) or $_POST['max'] == "") {
 				echo "</p>\n      <p>Maximum score not entered, defaulting to 0.</p>\n      <p>";  // Print error message
 				$_POST['max'] = "0";

@@ -44,9 +44,11 @@
 					" AND   subjectteacher.Username     = '$username')";
 	if($student_username != "") {
 		$query .=	"UNION " .
-					"(SELECT class.ClassTeacherUsername FROM class, classlist " .
+					"(SELECT class.ClassTeacherUsername FROM class, classterm, classlist " .
 					" WHERE  classlist.Username         = '$student_username' " .
-					" AND    class.ClassIndex           = classlist.ClassIndex " .
+					" AND    classlist.ClassTermIndex   = classterm.ClassTermIndex " .
+					" AND    classterm.ClassIndex       = class.ClassIndex " .
+					" AND    classterm.TermIndex        = $termindex " .
 					" AND    class.ClassTeacherUsername = '$username' " .
 					" AND    class.YearIndex            = $yearindex)";
 	}
