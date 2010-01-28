@@ -153,7 +153,7 @@
 				"       tuser.Surname AS CTSurname, " .
 				"       puser.Title AS PrincipalTitle, puser.FirstName AS PrincipalFirstName, " .
 				"       puser.Surname AS PrincipalSurname, " .
-				"       year.Year, " .
+				"       year.Year, term.DepartmentIndex, " .
 				"       classlist.Average, classlist.Conduct, classlist.Effort, " .
 				"       classlist.Rank, classlist.CTComment, classlist.HODComment, " .
 				"       classlist.CTCommentDone, classlist.HODCommentDone, " .
@@ -166,7 +166,7 @@
 				"       conduct_index.Display AS ConductDisplay " .
 				"       FROM user, term, year, " .
 				"            (classterm INNER JOIN classlist ON classterm.ClassTermIndex = $classtermindex " .
-				"                                        AND classlist.ClassTermIndex = $classtermindex) " .
+				"                                            AND classlist.ClassTermIndex = $classtermindex) " .
 				"             INNER JOIN class USING (ClassIndex) " .
 				"       LEFT OUTER JOIN nonmark_index AS average_index ON " .
 				"            classlist.Average = average_index.NonmarkIndex " .
@@ -359,6 +359,7 @@
 	}
 
 	// Replace obvious data points
+	$depindex = $student_info['DepartmentIndex'];
 	$student_name = "{$student_info['FirstName']} {$student_info['Surname']}";
 	$ct_name  = "{$student_info['CTTitle']} {$student_info['CTFirstName']} {$student_info['CTSurname']}";
 	$hod_name = "{$student_info['HODTitle']} {$student_info['HODFirstName']} {$student_info['HODSurname']}";
@@ -405,7 +406,8 @@
 					"       subject.AverageTypeIndex, subject.EffortTypeIndex, " .
 					"       subject.ConductTypeIndex, subject.CommentType, " .
 					"       subjectstudent.Comment, subjectstudent.CommentValue, " .
-					"       subjectstudent.ReportDone " .
+					"       subjectstudent.ReportDone, classterm.TermIndex, " .
+					"       class.ClassIndex, subjecttype.SubjectTypeIndex " .
 					"       FROM subject, subjecttype, class, classterm, subjectstudent " .
 					"       LEFT OUTER JOIN nonmark_index AS average_index ON " .
 					"            subjectstudent.Average = average_index.NonmarkIndex " .
@@ -518,6 +520,138 @@
 			$reprow = str_replace("&lt;&lt;subject_effort&gt;&gt;",       htmlspecialchars($effort, ENT_QUOTES),             $reprow);
 			$reprow = str_replace("&lt;&lt;subject_conduct&gt;&gt;",      htmlspecialchars($conduct, ENT_QUOTES),            $reprow);
 			$reprow = str_replace("&lt;&lt;subject_comment&gt;&gt;",      $comment,                                          $reprow);
+			
+			$classindex = $row['ClassIndex'];
+			$subjecttypeindex = $row['SubjectTypeIndex'];
+			$subjectname = $row['SubjectName'];
+			 
+			$query =	"SELECT subject.Average AS SubjectAverage, " .
+					    "       subjectstudent.Average, subjectstudent.Effort, subjectstudent.Conduct, " .
+                        "       average_index.Display AS AverageDisplay, " .
+						"       effort_index.Display AS EffortDisplay, " .
+						"       conduct_index.Display AS ConductDisplay, " .
+						"       subject.AverageType, subject.EffortType, subject.ConductType, " .
+						"       subject.AverageTypeIndex, subject.EffortTypeIndex, " .
+						"       subject.ConductTypeIndex, subject.CommentType, " .
+						"       subjectstudent.Comment, subjectstudent.CommentValue, " .
+						"       term.TermNumber " .
+						"       FROM subject, subjecttype, term, subjectstudent " .
+						"       LEFT OUTER JOIN nonmark_index AS average_index ON " .
+						"            subjectstudent.Average = average_index.NonmarkIndex " .
+						"       LEFT OUTER JOIN nonmark_index AS effort_index ON " .
+						"            subjectstudent.Effort = effort_index.NonmarkIndex " .
+						"       LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
+						"            subjectstudent.Conduct = conduct_index.NonmarkIndex " .
+						"WHERE subjectstudent.Username      = '$student_username' " .
+						"AND   subjectstudent.SubjectIndex  = subject.SubjectIndex " .
+						"AND   subject.YearIndex            = $yearindex " .
+						"AND   subject.ShowInList           = 1 " .
+						"AND   subject.Name                 = '$subjectname' " .
+						"AND   (subject.AverageType != $AVG_TYPE_NONE OR subject.EffortType != $EFFORT_TYPE_NONE OR subject.ConductType != $CONDUCT_TYPE_NONE OR subject.CommentType != $COMMENT_TYPE_NONE) " .
+						"AND   subjecttype.SubjectTypeIndex = $subjecttypeindex " .
+						"AND   term.TermIndex               = subject.TermIndex " .
+						"ORDER BY term.TermNumber ASC";
+			$nres =&  $db->query($query);
+			if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
+		
+			while ($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
+				$termnum = $nrow['TermNumber'];
+				
+				if($nrow['AverageType'] == $AVG_TYPE_NONE) {
+					$average = "N/A";
+					$subject_average = "N/A";
+				} elseif($nrow['AverageType'] == $AVG_TYPE_PERCENT) {
+					if($nrow['Average'] == -1) {
+						$average = "N/A";
+					} else {
+						$average = round($nrow['Average']);
+						$average = "$average%";
+					}
+					if($nrow['SubjectAverage'] == -1) {
+						$subject_average = "N/A";
+					} else {
+						$subject_average = round($nrow['SubjectAverage']);
+						$subject_average = "$subject_average%";
+					}
+				} elseif($nrow['AverageType'] == $AVG_TYPE_INDEX or $nrow['AverageType'] == $AVG_TYPE_GRADE) {
+					if(is_null($nrow['AverageDisplay'])) {
+						$average = "N/A";
+					} else {
+						$average = $nrow['AverageDisplay'];
+					}
+					$subject_average = "N/A";
+				} else {
+					$average = "N/A";
+					$subject_average = "N/A";
+				}
+		
+				if($nrow['EffortType'] == $EFFORT_TYPE_NONE) {
+					$effort = "N/A";
+				} elseif($nrow['EffortType'] == $EFFORT_TYPE_PERCENT) {
+					if($nrow['Effort'] == -1) {
+						$effort = "N/A";
+					} else {
+						$effort = round($nrow['Effort']);
+						$effort = "$effort%";
+					}
+				} elseif($nrow['EffortType'] == $EFFORT_TYPE_INDEX) {
+					if(is_null($nrow['EffortDisplay'])) {
+						$effort = "N/A";
+					} else {
+						$effort = $nrow['EffortDisplay'];
+					}
+				} else {
+					$effort = "N/A";
+				}
+			
+				if($nrow['ConductType'] == $CONDUCT_TYPE_NONE) {
+					$conduct = "N/A";
+				} elseif($nrow['ConductType'] == $CONDUCT_TYPE_PERCENT) {
+					if($nrow['Conduct'] == -1) {
+						$conduct = "&nbsp;";
+					} else {
+						$conduct = round($nrow['Conduct']);
+						$conduct = "$conduct%";
+					}
+				} elseif($nrow['ConductType'] == $CONDUCT_TYPE_INDEX) {
+					if(is_null($nrow['ConductDisplay'])) {
+						$conduct = "&nbsp;";
+					} else {
+						$conduct = $nrow['ConductDisplay'];
+					}
+				} else {
+					$conduct = "N/A";
+				}
+		
+				if($nrow['CommentType'] == $COMMENT_TYPE_NONE) {
+					$comment = "N/A";
+				} elseif($nrow['CommentType'] == $COMMENT_TYPE_MANDATORY or
+						$nrow['CommentType'] == $COMMENT_TYPE_OPTIONAL) {
+					if(!is_null($nrow['Comment'])) {
+						$comment = htmlspecialchars($nrow['Comment'], ENT_QUOTES);
+					} else {
+						$comment = "";
+					}
+				} else {
+					$comment = "N/A";
+				}
+				$reprow = str_replace("&lt;&lt;subject_average_t$termnum&gt;&gt;",      htmlspecialchars($subject_average, ENT_QUOTES),    $reprow);
+				$reprow = str_replace("&lt;&lt;subject_mark_t$termnum&gt;&gt;",         htmlspecialchars($average, ENT_QUOTES),            $reprow);
+				$reprow = str_replace("&lt;&lt;subject_effort_t$termnum&gt;&gt;",       htmlspecialchars($effort, ENT_QUOTES),             $reprow);
+				$reprow = str_replace("&lt;&lt;subject_conduct_t$termnum&gt;&gt;",      htmlspecialchars($conduct, ENT_QUOTES),            $reprow);
+				$reprow = str_replace("&lt;&lt;subject_comment_t$termnum&gt;&gt;",      $comment,                                          $reprow);
+			}
+			$query = "SELECT TermNumber FROM term WHERE DepartmentIndex=$depindex";
+			$nres =&  $db->query($query);
+			if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
+			while ($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
+				$termnum = $nrow["TermNumber"];
+				$reprow = str_replace("&lt;&lt;subject_average_t$termnum&gt;&gt;", "", $reprow);
+				$reprow = str_replace("&lt;&lt;subject_mark_t$termnum&gt;&gt;",    "", $reprow);
+				$reprow = str_replace("&lt;&lt;subject_effort_t$termnum&gt;&gt;",  "", $reprow);
+				$reprow = str_replace("&lt;&lt;subject_conduct_t$termnum&gt;&gt;", "", $reprow);
+				$reprow = str_replace("&lt;&lt;subject_comment_t$termnum&gt;&gt;", "", $reprow);
+			}
 			$rep .= $reprow;
 		}
 		$data = str_replace($data_row, $rep, $data);
