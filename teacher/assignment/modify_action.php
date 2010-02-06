@@ -84,7 +84,7 @@
 		$query .=		"       Hidden = {$_POST['hidden']} " .
 						"WHERE AssignmentIndex = $assignmentindex";
 		$aRes =& $db->query($query);
-		if(DB::isError($aRes)) die($aRes->getDebugInfo());           // Check for errors in query
+		if(DB::isError($aRes)) die($aRes->getMessage());           // Check for errors in query
 		
 		
 		$res =& $db->query("SELECT subjectstudent.Username FROM " .        // Get list of students

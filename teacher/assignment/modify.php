@@ -161,17 +161,25 @@
 		}
 
 		if(isset($aRow['DescriptionFileType']) and $aRow['DescriptionFileType'] != "") {
+			$descrtype0 = "";
 			$descrtype1 = "checked";
 		} else {
 			$descrtype0 = "checked";
+			$descrtype1 = "";
 		}
 
 		if($curve_type == 1) {
+			$curvetype0 = "";
 			$curvetype1 = "checked";
+			$curvetype2 = "";
 		} elseif ($curve_type == 2) {
+			$curvetype0 = "";
+			$curvetype1 = "";
 			$curvetype2 = "checked";
 		} else {
 			$curvetype0 = "checked";
+			$curvetype1 = "";
+			$curvetype2 = "";
 		}
 
 		if($aRow['Hidden'] == 1) {
