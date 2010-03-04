@@ -81,12 +81,12 @@
 						"                     CanModify, ShowInList, AverageType, " .
 						"                     AverageTypeIndex, ConductType, ConductTypeIndex, " .
 						"                     EffortType, EffortTypeIndex, " .
-						"                     TeacherCanChangeCategories) " .
+						"                     TeacherCanChangeCategories, CommentType) " .
 						"SELECT Name, ShortName, SubjectTypeIndex, YearIndex, $newterm AS TermIndex, " .
 						"       ShowAverage, DepartmentIndex, ClassIndex, Grade, " .
 						"       RenameUploads, CanModify, ShowInList, AverageType, AverageTypeIndex, " .
 						"       ConductType, ConductTypeIndex, EffortType, EffortTypeIndex, " .
-						"       TeacherCanChangeCategories FROM subject " .
+						"       TeacherCanChangeCategories, CommentType FROM subject " .
 						"WHERE  SubjectIndex = {$row['SubjectIndex']} ";
 			$newRes =& $db->query($query);
 			if(DB::isError($newRes)) die($newRes->getDebugInfo());           // Check for errors in query
