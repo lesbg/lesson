@@ -46,14 +46,14 @@
 
 	$query =	"(SELECT subject.Name, NULL AS ClassName, subject.Grade, period.PeriodIndex, " .
 				"        subject.SubjectIndex, attinfo.Date FROM timetable, period, " .
-				"        subjectstudent, subject " .
+				"        subject, subjectstudent " .
 				"        LEFT OUTER JOIN " .
-				"          (SELECT attendance.Date, attendance.SubjectIndex " .
+				"          (SELECT attendance.Date, attendance.Username " .
 				"                  FROM attendance, period " .
 				"           WHERE  attendance.PeriodIndex = period.PeriodIndex " .
 				"           AND    period.Period          = 1 " .
 				"           AND    attendance.Date        = \"$date\" " .
-				"          ) AS attinfo USING (SubjectIndex) " .
+				"          ) AS attinfo USING (Username) " .
 				" WHERE  subject.SubjectIndex        = timetable.SubjectIndex " .
 				" AND    subject.ClassIndex          IS NULL " .
 				" AND    subject.YearIndex           = $checkyear " .
@@ -67,14 +67,14 @@
 				"UNION " .
 				"(SELECT subject.Name, class.ClassName, class.Grade, period.PeriodIndex, " .
 				"        subject.SubjectIndex, attinfo.Date FROM timetable, class, " .
-				"        period, subjectstudent, subject " .
+				"        period, subject, subjectstudent " .
 				"        LEFT OUTER JOIN " .
-				"          (SELECT attendance.Date, attendance.SubjectIndex " .
+				"          (SELECT attendance.Date, attendance.Username " .
 				"                  FROM attendance, period " .
 				"           WHERE  attendance.PeriodIndex = period.PeriodIndex " .
 				"           AND    period.Period          = 1 " .
 				"           AND    attendance.Date        = \"$date\" " .
-				"          ) AS attinfo USING (SubjectIndex) " .
+				"          ) AS attinfo USING (Username) " .
 				" WHERE  subject.SubjectIndex        = timetable.SubjectIndex " .
 				" AND    subject.YearIndex           = $checkyear " .
 				" AND    subject.TermIndex           = $checkterm " .
