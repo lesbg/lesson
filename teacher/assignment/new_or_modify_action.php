@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * teacher/assignment/new_or_modify_action.php  (c) 2004-2007 Jonathan Dieter
+	 * teacher/assignment/new_or_modify_action.php  (c) 2004-2010 Jonathan Dieter
 	 *
 	 * Show common page information for changing or adding new grades
 	 * and call appropriate second page.
@@ -11,7 +11,7 @@
 	include "core/settermandyear.php";
 	
 	/* Check which button was pressed */
-	if($_POST["action"] == "Save" or $_POST["action"] == "Update" or $_POST["action"] == "Move this assignment to next term") { // If update or save were pressed, print  
+	if($_POST["action"] == "Save" or $_POST["action"] == "Update" or $_POST["action"] == "Move this assignment to next term" or $_POST["action"] == "Convert to agenda item" or $_POST["action"] == "Convert to assignment") { // If update or save were pressed, print  
 		$title         = "LESSON - Saving changes...";               //  common info and go to the appropriate page.
 		$noHeaderLinks = true;
 		$noJS          = true;
@@ -20,6 +20,12 @@
 		
 		echo "      <p align='center'>Saving changes...";
 
+		if(!isset($_POST['agenda']) or $_POST['agenda'] == 0) {
+			$agenda = "0";
+		} else {
+			$agenda = "1";
+		}
+		
 		if($_POST["action"] == "Save") {
 			$subjectindex = safe(dbfuncInt2String($_GET['key']));
 			$query =	"SELECT subject.AverageType, subject.AverageTypeIndex " .
@@ -115,7 +121,12 @@
 		
 		/* Check whether or not the due date was set, and set it to NULL if it wasn't */
 		if(!isset($_POST['duedate']) or $_POST['duedate'] == "") {         // Make sure date is in correct format.
-			$_POST['duedate'] = "NULL";
+			if($agenda == "1" or $_POST['action'] == "Convert to agenda item") {
+				print "</p><p align='center' class='error'>Due date not entered in agenda item, defaulting to tomorrow.</p><p align='center'>\n";
+				$_POST['duedate'] = "DATE(DATE_ADD(NOW(), INTERVAL 1 DAY))";
+			} else {
+				$_POST['duedate'] = "NULL";
+			}
 		} else {
 			$_POST['duedate'] =& dbfuncCreateDate(safe($_POST['duedate']));
 			$_POST['duedate'] = "'" . $_POST['duedate'] . "'";
@@ -126,15 +137,7 @@
 			$_POST['hidden'] = "1";
 		} else {
 			$_POST['hidden'] = "0";
-		}
-		
-		/* Check whether this assignment has been marked */
-		if($_POST['marked'] == "on") {                      // Make sure ActiveStudent is right type.
-			$_POST['marked'] = "1";
-		} else {
-			$_POST['marked'] = "0";
-		}
-		
+		}		
 
 		/* Check whether this assignment is uploadable */
 		if($_POST['uploadable'] == "on") {                      // Make sure ActiveStudent is right type.
@@ -150,84 +153,86 @@
 		$title = safe($_POST['title']);
 		
 		/* Check whether maximum score was included, and set to 0 if it wasn't */
-		if($averagetype == $AVG_TYPE_PERCENT or $averagetype == $AVG_TYPE_GRADE) {
-			if(!isset($_POST['max']) or $_POST['max'] == "") {
-				echo "</p>\n      <p>Maximum score not entered, defaulting to 0.</p>\n      <p>";  // Print error message
-				$_POST['max'] = "0";
-			} else {
-				if($_POST['max'] != "0") {
-					settype($_POST['max'], "double");
-					if($_POST['max'] <= 0)
-						echo "</p>\n      <p>Maximum score must be a number greater than 0...defaulting to 0.</p>\n      <p>";
-					settype($_POST['max'], "string");
-				}
-			}
-		
-			/* Check whether top mark was included, and set to NULL if it wasn't */
-			if(!isset($_POST['top_mark']) or $_POST['top_mark'] == "") {
-				if($_POST['curve_type'] == 2) {
-					echo "</p>\n      <p>Top mark must be a number between 0 and 100...setting to 100.</p>\n      <p>";
-					$_POST['top_mark'] = "100";
+		if($agenda == "0") {
+			if($averagetype == $AVG_TYPE_PERCENT or $averagetype == $AVG_TYPE_GRADE) {
+				if(!isset($_POST['max']) or $_POST['max'] == "") {
+					echo "</p>\n      <p>Maximum score not entered, defaulting to 0.</p>\n      <p>";  // Print error message
+					$_POST['max'] = "0";
 				} else {
-					$_POST['top_mark'] = "NULL";
+					if($_POST['max'] != "0") {
+						settype($_POST['max'], "double");
+						if($_POST['max'] <= 0)
+							echo "</p>\n      <p>Maximum score must be a number greater than or equal to 0...defaulting to 0.</p>\n      <p>";
+						settype($_POST['max'], "string");
+					}
 				}
-			} else {
-				if($_POST['top_mark'] != "0") {
-					settype($_POST['top_mark'], "double");
-					if($_POST['top_mark'] <= 0) {
-						echo "</p>\n      <p>Top mark must be a number between 0 and 100...setting to 0.</p>\n      <p>";
-						$_POST['top_mark'] = "0";
-					} elseif ($_POST['top_mark'] > 100) {
+			
+				/* Check whether top mark was included, and set to NULL if it wasn't */
+				if(!isset($_POST['top_mark']) or $_POST['top_mark'] == "") {
+					if($_POST['curve_type'] == 2) {
 						echo "</p>\n      <p>Top mark must be a number between 0 and 100...setting to 100.</p>\n      <p>";
 						$_POST['top_mark'] = "100";
+					} else {
+						$_POST['top_mark'] = "NULL";
 					}
-					settype($_POST['top_mark'], "string");
-				}
-			}
-			
-			/* Check whether bottom mark was included, and set to NULL if it wasn't */
-			if(!isset($_POST['bottom_mark']) or $_POST['bottom_mark'] == "") {
-				if($_POST['curve_type'] == 2) {
-					echo "</p>\n      <p>Bottom mark must be a number between 0 and 100...setting to 0.</p>\n      <p>";
-					$_POST['bottom_mark'] = "0";
 				} else {
-					$_POST['bottom_mark'] = "NULL";
+					if($_POST['top_mark'] != "0") {
+						settype($_POST['top_mark'], "double");
+						if($_POST['top_mark'] <= 0) {
+							echo "</p>\n      <p>Top mark must be a number between 0 and 100...setting to 0.</p>\n      <p>";
+							$_POST['top_mark'] = "0";
+						} elseif ($_POST['top_mark'] > 100) {
+							echo "</p>\n      <p>Top mark must be a number between 0 and 100...setting to 100.</p>\n      <p>";
+							$_POST['top_mark'] = "100";
+						}
+						settype($_POST['top_mark'], "string");
+					}
 				}
-			} else {
-				if($_POST['bottom_mark'] != "0") {
-					settype($_POST['bottom_mark'], "double");
-					if($_POST['bottom_mark'] <= 0) {
+				
+				/* Check whether bottom mark was included, and set to NULL if it wasn't */
+				if(!isset($_POST['bottom_mark']) or $_POST['bottom_mark'] == "") {
+					if($_POST['curve_type'] == 2) {
 						echo "</p>\n      <p>Bottom mark must be a number between 0 and 100...setting to 0.</p>\n      <p>";
 						$_POST['bottom_mark'] = "0";
-					} elseif ($_POST['top_mark'] > 100) {
-						echo "</p>\n      <p>Bottom mark must be a number between 0 and 100...setting to 100.</p>\n      <p>";
-						$_POST['bottom_mark'] = "100";
+					} else {
+						$_POST['bottom_mark'] = "NULL";
 					}
-					settype($_POST['bottom_mark'], "string");
+				} else {
+					if($_POST['bottom_mark'] != "0") {
+						settype($_POST['bottom_mark'], "double");
+						if($_POST['bottom_mark'] <= 0) {
+							echo "</p>\n      <p>Bottom mark must be a number between 0 and 100...setting to 0.</p>\n      <p>";
+							$_POST['bottom_mark'] = "0";
+						} elseif ($_POST['top_mark'] > 100) {
+							echo "</p>\n      <p>Bottom mark must be a number between 0 and 100...setting to 100.</p>\n      <p>";
+							$_POST['bottom_mark'] = "100";
+						}
+						settype($_POST['bottom_mark'], "string");
+					}
 				}
-			}
-			
-			//echo "<p>{$_POST['category']}</p>\n";
-			/* Check category */
-			if(!isset($_POST['category']) or $_POST['category'] == "") {
-				$_POST['category'] = "NULL";	 /* Check whether user is authorized to change scores */
-			} else {
-				settype($_POST['category'], "double");
-				settype($_POST['category'], "string");
-			}
-	
-			/* Check whether weight was included, and set to 0 if it wasn't */
-			if(!isset($_POST['weight']) or $_POST['weight'] == "") {
-				echo "</p>\n      <p>Weight not entered, defaulting to 1.</p>\n      <p>";  // Print error message
-				$_POST['weight'] = "1";
-			} else {
-				if($_POST['weight'] != "0") {
-					settype($_POST['weight'], "double");
-					if($_POST['weight'] == 0) {
-						echo "</p>\n      <p>Weight must be a number...defaulting to 1.</p>\n      <p>";
-						$_POST['weight'] = 1;
+				
+				//echo "<p>{$_POST['category']}</p>\n";
+				/* Check category */
+				if(!isset($_POST['category']) or $_POST['category'] == "") {
+					$_POST['category'] = "NULL";	 /* Check whether user is authorized to change scores */
+				} else {
+					settype($_POST['category'], "double");
+					settype($_POST['category'], "string");
+				}
+		
+				/* Check whether weight was included, and set to 0 if it wasn't */
+				if(!isset($_POST['weight']) or $_POST['weight'] == "") {
+					echo "</p>\n      <p>Weight not entered, defaulting to 1.</p>\n      <p>";  // Print error message
+					$_POST['weight'] = "1";
+				} else {
+					if($_POST['weight'] != "0") {
+						settype($_POST['weight'], "double");
+						if($_POST['weight'] == 0) {
+							echo "</p>\n      <p>Weight must be a number...defaulting to 1.</p>\n      <p>";
+							$_POST['weight'] = 1;
+						}
+						settype($_POST['max'], "string");
 					}
-					settype($_POST['max'], "string");
 				}
 			}
 		}

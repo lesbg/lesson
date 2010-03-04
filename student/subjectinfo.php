@@ -91,13 +91,14 @@
 			$has_categories = False;
 		}
 		
-		$query =	"SELECT Title, Date, DueDate, AssignmentIndex, Description, DescriptionData, " .
-					"       DescriptionFileType, AverageType, ShowAverage, " .
+	$query =		"SELECT Title, Date, DueDate, assignment.AssignmentIndex, Description, DescriptionData, " .
+					"       DescriptionFileType, AverageType, ShowAverage, Agenda, subject.Name AS SubjectName, " .
 					"       Uploadable, assignment.Weight, Score, Percentage, mark.Comment, " .
 					"       subjectstudent.Average AS StudentSubjectAverage, " .
-					"       CanModify, CategoryName FROM subject INNER JOIN assignment USING (SubjectIndex) " .
-					"       INNER JOIN mark USING (AssignmentIndex) INNER JOIN subjectstudent " .
-					"       ON (subjectstudent.SubjectIndex = subject.SubjectIndex AND subjectstudent.Username = mark.Username) " .
+					"       CanModify, CategoryName, subject.SubjectIndex " .
+					"       FROM subject INNER JOIN assignment USING (SubjectIndex) INNER JOIN subjectstudent " .
+					"       ON (subjectstudent.SubjectIndex = subject.SubjectIndex) LEFT OUTER JOIN mark ON " .
+					"		(mark.Username = subjectstudent.Username AND mark.AssignmentIndex = assignment.AssignmentIndex) " .
 					"       LEFT OUTER JOIN categorylist USING (CategoryListIndex) LEFT OUTER JOIN category USING (CategoryIndex) " .
 					"WHERE mark.Username     = '$studentusername' " .
 					"AND   subject.SubjectIndex = $subjectindex " .
@@ -154,20 +155,30 @@
 					$alt_step = "std";
 				}
 				$alt = " class='$alt_step'";
-				if($row['AverageType'] == $AVG_TYPE_PERCENT or $row['AverageType'] == $AVG_TYPE_GRADE) {
-					if($row['Score'] == $MARK_LATE and $can_modify == 1) {
-						$alt = " class='late-$alt_step'";
-					} elseif(is_null($row['Score']) and $can_modify == 1) {
-						$alt = " class='unmarked-$alt_step'";
-					}
-				}  elseif($row['AverageType'] == $AVG_TYPE_INDEX) {
-					if(is_null($row['Score']) and $can_modify == 1) {
-						$alt = " class='unmarked-$alt_step'";
+				$aclass = "";
+				
+				if($row['Agenda'] == 1) {
+					$alt    = " class='agenda-$alt_step'";
+					$aclass = " class='agenda'";
+				} else {
+					if($row['AverageType'] == $AVG_TYPE_PERCENT or $row['AverageType'] == $AVG_TYPE_GRADE) {
+						if($row['Score'] == $MARK_LATE and $can_modify == 1) {
+							$alt    = " class='late-$alt_step'";
+							$aclass = " class='late'";
+						} elseif(is_null($row['Score']) and $can_modify == 1) {
+							$alt    = " class='unmarked-$alt_step'";
+							$aclass = " class='unmarked'";
+						}
+					}  elseif($row['AverageType'] == $AVG_TYPE_INDEX) {
+						if(is_null($row['Score']) and $can_modify == 1) {
+							$alt    = " class='unmarked-$alt_step'";
+							$aclass = " class='unmarked'";
+						}
 					}
 				}
 				$dateinfo = date($dateformat, strtotime($row['Date']));
 				if(isset($row['DueDate'])) {
-					$duedateinfo = date($dateformat, strtotime($row['DueDate']));
+					$duedateinfo = "<b>" . date($dateformat, strtotime($row['DueDate'])) . "</b>";
 				} else {
 					$duedateinfo = "";
 				}
@@ -183,18 +194,6 @@
 						echo "            <td>$uploadbutton</td>\n";
 					} else {
 						echo "            <td>&nbsp;</td>\n";
-					}
-				}
-				$aclass = "";
-				if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
-					if($row['Score'] == $MARK_LATE and $can_modify == 1) {
-						$aclass = " class='late'";
-					} elseif(is_null($row['Score']) and $can_modify == 1) {
-						$aclass = " class='unmarked'";
-					}
-				} elseif($average_type == $AVG_TYPE_INDEX) {
-					if(is_null($row['Score']) and $can_modify == 1) {
-						$aclass = " class='unmarked'";
 					}
 				}
 				
@@ -220,56 +219,66 @@
 				}
 				echo "            <td>{$dateinfo}</td>\n";
 				echo "            <td>{$duedateinfo}</td>\n";
-				if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
-					if($row['Score'] == $MARK_LATE) {
-						if($can_modify == 1) {
-							echo "            <td>&nbsp;</td>\n";
-						} else {
-							echo "            <td>0%</td>\n";
-						}
-						echo "            <td>{$row['Weight']}</td>\n";
-					} elseif($row['Score'] == $MARK_ABSENT) {
-						echo "            <td colspan='2' align='center'><i>Absent</i></td>\n";
-					} elseif($row['Score'] == $MARK_EXEMPT) {
-						echo "            <td colspan='2' align='center'><i>Exempt</i></td>\n";
-					} elseif(is_null($row['Score'])) {
-						if($can_modify == 1) {
-							echo "            <td>&nbsp;</td>\n";
-							echo "            <td>{$row['Weight']}</td>\n";
-						} else {
-							echo "            <td colspan='2' align='center'><i>Exempt</i></td>\n";
-						}
+				if($row['Agenda'] == 1) {
+					if(($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE)) {
+						$colspan = "3";
 					} else {
-						$score = round($row['Percentage']);
-						echo "            <td>$score%</td>\n";
-						echo "            <td>{$row['Weight']}</td>\n";
+						$colspan = "2";
 					}
-					if($row['Score'] == $MARK_LATE) {
-						if($row['Comment'] == "" or is_null($row['Comment'])) {
-							echo "            <td>Late</td>\n";
+					
+					echo "            <td colspan='$colspan' align='center'><i>N/A</i></td>\n";
+				} else {
+					if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
+						if($row['Score'] == $MARK_LATE) {
+							if($can_modify == 1) {
+								echo "            <td>&nbsp;</td>\n";
+							} else {
+								echo "            <td>0%</td>\n";
+							}
+							echo "            <td>{$row['Weight']}</td>\n";
+						} elseif($row['Score'] == $MARK_ABSENT) {
+							echo "            <td colspan='2' align='center'><i>Absent</i></td>\n";
+						} elseif($row['Score'] == $MARK_EXEMPT) {
+							echo "            <td colspan='2' align='center'><i>Exempt</i></td>\n";
+						} elseif(is_null($row['Score'])) {
+							if($can_modify == 1) {
+								echo "            <td>&nbsp;</td>\n";
+								echo "            <td>{$row['Weight']}</td>\n";
+							} else {
+								echo "            <td colspan='2' align='center'><i>Exempt</i></td>\n";
+							}
+						} else {
+							$score = round($row['Percentage']);
+							echo "            <td>$score%</td>\n";
+							echo "            <td>{$row['Weight']}</td>\n";
+						}
+						if($row['Score'] == $MARK_LATE) {
+							if($row['Comment'] == "" or is_null($row['Comment'])) {
+								echo "            <td>Late</td>\n";
+							} else {
+								echo "            <td>{$row['Comment']}</td>\n";
+							}
 						} else {
 							echo "            <td>{$row['Comment']}</td>\n";
 						}
-					} else {
+					} elseif($average_type == $AVG_TYPE_INDEX) {
+						if(!isset($average_type_index) or $average_type_index == "" or !isset($row['Score']) or $row['Score'] == "") {
+							$score = "N/A";
+						} else {
+							$query =	"SELECT Input, Display FROM nonmark_index " .
+										"WHERE NonmarkTypeIndex = $average_type_index " .
+										"AND   NonmarkIndex     = {$row['Score']}";
+							$sres =& $db->query($query);
+							if(DB::isError($sres)) die($sres->getDebugInfo());           // Check for errors in query
+							if($srow =& $sres->fetchRow(DB_FETCHMODE_ASSOC)) {
+								$score = $srow['Display'];
+							} else {
+								$score = "N/A";
+							}
+						}
+						echo "            <td>$score</td>\n";
 						echo "            <td>{$row['Comment']}</td>\n";
 					}
-				} elseif($average_type == $AVG_TYPE_INDEX) {
-					if(!isset($average_type_index) or $average_type_index == "" or !isset($row['Score']) or $row['Score'] == "") {
-						$score = "N/A";
-					} else {
-						$query =	"SELECT Input, Display FROM nonmark_index " .
-									"WHERE NonmarkTypeIndex = $average_type_index " .
-									"AND   NonmarkIndex     = {$row['Score']}";
-						$sres =& $db->query($query);
-						if(DB::isError($sres)) die($sres->getDebugInfo());           // Check for errors in query
-						if($srow =& $sres->fetchRow(DB_FETCHMODE_ASSOC)) {
-							$score = $srow['Display'];
-						} else {
-							$score = "N/A";
-						}
-					}
-					echo "            <td>$score</td>\n";
-					echo "            <td>{$row['Comment']}</td>\n";
 				}
 				echo "         </tr>\n";
 				$show_average = $row['ShowAverage'];

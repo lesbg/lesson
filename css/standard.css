@@ -144,10 +144,11 @@ th {
 	stroke:           black;
 	stroke-width:     1;
 }
-.almost-std {
+
+.agenda-std {
 	background-color: #ffb;
 }
-.almost-alt {
+.agenda-alt {
 	background-color: #ff9;
 }
 .late-std {
@@ -220,6 +221,12 @@ a.late {
 }
 a.late:hover {
 	color:            #d00;
+}
+a.agenda {
+	color:            #550;
+}
+a.agenda:hover {
+	color:            #770;
 }
 	
 /* Psuedo-button hyperlinks */

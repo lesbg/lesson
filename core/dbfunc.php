@@ -858,6 +858,7 @@
 					"                   categorylist.Weight AS TotalWeight FROM assignment " .
 					"                   LEFT OUTER JOIN categorylist USING (CategoryListIndex), mark " .
 					"            WHERE assignment.SubjectIndex=$subject_index " .
+					"            AND   assignment.Agenda = 0 " .
 					"            AND   mark.AssignmentIndex = assignment.AssignmentIndex " .
 					"            AND   (mark.Score >= 0 OR mark.Score = $MARK_LATE) " .
 					"            AND   assignment.Weight > 0 " .
@@ -865,6 +866,7 @@
 					"           ) AS do_weight GROUP BY Username) AS total " .
 					"         ON (subjectstudent.Username = total.username)" .
 					"       WHERE assignment.SubjectIndex = $subject_index " .
+					"       AND   assignment.Agenda = 0 " .
 					"       AND   assignment.Hidden = 0 " .
 					"       AND   (mark.Score >= 0 OR mark.Score = $MARK_LATE) " .
 					"       AND   mark.Score IS NOT NULL " .

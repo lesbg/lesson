@@ -1,8 +1,8 @@
 <?php
 	/*****************************************************************
-	 * teacher/assignment/new_action.php  (c) 2004-2008 Jonathan Dieter
+	 * teacher/assignment/new_action.php  (c) 2004-2010 Jonathan Dieter
 	 *
-	 * Run query to insert a new assignment into the database.
+	 * Run query to insert a new assignment or agenda item into the database.
 	 *****************************************************************/
 
 	/* Get variables */
@@ -41,21 +41,21 @@
 		}
 		$query =		"INSERT INTO assignment (Title, Description, DescriptionData, " .
 						"                        DescriptionFileType, Date, DueDate, ";
-		if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
+		if(($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) and $agenda == "0") {
 			$query .=	"                        Max, CategoryListIndex, " .
 						"                        CurveType, TopMark, " .
 						"                        BottomMark, Weight, ";
 		}
-		$query .=		"                        Hidden, " .
+		$query .=		"                        Hidden, Agenda, " .
 						"                        SubjectIndex, Uploadable) " .
 						"VALUES ('$title' , $descr, $descr_data, " .
 						"        $descr_file_type, {$_POST['date']}, {$_POST['duedate']}, ";
-		if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
+		if(($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) and $agenda == "0") {
 			$query .=	"        {$_POST['max']}, {$_POST['category']}, " .
 						"        {$_POST['curve_type']}, {$_POST['top_mark']}, {$_POST['bottom_mark']}, " .
 						"        {$_POST['weight']}, ";
 		}
-		$query .=		"        {$_POST['hidden']}, $subjectindex, " .
+		$query .=		"        {$_POST['hidden']}, $agenda, $subjectindex, " .
 						"        {$_POST['uploadable']})";
 		$aRes =& $db->query($query);
 		if(DB::isError($aRes)) die($aRes->getDebugInfo());           // Check for errors in query

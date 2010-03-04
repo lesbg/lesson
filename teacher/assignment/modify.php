@@ -218,6 +218,7 @@
 
 		echo "      </script>\n";
 		echo "      <form action='$link' enctype='multipart/form-data' method='post' name='assignment'>\n";        // Form method
+		echo "         <input type='hidden' id='agenda' name='agenda' value='0'>\n";
 		echo "         <table class='transparent' align='center'>\n";
 		echo "            <tr>\n";
 		echo "               <td>Title:</td>\n";
@@ -248,7 +249,7 @@
 		}
 		echo "            <tr>\n";
 		echo "               <td>Assignment Options:</td>\n";
-		echo "               <td colspan='2'><input type='checkbox' name='hidden' id='hidden' tabindex='6' onchange='recalc_all();' $hidden> " .
+		echo "               <td colspan='2'><input type='checkbox' name='hidden' id='hidden' tabindex='6' onchange='check_style();' $hidden> " .
 								"<label for='hidden'>Hidden from students</label><br>\n";
 		echo "                  <input type='checkbox' name='uploadable' id='uploadable' tabindex='7' $uploadable> " .
 								"<label id='uploadable_lbl' for='uploadable'>Allow students to upload files so you can access them</label></td>\n";
@@ -332,13 +333,14 @@
 		echo "            <input type='submit' name='action' value='Update' tabindex='18' />&nbsp; \n";
 		echo "            <input type='submit' name='action' value='Cancel' tabindex='19' />&nbsp; \n";
 		echo "            <input type='submit' name='action' value='Delete' tabindex='20' />&nbsp; \n";
+		echo "            <input type='submit' name='action' value='Convert to agenda item' tabindex='21' \>&nbsp; \n";
 		if(!is_null($next_subjectindex)) {
-			echo "            <input type='hidden' name='next_subject' value='$next_subjectindex' /><input type='submit' name='action' value='Move this assignment to next term' tabindex='21' />&nbsp; \n";
+			echo "            <input type='hidden' name='next_subject' value='$next_subjectindex' /><input type='submit' name='action' value='Move this assignment to next term' tabindex='22' />&nbsp; \n";
 		}
 		echo "         </p>\n";
 		echo "         <p></p>\n";
 		/* Print scores and comments */
-		$tabC = 21;
+		$tabC = 23;
 		$order = 1;
 		if($res->numRows() > 0) {
 			echo "         <table align='center' border='1'>\n"; // Table headers
@@ -444,10 +446,12 @@
 		$tabUpdate = $tabC + 1;
 		$tabCancel = $tabC + 2;
 		$tabDelete = $tabC + 3;
+		$tabAgenda = $tabC + 4;
 		echo "         <p align='center'>\n";
 		echo "            <input type='submit' name='action' value='Update' tabindex='$tabUpdate' \>&nbsp; \n";
 		echo "            <input type='submit' name='action' value='Cancel' tabindex='$tabCancel' \>&nbsp; \n";
 		echo "            <input type='submit' name='action' value='Delete' tabindex='$tabDelete' \>&nbsp; \n";
+		echo "            <input type='submit' name='action' value='Convert to agenda item' tabindex='$tabAgenda' \>&nbsp; \n";
 		echo "         </p>\n";
 		
 		echo "      </form>\n";

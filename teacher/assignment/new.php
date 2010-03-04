@@ -89,10 +89,11 @@
 		}
 		echo "\n";
 		echo "      </script>\n";
-		echo "      <form action='$link' method='post' name='assignment'>\n";    // Form method
-		
+				
 		$dateinfo = date($dateformat); // Print assignment information table with empty fields to fill in
+		$duedateinfo = date($dateformat, time() + (24*60*60)); // Print assignment information table with empty fields to fill in
 		echo "      <form action='$link' method='post' name='assignment'>\n";        // Form method
+		echo "         <input type='hidden' id='agenda' name='agenda' value='0'>\n";
 		echo "         <table class='transparent' align='center'>\n";
 		echo "            <tr>\n";
 		echo "               <td>Title:</td>\n";
@@ -106,7 +107,7 @@
 		echo "            </tr>\n";
 		echo "            <tr>\n";
 		echo "               <td>Due Date:</td>\n";
-		echo "               <td colspan='2'><input type='text' name='duedate' " .
+		echo "               <td colspan='2'><input type='text' name='duedate' value='{$duedateinfo}' " .
 														"tabindex='3' size='50'></td>\n";
 		echo "            </tr>\n";
 		if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
@@ -123,7 +124,7 @@
 		}
 		echo "            <tr>\n";
 		echo "               <td>Assignment Options:</td>\n";
-		echo "               <td colspan='2'><input type='checkbox' name='hidden' id='hidden' tabindex='6' onchange='recalc_all();'> " .
+		echo "               <td colspan='2'><input type='checkbox' name='hidden' id='hidden' tabindex='6' onchange='check_style();'> " .
 														"<label for='hidden'>Hidden</label><br>\n";
 		echo "                  <input type='checkbox' name='uploadable' id='uploadable' tabindex='7'> " .
 														"<label for='uploadable'>Allow students to upload files so you can access them</label></td>\n";

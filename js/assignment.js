@@ -156,11 +156,16 @@ function setLinkedStyleSheet(title) {
 /* Check which stylesheet to use */
 function check_style() {
 	var hidden = document.getElementById("hidden").checked;
+	var agenda = document.getElementById("agenda").value;
 	
 	if(hidden == true) {
 		setLinkedStyleSheet('Hidden');
 	} else {
-		setLinkedStyleSheet('Regular');
+		if(agenda == true) {
+			setLinkedStyleSheet('Agenda');
+		} else {
+			setLinkedStyleSheet('Regular');
+		}
 	}
 }
 

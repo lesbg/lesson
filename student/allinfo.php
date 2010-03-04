@@ -90,33 +90,41 @@
 			$has_categories = False;
 		}
 
-		$query =		"SELECT Title, Date, DueDate, AssignmentIndex, Description, DescriptionData, " .
-						"       DescriptionFileType, AverageType, ShowAverage, " .
+		$query =		"SELECT Title, Date, DueDate, assignment.AssignmentIndex, Description, DescriptionData, " .
+						"       DescriptionFileType, AverageType, ShowAverage, Agenda, subject.Name AS SubjectName, " .
 						"       Uploadable, assignment.Weight, Score, Percentage, mark.Comment, " .
 						"       subjectstudent.Average AS StudentSubjectAverage, " .
 						"       CanModify, CategoryName, subject.SubjectIndex " .
-						"       FROM subject INNER JOIN assignment USING (SubjectIndex) " .
-						"       INNER JOIN mark USING (AssignmentIndex) INNER JOIN subjectstudent " .
-						"       ON (subjectstudent.SubjectIndex = subject.SubjectIndex AND subjectstudent.Username = mark.Username) " .
+						"       FROM subject INNER JOIN assignment USING (SubjectIndex) INNER JOIN subjectstudent " .
+						"       ON (subjectstudent.SubjectIndex = subject.SubjectIndex) LEFT OUTER JOIN mark ON " .
+						"		(mark.Username = subjectstudent.Username AND mark.AssignmentIndex = assignment.AssignmentIndex) " .
 						"       LEFT OUTER JOIN categorylist USING (CategoryListIndex) LEFT OUTER JOIN category USING (CategoryIndex) " .
-						"WHERE mark.Username     = '$studentusername' " .
-						"AND   Hidden       = 0 ";
+						"WHERE subjectstudent.Username     = '$studentusername' " .
+						"AND   Hidden       = 0 " .
+						"AND   YearIndex = $yearindex " .
+						"AND   TermIndex = $termindex ";
 		if($showtype == "u") {
 			$query .=	"AND   mark.Score IS NULL " .
-						"AND   subject.AverageType != $AVG_TYPE_NONE ";
+						"AND   subject.AverageType != $AVG_TYPE_NONE " .
+						"AND   DATE(NOW()) >= assignment.Date " .
+						"AND   DATE(ADDTIME(NOW(), '09:00:00')) <= assignment.DueDate " . // Clever hack to not show homework due today after 3:00PM
+						"ORDER BY DueDate ASC, Date ASC, AssignmentIndex DESC";          // (15:00 + 9 hours = next day)
 		} elseif($showtype == "m") {
 			$query .=	"AND   mark.Score IS NOT NULL ";
 		} elseif($showtype == "l") {
 			$query .=	"AND   mark.Score = $MARK_LATE ";
 						"AND   (subject.AverageType == $AVG_TYPE_PERCENT or subject.AverageType == $AVG_TYPE_GRADE) ";
+						"ORDER BY DueDate ASC, Date ASC, AssignmentIndex DESC";
 		} elseif($showtype == "t") {
 			$query .=	"AND   mark.Score IS NULL " .
 						"AND   subject.AverageType != $AVG_TYPE_NONE " .
-						"AND   assignment.Date = DATE(NOW()) ";
+						"AND   DATE(NOW()) >= assignment.Date " .
+						"AND   DATE(NOW()) =  assignment.DueDate " .
+						"ORDER BY DueDate ASC, Date ASC, AssignmentIndex DESC";
+		} else {
+			$query .=	"ORDER BY Date DESC, AssignmentIndex DESC";			
 		}
-		$query .=		"AND   YearIndex = $yearindex " .
-						"AND   TermIndex = $termindex " .
-						"ORDER BY Date DESC, AssignmentIndex DESC";
+		
 
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
@@ -150,15 +158,25 @@
 					$alt_step = "std";
 				}
 				$alt = " class='$alt_step'";
-				if($row['AverageType'] == $AVG_TYPE_PERCENT) {
-					if($row['Score'] == $MARK_LATE and $can_modify == 1) {
-						$alt = " class='late-$alt_step'";
-					} elseif(is_null($row['Score']) and $can_modify == 1) {
-						$alt = " class='unmarked-$alt_step'";
-					}
-				}  elseif($row['AverageType'] == $AVG_TYPE_INDEX) {
-					if(is_null($row['Score']) and $can_modify == 1) {
-						$alt = " class='unmarked-$alt_step'";
+				$aclass = "";
+				
+				if($row['Agenda'] == 1) {
+					$alt    = " class='agenda-$alt_step'";
+					$aclass = " class='agenda'";
+				} else {
+					if($row['AverageType'] == $AVG_TYPE_PERCENT or $row['AverageType'] == $AVG_TYPE_GRADE) {
+						if($row['Score'] == $MARK_LATE and $can_modify == 1) {
+							$alt    = " class='late-$alt_step'";
+							$aclass = " class='late'";
+						} elseif(is_null($row['Score']) and $can_modify == 1) {
+							$alt    = " class='unmarked-$alt_step'";
+							$aclass = " class='unmarked'";
+						}
+					}  elseif($row['AverageType'] == $AVG_TYPE_INDEX) {
+						if(is_null($row['Score']) and $can_modify == 1) {
+							$alt    = " class='unmarked-$alt_step'";
+							$aclass = " class='unmarked'";
+						}
 					}
 				}
 				echo "         <tr$alt>\n";
@@ -173,18 +191,6 @@
 						echo "            <td>$uploadbutton</td>\n";
 					} else {
 						echo "            <td>&nbsp;</td>\n";
-					}
-				}
-				$aclass = "";
-				if($row['AverageType'] == $AVG_TYPE_PERCENT) {
-					if($row['Score'] == $MARK_LATE and $can_modify == 1) {
-						$aclass = " class='late'";
-					} elseif(is_null($row['Score']) and $can_modify == 1) {
-						$aclass = " class='unmarked'";
-					}
-				} elseif($row['AverageType'] == $AVG_TYPE_INDEX) {
-					if(is_null($row['Score']) and $can_modify == 1) {
-						$aclass = " class='unmarked'";
 					}
 				}
 				
@@ -241,63 +247,67 @@
 				}
 				$dateinfo = date($dateformat, strtotime($row['Date']));
 				if(isset($row['DueDate'])) {
-					$duedateinfo = date($dateformat, strtotime($row['DueDate']));
+					$duedateinfo = "<b>" . date($dateformat, strtotime($row['DueDate'])) . "</b>";
 				} else {
 					$duedateinfo = "";
 				}
 				echo "            <td>$dateinfo</td>\n";
 				echo "            <td>$duedateinfo</td>\n";
 				
-				if($row['AverageType'] == $AVG_TYPE_PERCENT) {
-					if($row['Score'] == $MARK_LATE) {
-						if($can_modify == 1) {
-							echo "            <td>&nbsp;</td>\n";
-						} else {
-							echo "            <td>0%</td>\n";
-						}
-					} elseif($row['Score'] == $MARK_ABSENT) {
-						echo "            <td align='center'><i>Absent</i></td>\n";
-					} elseif($row['Score'] == $MARK_EXEMPT) {
-						echo "            <td align='center'><i>Exempt</i></td>\n";
-					} elseif(is_null($row['Score'])) {
-						if($can_modify == 1) {
-							echo "            <td>&nbsp;</td>\n";
-						} else {
+				if($row['Agenda'] == 1) {
+					echo "            <td colspan='2' align='center'><i>N/A</i></td>\n";
+				} else {				
+					if($row['AverageType'] == $AVG_TYPE_PERCENT) {
+						if($row['Score'] == $MARK_LATE) {
+							if($can_modify == 1) {
+								echo "            <td>&nbsp;</td>\n";
+							} else {
+								echo "            <td>0%</td>\n";
+							}
+						} elseif($row['Score'] == $MARK_ABSENT) {
+							echo "            <td align='center'><i>Absent</i></td>\n";
+						} elseif($row['Score'] == $MARK_EXEMPT) {
 							echo "            <td align='center'><i>Exempt</i></td>\n";
+						} elseif(is_null($row['Score'])) {
+							if($can_modify == 1) {
+								echo "            <td>&nbsp;</td>\n";
+							} else {
+								echo "            <td align='center'><i>Exempt</i></td>\n";
+							}
+						} else {
+							$score = round($row['Percentage']);
+							echo "            <td>$score%</td>\n";
 						}
-					} else {
-						$score = round($row['Percentage']);
-						echo "            <td>$score%</td>\n";
-					}
-					if($row['Score'] == $MARK_LATE) {
-						if($row['Comment'] == "" or is_null($row['Comment'])) {
-							echo "            <td>Late</td>\n";
+						if($row['Score'] == $MARK_LATE) {
+							if($row['Comment'] == "" or is_null($row['Comment'])) {
+								echo "            <td>Late</td>\n";
+							} else {
+								echo "            <td>{$row['Comment']}</td>\n";
+							}
 						} else {
 							echo "            <td>{$row['Comment']}</td>\n";
 						}
+					} elseif($row['AverageType'] == $AVG_TYPE_INDEX) {
+						if(!isset($row['AverageTypeIndex']) or $row['AverageTypeIndex'] == "" or !isset($row['Score']) or $row['Score'] == "") {
+							$score = "N/A";
+						} else {
+							$query =	"SELECT Input, Display FROM nonmark_index " .
+										"WHERE NonmarkTypeIndex = {$row['AverageTypeIndex']} " .
+										"AND   NonmarkIndex     = {$row['Score']}";
+							$sres =& $db->query($query);
+							if(DB::isError($sres)) die($sres->getDebugInfo());           // Check for errors in query
+							if($srow =& $sres->fetchRow(DB_FETCHMODE_ASSOC)) {
+								$score = $srow['Display'];
+							} else {
+								$score = "N/A";
+							}
+						}
+						echo "            <td>$score</td>\n";
+						echo "            <td>{$row['Comment']}</td>\n";
 					} else {
+						echo "            <td>N/A</td>\n";
 						echo "            <td>{$row['Comment']}</td>\n";
 					}
-				} elseif($row['AverageType'] == $AVG_TYPE_INDEX) {
-					if(!isset($row['AverageTypeIndex']) or $row['AverageTypeIndex'] == "" or !isset($row['Score']) or $row['Score'] == "") {
-						$score = "N/A";
-					} else {
-						$query =	"SELECT Input, Display FROM nonmark_index " .
-									"WHERE NonmarkTypeIndex = {$row['AverageTypeIndex']} " .
-									"AND   NonmarkIndex     = {$row['Score']}";
-						$sres =& $db->query($query);
-						if(DB::isError($sres)) die($sres->getDebugInfo());           // Check for errors in query
-						if($srow =& $sres->fetchRow(DB_FETCHMODE_ASSOC)) {
-							$score = $srow['Display'];
-						} else {
-							$score = "N/A";
-						}
-					}
-					echo "            <td>$score</td>\n";
-					echo "            <td>{$row['Comment']}</td>\n";
-				} else {
-					echo "            <td>N/A</td>\n";
-					echo "            <td>{$row['Comment']}</td>\n";
 				}
 				echo "         </tr>\n";
 			}

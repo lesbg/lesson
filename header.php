@@ -24,13 +24,15 @@
 
 	/* Link in CSS stylesheets */
 ?>
-		<link rel="StyleSheet" href="css/standard.css" title="LES" type="text/css" media="screen">
+
+<link rel="StyleSheet" href="css/standard.css" title="LES" type="text/css" media="screen">
+
 <?php
 	if(isset($use_extra_css) && $use_extra_css == true) {
 		?>
 		<link rel="StyleSheet" href="css/standard.css" title="Regular" type="text/css" media="screen">
+		<link rel="StyleSheet" href="css/standard-agenda.css" title="Agenda" type="text/css" media="screen">
 		<link rel="StyleSheet" href="css/standard-hidden.css" title="Hidden" type="text/css" media="screen">
-		<link rel="StyleSheet" href="css/standard-unmarked.css" title="Unmarked" type="text/css" media="screen">
 		<?php
 	}
 ?>

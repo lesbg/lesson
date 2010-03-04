@@ -15,11 +15,11 @@
 	/* Check whether user is authorized to change scores */
 	$res =& $db->query("SELECT subjectteacher.Username FROM subjectteacher " .
 					   "WHERE subjectteacher.SubjectIndex = $subjectindex " .
-					   "AND   subjectteacher.Username     = \"$username\"");
+					   "AND   subjectteacher.Username     = '$username'");
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 	
-	if($res->numRows() > 0 || dbfuncGetPermission($permissions, $PERM_ADMIN)) {
-		$query =    "SELECT Permissions FROM disciplineperms WHERE Username=\"$username\"";
+	if($res->numRows() > 0 or $is_admin) {
+		$query =    "SELECT Permissions FROM disciplineperms WHERE Username='$username'";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
@@ -46,24 +46,28 @@
 		$nochangeyt = true;
 		
 		include "core/titletermyear.php";
-		$newlink =  "index.php?location=" . dbfuncString2Int("teacher/assignment/new.php") .
-					"&amp;key=" .               dbfuncString2Int($subjectindex) .
-					"&amp;keyname=" .           dbfuncString2Int($title);
-		$optlink =  "index.php?location=" . dbfuncString2Int("teacher/subject/modify.php") .
-					"&amp;key=" .               dbfuncString2Int($subjectindex) .
-					"&amp;keyname=" .           dbfuncString2Int($title);
+		$newlink =  	"index.php?location=" . dbfuncString2Int("teacher/assignment/new.php") .
+						"&amp;key=" .           dbfuncString2Int($subjectindex) .
+						"&amp;keyname=" .       $_GET['keyname'];
+		$agendalink =	"index.php?location=" . dbfuncString2Int("teacher/assignment/list_agenda.php") .
+						"&amp;key=" .           dbfuncString2Int($subjectindex) .
+						"&amp;keyname=" .       $_GET['keyname'];
+		$optlink =  	"index.php?location=" . dbfuncString2Int("teacher/subject/modify.php") .
+						"&amp;key=" .           dbfuncString2Int($subjectindex) .
+						"&amp;keyname=" .       $_GET['keyname'];
 		if($average_type == $AVG_TYPE_PERCENT) {
 			$prtlink =  "index.php?location=" . dbfuncString2Int("teacher/assignment/print.php") .
-						"&amp;key=" .               dbfuncString2Int($subjectindex) .
-						"&amp;keyname=" .           dbfuncString2Int($title);
+						"&amp;key=" .           dbfuncString2Int($subjectindex) .
+						"&amp;keyname=" .       $_GET['keyname'];
 		}
-		$cltlink =  "index.php?location=" . dbfuncString2Int("teacher/assignment/print_gradesheet.php") .
-					"&amp;key=" .               dbfuncString2Int($subjectindex) .
-					"&amp;keyname=" .           dbfuncString2Int($title);
-		
-		if(($can_modify==1 or dbfuncGetPermission($permissions, $PERM_ADMIN)) and $average_type != 0){
-			$newbutton = dbfuncGetButton($newlink, "New assignment", "medium", "", "Create new assignment for this subject");
-			$optbutton = dbfuncGetButton($optlink, "Subject options", "medium", "", "Edit options for this subject");
+		$cltlink =  	"index.php?location=" . dbfuncString2Int("teacher/assignment/print_gradesheet.php") .
+						"&amp;key=" .           dbfuncString2Int($subjectindex) .
+						"&amp;keyname=" .       $_GET['keyname'];
+						
+		$agendabutton = dbfuncGetButton($agendalink, "Agenda items", "medium", "", "List agenda items for this subject");
+		if(($can_modify==1 or $is_admin) and $average_type != $AVG_TYPE_NONE){
+			$newbutton    = dbfuncGetButton($newlink, "New assignment", "medium", "", "Create new assignment for this subject");
+			$optbutton    = dbfuncGetButton($optlink, "Subject options", "medium", "", "Edit options for this subject");
 		} else {
 			$newbutton = "";
 			$optbutton = "";
@@ -77,9 +81,9 @@
 		}
 		$cltbutton = dbfuncGetButton($cltlink, "Printable gradesheet", "medium", "", "View printable gradesheet for this subject");
 
-		echo "      <p align=\"center\">$newbutton $optbutton $prtbutton $cltbutton</p>\n";
+		echo "      <p align='center'>$agendabutton $newbutton $optbutton $prtbutton $cltbutton</p>\n";
 	
-		echo "      <table align=\"center\" border=\"1\">\n"; // Table headers
+		echo "      <table align='center' border='1'>\n"; // Table headers
 		echo "         <tr>\n";
 		echo "            <th>&nbsp;</th>\n";
 		echo "            <th>Student</th>\n";
@@ -94,6 +98,7 @@
 						"       LEFT OUTER JOIN categorylist USING (CategoryListIndex) " .
 						"       LEFT OUTER JOIN category USING (CategoryIndex) " .
 						"WHERE assignment.SubjectIndex = $subjectindex " .
+						"AND   assignment.Agenda = 0 " .
 						"ORDER BY Date, AssignmentIndex";
 			$res =& $db->query($query);
 			if(DB::isError($res)) die($res->getDebugInfo());
@@ -109,14 +114,14 @@
 							"&amp;key=" .               dbfuncString2Int($row['AssignmentIndex']) .
 							"&amp;keyname=" .           dbfuncString2Int($row['Title']);
 				$headtype = "";
-				if($hidden == 1) $headtype=" class=\"hidden\"";
+				if($hidden == 1) $headtype=" class='hidden'";
 				if(is_null($row['CategoryName'])) {
 					$catinfo = "";
 				} else {
-					$catinfo = "<br><span class=\"small\">{$row['CategoryName']}</span>";
+					$catinfo = "<br><span class='small'>{$row['CategoryName']}</span>";
 				}
 				if($can_modify == 1 or dbfuncGetPermission($permissions, $PERM_ADMIN)) {
-					echo "            <th$headtype width=10px><a$headtype href=\"$link\">{$row['Title']}<br> ({$dateinfo}){$catinfo}</a></th>\n";
+					echo "            <th$headtype width=10px><a$headtype href='$link'>{$row['Title']}<br> ({$dateinfo}){$catinfo}</a></th>\n";
 				} else {
 					echo "            <th$headtype width=10px>{$row['Title']}<br>($dateinfo){$catinfo}</th>\n";
 				}
@@ -155,7 +160,7 @@
 				$alt_step = "std";
 			}
 
-			$alt = " class=\"$alt_step\"";
+			$alt = " class='$alt_step'";
 			echo "         <tr$alt>\n";
 
 			if($currentyear == $yearindex) {
@@ -200,14 +205,15 @@
 							"&amp;key2name=" .      dbfuncString2Int("{$row['FirstName']} {$row['Surname']}") .
 							"&amp;key=" .           $_GET['key'] .
 							"&amp;keyname=" .       $_GET['keyname'];
-				echo "            <td nowrap><a href=\"$link\">{$row['FirstName']} {$row['Surname']} ({$row['Username']})</a></td>\n";
+				echo "            <td nowrap><a href='$link'>{$row['FirstName']} {$row['Surname']} ({$row['Username']})</a></td>\n";
 			
 				$query =	"SELECT mark.Percentage, mark.Score, assignment.Weight, " .
 							"       assignment.Hidden " .
 							"       FROM assignment LEFT OUTER JOIN mark ON " .
 							"       (mark.AssignmentIndex=assignment.AssignmentIndex AND " .
-							"        mark.Username = \"{$row['Username']}\") " .
+							"        mark.Username = '{$row['Username']}') " .
 							"WHERE assignment.SubjectIndex = $subjectindex " .
+							"AND   assignment.Agenda = 0 " .
 							"ORDER BY assignment.Date, assignment.AssignmentIndex";
 				$mres =& $db->query($query);
 				if(DB::isError($mres)) die($mres->getDebugInfo());           // Check for errors in query
@@ -219,14 +225,14 @@
 					
 					$alt = "";
 					if($hidden == 1) {
-						$alt = " class=\"hidden-$alt_step\"";
+						$alt = " class='hidden-$alt_step'";
 					}
 					
 					if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
 						if($mRow['Score'] == $MARK_LATE) {
 							if($can_modify == 1) {
 								if($hidden == 0) {
-									$alt    = " class=\"late-$alt_step\"";
+									$alt    = " class='late-$alt_step'";
 								}
 								echo "            <td$alt nowrap><i>Late</i></td>\n";
 							} else {
@@ -239,7 +245,7 @@
 						} elseif(is_null($mRow['Score'])) {
 							if($can_modify == 1) {
 								if($hidden == 0) {
-									$alt    = " class=\"unmarked-$alt_step\"";
+									$alt    = " class='unmarked-$alt_step'";
 								}
 								echo "            <td$alt nowrap>&nbsp;</td>\n";
 							} else {
@@ -252,7 +258,7 @@
 					} elseif($average_type == $AVG_TYPE_INDEX) {
 						if(!isset($average_type_index) or $average_type_index == "" or !isset($mRow['Score']) or $mRow['Score'] == "") {
 							if($can_modify == 1 and $hidden == 0) {
-								$alt    = " class=\"unmarked-$alt_step\"";
+								$alt    = " class='unmarked-$alt_step'";
 							}
 							$average = "";
 						} else {
@@ -265,7 +271,7 @@
 								$average = $srow['Display'];
 							} else {
 								if($can_modify == 1 and $hidden == 0) {
-									$alt    = " class=\"unmarked-$alt_step\"";
+									$alt    = " class='unmarked-$alt_step'";
 								}
 								$average = "N/A";
 							}
@@ -309,7 +315,7 @@
 			} else {
 				$alt_step = "std";
 			}
-			$alt = " class=\"$alt_step\"";
+			$alt = " class='$alt_step'";
 
 			echo "         <tr$alt>\n";
 			echo "            <td nowrap>&nbsp;</td>\n";
@@ -318,6 +324,7 @@
 			/* Get assignment averages */
 			$query =	"SELECT Average, Hidden FROM assignment " .
 						"WHERE SubjectIndex = $subjectindex " .
+						"AND   Agenda = 0 " .
 						"ORDER BY Date, AssignmentIndex";
 			$res =& $db->query($query);
 			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
@@ -329,7 +336,7 @@
 					$average = "N/A";
 				}
 				if($row['Hidden'] == "1") {
-					$alt = " class=\"hidden-$alt_step\"";
+					$alt = " class='hidden-$alt_step'";
 				} else {
 					$alt = "";
 				}
@@ -363,7 +370,7 @@
 					"Tried to access marks for $title.");
 		
 		echo "      <p>You do not have permission to access this page</p>\n";
-		echo "      <p><a href=\"$backLink\">Click here to go back</a></p>\n";
+		echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";
 	}
 	
 	include "footer.php";

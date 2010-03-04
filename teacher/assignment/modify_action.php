@@ -43,7 +43,7 @@
 			$subjectindex = $next_subjectindex;
 		}
 		
-		if(($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) and $_POST['category'] == "NULL") {
+		if(($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) and (!isset($_POST['category']) or $_POST['category'] == "NULL")) {
 			$res =&  $db->query("SELECT categorylist.CategoryListIndex FROM assignment, category, " .
 								"       categorylist " .
 								"WHERE assignment.AssignmentIndex = $assignmentindex " .
@@ -53,6 +53,8 @@
 			if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 			if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 				$_POST['category'] = $row['CategoryListIndex'];
+			} else {
+				$_POST['category'] = "NULL";
 			}
 		}
 		if($_POST['uploadable'] == 1) {
@@ -76,110 +78,125 @@
 						"       DescriptionData = $descr_data, DescriptionFileType = $descr_file_type, " .
 						"       Date = {$_POST['date']}, DueDate = {$_POST['duedate']}, " .
 						"       UploadName = {$upload_name}, Uploadable = {$_POST['uploadable']}, ";
-		if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
+		if(($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) and $agenda == "0") {
 			$query .=	"       CurveType = {$_POST['curve_type']}, TopMark = {$_POST['top_mark']}, " .
 						"       BottomMark = {$_POST['bottom_mark']}, Weight = {$_POST['weight']}, " .
 						"       CategoryListIndex = {$_POST['category']}, Max = {$_POST['max']}, ";
 		}
-		$query .=		"       Hidden = {$_POST['hidden']} " .
+		$query .=		"       Hidden = {$_POST['hidden']}, Agenda = $agenda " .
 						"WHERE AssignmentIndex = $assignmentindex";
 		$aRes =& $db->query($query);
 		if(DB::isError($aRes)) die($aRes->getMessage());           // Check for errors in query
 		
+		if($_POST['action'] == "Convert to agenda item") {
+			$query =	"UPDATE assignment SET Agenda=1 " .
+						"WHERE AssignmentIndex = $assignmentindex";
+			$nres =&  $db->query($query);
+			if(DB::isError($nres)) die($nres->getDebugInfo());         // Check for errors in query
+		}
+
+		if($_POST['action'] == "Convert to assignment" and $average_type != $AVG_TYPE_NONE) {
+			$query =	"UPDATE assignment SET Agenda=0 " .
+						"WHERE AssignmentIndex = $assignmentindex";
+			$nres =&  $db->query($query);
+			if(DB::isError($nres)) die($nres->getDebugInfo());         // Check for errors in query
+		}
 		
-		$res =& $db->query("SELECT subjectstudent.Username FROM " .        // Get list of students
-						   "       subjectstudent LEFT OUTER JOIN mark ON (mark.AssignmentIndex = $assignmentindex " .
-						   "       AND mark.Username = subjectstudent.Username), assignment " .
-						   "WHERE assignment.AssignmentIndex = $assignmentindex " .
-						   "AND   subjectstudent.SubjectIndex = assignment.SubjectIndex " .
-						   "ORDER BY subjectstudent.Username");
-		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
-		
-		/* For each student, check whether there's already a mark, then either insert or update mark as needed */
-		while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-			if($average_type != $AVG_TYPE_NONE) {
-				$score = $_POST["score_{$row['Username']}"];          // Get score for username from POST data
-			} else {
-				$score = "NULL";
-			}
+		if($agenda == "0") {
+			$res =& $db->query("SELECT subjectstudent.Username FROM " .        // Get list of students
+							   "       subjectstudent LEFT OUTER JOIN mark ON (mark.AssignmentIndex = $assignmentindex " .
+							   "       AND mark.Username = subjectstudent.Username), assignment " .
+							   "WHERE assignment.AssignmentIndex = $assignmentindex " .
+							   "AND   subjectstudent.SubjectIndex = assignment.SubjectIndex " .
+							   "ORDER BY subjectstudent.Username");
+			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 			
-			$comment = $_POST["comment_{$row['Username']}"];        // Get comment for username from POST data
-			
-			if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
-				if(strtoupper($score) == 'A') {
-					$score   = "$MARK_ABSENT";                   // Change "A" for absent to $MARK_ABSENT.
-				} elseif(strtoupper($score) == 'E') {
-					$score   = "$MARK_EXEMPT";
-				} elseif(strtoupper($score) == 'L') {
-					$score   = "$MARK_LATE";
-				} elseif($score == '' or !isset($_POST["score_{$row['Username']}"])) { // If score is blanks, set to NULL
-					$score   = "NULL";
+			/* For each student, check whether there's already a mark, then either insert or update mark as needed */
+			while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+				if($average_type != $AVG_TYPE_NONE) {
+					$score = $_POST["score_{$row['Username']}"];          // Get score for username from POST data
 				} else {
-					if($score != "0") {
-						$max = $_POST['max'];
-						settype($max, "double");
-						settype($score, "double");
-						if($score < 0) {    // If score is less than 0, print error message and set to 0.
-							echo "</p>\n      <p>Score for {$row['Username']} must be at least 0...setting to 0.</p>\n      <p>";
-							$score = 0;
-						}
-						if($score > $max) { // If score is greater than $max, print error message, but don't do anything.
-							echo "</p>\n      <p>Warning!  Score for {$row['Username']} is greater than $max.</p>\n      <p>";
-						}
-						if($score == 0) {   // If score started with a letter, print error message and set to 0.
-							echo "</p>\n      <p>Score for {$row['Username']} must be a number or A (for absent)...clearing. " .
-								"</p>\n      <p>";
-							$score = "NULL";
-						}
-						settype($score, "string");
-					}
+					$score = "NULL";
 				}
-			} elseif($average_type == $AVG_TYPE_INDEX) {
-				$inval = safe($_POST["score_{$row['Username']}"]);
-				$inval = strtoupper($inval);
-				$query = "SELECT NonmarkIndex FROM nonmark_index WHERE NonmarkTypeIndex=$average_type_index AND Input = '$inval'";
-				$sRes =& $db->query($query);
+				
+				$comment = $_POST["comment_{$row['Username']}"];        // Get comment for username from POST data
+				
+				if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
+					if(strtoupper($score) == 'A') {
+						$score   = "$MARK_ABSENT";                   // Change "A" for absent to $MARK_ABSENT.
+					} elseif(strtoupper($score) == 'E') {
+						$score   = "$MARK_EXEMPT";
+					} elseif(strtoupper($score) == 'L') {
+						$score   = "$MARK_LATE";
+					} elseif($score == '' or !isset($_POST["score_{$row['Username']}"])) { // If score is blanks, set to NULL
+						$score   = "NULL";
+					} else {
+						if($score != "0") {
+							$max = $_POST['max'];
+							settype($max, "double");
+							settype($score, "double");
+							if($score < 0) {    // If score is less than 0, print error message and set to 0.
+								echo "</p>\n      <p>Score for {$row['Username']} must be at least 0...setting to 0.</p>\n      <p>";
+								$score = 0;
+							}
+							if($score > $max) { // If score is greater than $max, print error message, but don't do anything.
+								echo "</p>\n      <p>Warning!  Score for {$row['Username']} is greater than $max.</p>\n      <p>";
+							}
+							if($score == 0) {   // If score started with a letter, print error message and set to 0.
+								echo "</p>\n      <p>Score for {$row['Username']} must be a number or A (for absent)...clearing. " .
+									"</p>\n      <p>";
+								$score = "NULL";
+							}
+							settype($score, "string");
+						}
+					}
+				} elseif($average_type == $AVG_TYPE_INDEX) {
+					$inval = safe($_POST["score_{$row['Username']}"]);
+					$inval = strtoupper($inval);
+					$query = "SELECT NonmarkIndex FROM nonmark_index WHERE NonmarkTypeIndex=$average_type_index AND Input = '$inval'";
+					$sRes =& $db->query($query);
+					if(DB::isError($sRes)) die($sRes->getDebugInfo());      // Check for errors in query
+		
+					if($sRow =& $sRes->fetchRow(DB_FETCHMODE_ASSOC)) {
+						$score = $sRow['NonmarkIndex'];
+					} else {
+						if(isset($inval) and $inval != "") {
+							echo "</p>\n      <p>Mark for {$row['Username']} is invalid...clearing. " .
+								"</p>\n      <p>";
+						}
+						$score = "NULL";
+					}
+				} else {
+					$score = "NULL";
+				}
+				if($comment == '' or !isset($_POST["comment_{$row['Username']}"]))  {   // If comment is blank, set to NULL
+					$comment = "NULL";
+				} else {
+					$comment = safe(htmlize_comment($comment));
+					$comment = "'$comment'";     // If comment is not blank, put quotes around it
+				}
+				
+				$sRes =& $db->query("SELECT mark.MarkIndex FROM assignment, mark " .
+									"WHERE assignment.AssignmentIndex = $assignmentindex " .
+									"AND   mark.AssignmentIndex       = assignment.AssignmentIndex " .
+									"AND   mark.Username              = '{$row['Username']}'");
 				if(DB::isError($sRes)) die($sRes->getDebugInfo());      // Check for errors in query
 	
 				if($sRow =& $sRes->fetchRow(DB_FETCHMODE_ASSOC)) {
-					$score = $sRow['NonmarkIndex'];
-				} else {
-					if(isset($inval) and $inval != "") {
-						echo "</p>\n      <p>Mark for {$row['Username']} is invalid...clearing. " .
-							"</p>\n      <p>";
+					$update =& $db->query("UPDATE mark SET Score = $score, Comment = $comment " .
+										"WHERE mark.MarkIndex  = {$sRow['MarkIndex']} ");
+					if(DB::isError($update)) {
+						echo "</p>\n      <p>Update: " . $update->getMessage() . "</p>\n      <p>";
+						$error = true;
 					}
-					$score = "NULL";
-				}
-			} else {
-				$score = "NULL";
-			}
-			if($comment == '' or !isset($_POST["comment_{$row['Username']}"]))  {   // If comment is blank, set to NULL
-				$comment = "NULL";
-			} else {
-				$comment = safe(htmlize_comment($comment));
-				$comment = "'$comment'";     // If comment is not blank, put quotes around it
-			}
-			
-			$sRes =& $db->query("SELECT mark.MarkIndex FROM assignment, mark " .
-								"WHERE assignment.AssignmentIndex = $assignmentindex " .
-								"AND   mark.AssignmentIndex       = assignment.AssignmentIndex " .
-								"AND   mark.Username              = '{$row['Username']}'");
-			if(DB::isError($sRes)) die($sRes->getDebugInfo());      // Check for errors in query
-
-			if($sRow =& $sRes->fetchRow(DB_FETCHMODE_ASSOC)) {
-				$update =& $db->query("UPDATE mark SET Score = $score, Comment = $comment " .
-									"WHERE mark.MarkIndex  = {$sRow['MarkIndex']} ");
-				if(DB::isError($update)) {
-					echo "</p>\n      <p>Update: " . $update->getMessage() . "</p>\n      <p>";
-					$error = true;
-				}
-			} else {
-				$update =& $db->query("INSERT INTO mark (MarkIndex, Username, AssignmentIndex, " .
-									"Score, Comment) VALUES ('', '{$row['Username']}', " .
-									"$assignmentindex, $score, $comment);"); 
-				if(DB::isError($update)) {
-					echo "</p>\n      <p>Insert: " . $update->getDebugInfo() . "</p>\n      <p>"; // Print any errors
-					$error = true;
+				} else {
+					$update =& $db->query("INSERT INTO mark (MarkIndex, Username, AssignmentIndex, " .
+										"Score, Comment) VALUES ('', '{$row['Username']}', " .
+										"$assignmentindex, $score, $comment);"); 
+					if(DB::isError($update)) {
+						echo "</p>\n      <p>Insert: " . $update->getDebugInfo() . "</p>\n      <p>"; // Print any errors
+						$error = true;
+					}
 				}
 			}
 		}
