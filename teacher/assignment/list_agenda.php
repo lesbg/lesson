@@ -21,6 +21,21 @@
 		$nochangeyt = true;
 		include "core/titletermyear.php";
 
+		/* Get whether marks can be modified */
+		$res =& $db->query("SELECT AverageType, AverageTypeIndex, CanModify FROM subject " .
+						   "WHERE subject.SubjectIndex = $subjectindex");
+		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+			
+		$row       =& $res->fetchRow(DB_FETCHMODE_ASSOC);
+		if(dbfuncGetPermission($permissions, $PERM_ADMIN)) {
+			$can_modify = 1;
+		} else {
+			$can_modify = $row['CanModify'];
+		}
+
+		$average_type       = $row['AverageType'];
+		$average_type_index = $row['AverageTypeIndex'];
+
 		$asmntlink =	"index.php?location=" . dbfuncString2Int("teacher/assignment/list.php") .
 						"&amp;key=" .           dbfuncString2Int($subjectindex) .
 						"&amp;keyname=" .       $_GET['keyname'];
