@@ -193,7 +193,7 @@
 		echo "            <input type='submit' name='action' value='Update' tabindex='18' />&nbsp; \n";
 		echo "            <input type='submit' name='action' value='Cancel' tabindex='19' />&nbsp; \n";
 		echo "            <input type='submit' name='action' value='Delete' tabindex='20' />&nbsp; \n";
-		if($averagetype != $AVG_TYPE_NONE) {
+		if($average_type != $AVG_TYPE_NONE) {
 			echo "            <input type='submit' name='action' value='Convert to assignment' tabindex='21' \>&nbsp; \n";
 		}
 		if(!is_null($next_subjectindex)) {
