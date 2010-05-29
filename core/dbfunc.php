@@ -12,7 +12,7 @@
 	/* Escape strings so they are safe to enter into a database */
 	function safe($instring) {
 		global $db;
-		return $db->escapeSimple($instring);
+		return $db->escapeSimple(stripslashes($instring));
 	}
 	
 	/* Connect to database specified by global variable $dsn */
