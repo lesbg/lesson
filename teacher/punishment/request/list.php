@@ -14,7 +14,7 @@
 	include "header.php";
 
 	/* Make sure user has permission to view student's marks for subject */
-	if(dbfuncGetPermission($permissions, $PERM_ADMIN) || $teacherusername == $username) {
+	if(dbfuncGetPermission($permissions, $PERM_ADMIN) or $teacherusername == $username) {
 		include "core/settermandyear.php";
 
 		$query =	"SELECT disciplinetype.DisciplineType, user.Username, disciplinebacklog.DateOfViolation, " .
@@ -22,10 +22,10 @@
 					"       class.ClassName, disciplinebacklog.DisciplineBacklogIndex " .
 					"       FROM class, classterm, classlist, disciplinetype, " .
 					"       disciplinebacklog, user " .
-					"WHERE  disciplinebacklog.WorkerUsername = \"$teacherusername\" " .
-					"AND    disciplinebacklog.DisciplineTypeIndex = disciplinetype.DisciplineTypeIndex " .
+					"WHERE  disciplinebacklog.WorkerUsername   = '$teacherusername' " .
+					"AND    disciplinetype.DisciplineTypeIndex = disciplinebacklog.DisciplineTypeIndex " .
+					"AND    user.Username                      = disciplinebacklog.Username " .
 					"AND    classlist.Username         = user.Username " .
-					"AND    disciplinebacklog.Username = user.Username " .
 					"AND    classlist.ClassTermIndex   = classterm.ClassTermIndex " .
 					"AND    classterm.TermIndex        = $termindex " .
 					"AND    classterm.ClassIndex       = class.ClassIndex " .
@@ -84,23 +84,23 @@
 			echo "      <p align=\"center\" class=\"subtitle\">You have no punishments pending approval.</p>\n";
 		}
 		echo "      <p>&nbsp;</p>\n";
-		$query =	"SELECT disciplinetype.DisciplineType, disciplineweight.DisciplineWeight, user.Username, " .
-					"       user.FirstName, user.Surname, disciplinebacklog.Date, class.ClassName, " .
-					"       disciplinebacklog.DisciplineBacklogIndex, disciplinebacklog.Comment, discipline.Comment AS " .
-					"       Reason " .
-					"       FROM class, classlist, classterm, disciplinetype, disciplineweight, " .
-					"       discipline, user, disciplinebacklog " .
-					"WHERE  disciplinebacklog.WorkerUsername = \"$teacherusername\" " .
-					"AND    disciplinebacklog.DisciplineIndex = discipline.DisciplineIndex " .
-					"AND    discipline.DisciplineWeightIndex = disciplineweight.DisciplineWeightIndex " .
-					"AND    disciplineweight.DisciplineTypeIndex = disciplinetype.DisciplineTypeIndex " .
-					"AND    classlist.Username = user.Username " .
-					"AND    discipline.Username = user.Username " .
-					"AND    classlist.ClassTermIndex = classterm.ClassTermIndex " .
-					"AND    classterm.ClassIndex = class.ClassIndex " .
-					"AND    class.YearIndex = $yearindex " .
+		$query =	"SELECT disciplinetype.DisciplineType, user.Username,  " .
+					"       user.FirstName, user.Surname, disciplinebacklog.Date, disciplinebacklog.Comment, " .
+					"       class.ClassName, disciplinebacklog.DisciplineBacklogIndex, discipline.Comment AS Reason " .
+					"       FROM class, classterm, classlist, disciplinetype, disciplineweight, discipline, " .
+					"       disciplinebacklog, user " .
+					"WHERE  disciplinebacklog.WorkerUsername   = '$teacherusername' " .
+					"AND    discipline.DisciplineIndex         = disciplinebacklog.DisciplineIndex " .
+					"AND    disciplineweight.DisciplineWeightIndex = discipline.DisciplineWeightIndex " .
+					"AND    disciplinetype.DisciplineTypeIndex = disciplineweight.DisciplineTypeIndex " .
+					"AND    user.Username                      = discipline.Username " .
+					"AND    classlist.Username         = user.Username " .
+					"AND    classlist.ClassTermIndex   = classterm.ClassTermIndex " .
+					"AND    classterm.TermIndex        = $termindex " .
+					"AND    classterm.ClassIndex       = class.ClassIndex " .
+					"AND    class.YearIndex            = $yearindex " .
 					"AND    disciplinebacklog.RequestType = 2 " .
-					"ORDER BY discipline.Date DESC";
+					"ORDER BY disciplinebacklog.Date, disciplinebacklog.DisciplineBacklogIndex DESC";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		if($res->numRows() > 0) {
