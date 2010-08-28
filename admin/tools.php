@@ -40,6 +40,7 @@
 		$viewLogLink     = "index.php?location=" . dbfuncString2Int("admin/viewlog.php");
 		$counselorLink   = "index.php?location=" . dbfuncString2Int("admin/counselor/modify.php");
 		$principalLink   = "index.php?location=" . dbfuncString2Int("admin/principal/modify.php");
+		$bookLink        = "index.php?location=" . dbfuncString2Int("admin/book/title_list.php");
 		$messageLink     = "index.php?location=" . dbfuncString2Int("user/messages.php");
 		$lowmarksLink    = "index.php?location=" . dbfuncString2Int("admin/marks/low.php");
 		$proofLink       = "index.php?location=" . dbfuncString2Int("admin/proofreader/list.php");
@@ -59,6 +60,7 @@
 		echo "      <p><a href='$catListLink'>Category Types List</a></p>\n";
 		echo "      <p><a href='$commentLink'>Comment List</a></p>\n";
 		echo "      <p><a href='$proofLink'>Proofreader List</a></p>\n";
+		echo "      <p><a href='$bookLink'>Book List</a></p>\n";
 		echo "      <p><a href='$newUserLink'>New user</a></p>\n";
 		echo "      <p><a href='$newQuarterLink'>Generate new quarter</a></p>\n";
 		echo "      <p><a href='$openreportLink'>Open reports</a></p>\n";
