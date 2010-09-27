@@ -6,7 +6,7 @@
 	 *****************************************************************/
 
 	/* Get variables */
-	$bookindex = dbfuncInt2String($_GET['key']);
+	$booktitleindex = dbfuncInt2String($_GET['key']);
 	$book      = dbfuncInt2String($_GET['keyname']);
 	$nextLink      = dbfuncInt2String($_GET['next']);
 	
@@ -24,17 +24,28 @@
 			$errorname = "";
 			$iserror   = False;
 			
-			$query =	"DELETE FROM book WHERE BookTitleIndex='$bookindex'";
+			$query =	"SELECT BookTitleIndex FROM book " .
+						"WHERE BookTitleIndex = '$booktitleindex' ";
 			$res =&  $db->query($query);
 			if(DB::isError($res)) die($res->getDebugInfo());              // Check for errors in query
-			$query =	"DELETE FROM book_title WHERE BookTitleIndex='$bookindex'";
-			$res =&  $db->query($query);
-			if(DB::isError($res)) die($res->getDebugInfo());              // Check for errors in query
-				
-			echo "      <p align=\"center\">$book successfully deleted.</p>\n";
-			log_event($LOG_LEVEL_ADMIN, "admin/book/delete_title.php", $LOG_ADMIN,
-					"Deleted book type $book.");
-
+			if($res->numRows() > 0) {
+				$errorname .= "      <p align='center'>You cannot delete $book until you remove all copies of the book.</p>\n";
+				$iserror    = True;
+				log_event($LOG_LEVEL_ADMIN, "admin/book/delete_title.php", $LOG_ERROR,
+						"Attempted to delete book title $book, but there were still copies of the title.");
+			}
+			
+			if($iserror) {
+				echo $errorname;
+			} else {
+				$query =	"DELETE FROM book_title WHERE BookTitleIndex='$booktitleindex'";
+				$res =&  $db->query($query);
+				if(DB::isError($res)) die($res->getDebugInfo());              // Check for errors in query
+					
+				echo "      <p align=\"center\">$book successfully deleted.</p>\n";
+				log_event($LOG_LEVEL_ADMIN, "admin/book/delete_title.php", $LOG_ADMIN,
+						"Deleted book type $book.");
+			}
 			echo "      <p align=\"center\"><a href=\"$nextLink\">Continue</a></p>\n";
 		} else {
 			log_event($LOG_LEVEL_ERROR, "admin/book/delete_title.php", $LOG_DENIED_ACCESS,

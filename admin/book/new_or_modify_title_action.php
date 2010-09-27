@@ -20,16 +20,16 @@
 			$format_error    = True;
 		}
 		
-		$_POST['title'] = safe($_POST['title']);
+		$title = safe($_POST['title']);
 		
 		if(!isset($_POST['id']) or is_null($_POST['id']) or $_POST['id'] == "") {  // Make sure name has been entered
 			$errorlist      .= "<p class='error' align='center'>You must specify the book's ID!</p>\n";
 			$format_error    = True;
 		} else {
-			$_POST['id'] = safe($_POST['id']);
+			$id = safe($_POST['id']);
 			if($_POST['type'] == "new") {
 				$query =	"SELECT BookTitleIndex FROM book_title " .
-							"WHERE BookTitleIndex = '{$_POST['id']}'";
+							"WHERE BookTitleIndex = '$id'";
 				$res =& $db->query($query);
 				if(DB::isError($res)) die($res->getDebugInfo());             // Check for errors in query
 				if($res->numRows() > 0) {
@@ -39,7 +39,7 @@
 			}
 		}
 
-		$_POST['cost'] = floatval($_POST['cost']);
+		$cost = floatval($_POST['cost']);
 		
 		if(!$format_error){	
 			$errorlist = "";   // Clear error list.  This list will now only contain database errors.

@@ -7,7 +7,7 @@
 
 	/* Get variables */
 	$title            = "Change title information for " . dbfuncInt2String($_GET['keyname']);
-	$bookindex        = dbfuncInt2String($_GET['key']);
+	$booktitleindex   = dbfuncInt2String($_GET['key']);
 	$link             = "index.php?location=" . dbfuncString2Int("admin/book/new_or_modify_title_action.php") .
 						"&amp;key=" .           $_GET['key'] .
 						"&amp;keyname=" .       $_GET['keyname'] .
@@ -19,7 +19,7 @@
 	if($is_admin) {
 		/* Get subject information */
 		$fRes =& $db->query("SELECT BookTitle, BookTitleIndex, Cost FROM book_title " .
-							"WHERE BookTitleIndex = '$bookindex'");
+							"WHERE BookTitleIndex = '$booktitleindex'");
 		if(DB::isError($fRes)) die($fRes->getDebugInfo());             // Check for errors in query
 		if($fRow =& $fRes->fetchRow(DB_FETCHMODE_ASSOC)) {
 			if(isset($errorlist)) {
@@ -59,13 +59,55 @@
 			echo "               <td><b>Cost (\$)</b></td>\n";
 			echo "               <td><input type='text' name='cost' value='{$_POST['cost']}' size=20></td>\n";
 			echo "            </tr>\n";
+			echo "            <tr>\n";
+			echo "               <td><b>Owner</b></td>\n";
+			echo "               <td>\n";
+			$query =	"SELECT year.Year FROM year WHERE YearIndex = $yearindex";
+			$res =&  $db->query($query);
+			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+			if ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+				$yearname = $row['Year'];
+			} else {
+				$yearname = "Unknown";
+			}
+			$query =	"(SELECT user.Username, user.Title, user.FirstName, user.Surname, " .
+						"        year.Year, book_title_owner.YearIndex, year.YearNumber FROM " .
+						"        book_title_owner, year, user " .
+						" WHERE  user.Username = book_title_owner.Username " .
+						" AND    year.YearIndex = book_title_owner.YearIndex " .
+						" AND    book_title_owner.BookTitleIndex = '$booktitleindex') " .
+						"UNION " .
+						"(SELECT NULL AS Username, NULL AS Title, NULL AS FirstName, NULL AS Surname, " .
+						"        year.Year, year.YearIndex, year.YearNumber FROM " .
+						"        year LEFT OUTER JOIN book_title_owner ON " .
+						"        (book_title_owner.BookTitleIndex = '$booktitleindex' " .
+						"         AND book_title_owner.Yearindex = year.YearIndex) " .
+						" WHERE year.YearIndex = $yearindex" .
+						" AND   book_title_owner.Username IS NULL) " .
+						" ORDER BY YearNumber DESC";
+			$res =&  $db->query($query);
+			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+			while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+				echo "{$row['Year']}:\t";
+				if($row['YearIndex'] == $yearindex) {
+						echo "";
+				} else {
+					if(is_null($row['Username'])) {
+						echo "<i>None</i><br>";
+					} else {
+						echo "{$row['Username']} - {$row['Title']} {$row['FirstName']} {$row['Surname']}<br>";
+					}
+				}
+				
+			}			
+			echo "               </td>\n";
 			echo "         </table>\n";                                                      // End of table
 			echo "         <p align='center'>\n";
 			echo "            <input type='submit' name='action' value='Update' \>\n";
 			echo "            <input type='submit' name='action' value='Cancel' \>\n";
 			echo "         </p>\n";
 			echo "      </form>\n";
-		} else {  // Couldn't find $bookindex in book_title table
+		} else {  // Couldn't find $booktitleindex in book_title table
 			echo "      <p align='center'>Can't find book title.  Have you deleted it?</p>\n";
 			echo "      <p align='center'><a href='$backLink'>Click here to go back</a></p>\n";
 		}

@@ -2,7 +2,7 @@
 	/*****************************************************************
 	 * admin/book/title_list.php  (c) 2010 Jonathan Dieter
 	 *
-	 * List all available book types
+	 * List all available book titles
 	 *****************************************************************/
 
 	$title = "Book Title List";
@@ -12,8 +12,12 @@
 	if($is_admin) {
 		/* Get category list */
 		$query =	"SELECT book_title.BookTitle, book_title.BookTitleIndex, book_title.Cost, " .
-					"       COUNT(book.BookTitleIndex) AS Count" .
-					"       FROM book_title LEFT OUTER JOIN book USING (BookTitleIndex) " .
+					"       COUNT(book.BookTitleIndex) AS Count, user.Title, user.FirstName, user.Surname " .
+					"       FROM book_title LEFT OUTER JOIN book USING (BookTitleIndex), " .
+					"       book_title_owner, user " .
+					"WHERE book_title_owner.BookTitleIndex = book_title.BookTitleIndex " .
+					"AND   book_title_owner.YearIndex = $yearindex " .
+					"AND   user.Username = book_title_owner.Username " .
 					"GROUP BY book_title.BookTitleIndex " .
 					"ORDER BY book_title.BookTitle, book_title.BookTitleIndex";
 		$res =& $db->query($query);
@@ -32,6 +36,7 @@
 			echo "            <th>ID</th>\n";
 			echo "            <th>Cost</th>\n";
 			echo "            <th>Book Count</th>\n";
+			echo "            <th>Teacher</th>\n";
 			echo "            <th>Delete</th>\n";
 			echo "         </tr>\n";
 			
@@ -45,7 +50,7 @@
 				} else {
 					$alt = " class='std'";
 				}
-				$viewlink = "index.php?location=" .  dbfuncString2Int("admin/book/copies_list.php") .
+				$viewlink = "index.php?location=" .  dbfuncString2Int("admin/book/copy_list.php") .
 							"&amp;key=" .            dbfuncString2Int($row['BookTitleIndex']) .
 							"&amp;keyname=" .        dbfuncString2Int($row['BookTitle']) .
 							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("admin/book/title_list.php"));
@@ -68,6 +73,7 @@
 				echo "            <td>{$row['BookTitleIndex']}</td>\n";
 				echo "            <td>\${$row['Cost']}</td>\n";
 				echo "            <td>{$row['Count']}</td>\n";
+				echo "            <td>{$row['Title']} {$row['FirstName']} {$row['Surname']}</td>\n";
 				echo "            <td align='center'>$delbutton</td>\n";
 			}
 			echo "      </table>\n";               // End of table

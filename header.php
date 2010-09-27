@@ -13,12 +13,12 @@
 <?php
 	if(isset($extraMeta)) echo $extraMeta;           // Print any extra metatags.
 ?>
-		<title><?=$title?></title>
+		<title><?php echo $title?></title>
 <?php
 	if(!isset($noJS) || !$noJS) {
 		?><script language="JavaScript" type="text/javascript" src="js/main.js"></script><?php
 		if(isset($extra_js)) {
-			?><script language="JavaScript" type="text/javascript" src="js/<?=$extra_js?>"></script><?php
+			?><script language="JavaScript" type="text/javascript" src="js/<?php echo $extra_js?>"></script><?php
 		}
 	}
 
@@ -46,7 +46,7 @@
 		$alt = "";
 	}
 ?>
-	<body<?=$alt?>>
+	<body<?php echo $alt?>>
 <?php
 	if(!isset($noHeaderLinks) || !$noHeaderLinks) {
 		if(!isset($homebutton)) {
@@ -67,14 +67,14 @@
 					}
 				?>
 				<td class="title">
-					<?=$title?>
+					<?php echo $title?>
 		<?php
 		if(isset($subtitle)) {
-			?><span class="subtitle"><br><?=$subtitle?></span><?php
+			?><span class="subtitle"><br><?php echo $subtitle?></span><?php
 		}
 		?>
 				</td>
-				<td width="200px" class="home"><?=$homebutton?></td>
+				<td width="200px" class="home"><?php echo $homebutton?></td>
 			</tr>
 		</table>
 		<?php

@@ -20,12 +20,12 @@
 		if(!isset($_POST['title'])) {
 			$_POST['title'] = "";
 		} else {
-			$_POST['title'] = htmlspecialchars($_POST['title']);
+			$_POST['title'] = htmlspecialchars($_POST['title'], ENT_QUOTES);
 		}
 		if(!isset($_POST['id'])) {
 			$_POST['id'] = "";
 		} else {
-			$_POST['id'] = htmlspecialchars($_POST['id']);
+			$_POST['id'] = htmlspecialchars($_POST['id'], ENT_QUOTES);
 		}
 		if(!isset($_POST['cost'])) {
 			$_POST['cost'] = "";

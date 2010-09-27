@@ -10,7 +10,7 @@
 	if($is_admin) {
 		/* Add new book type */
 		$res =&  $db->query("INSERT INTO book_title (BookTitle, BookTitleIndex, Cost) " .
-							"VALUES ('{$_POST['title']}', '{$_POST['id']}', {$_POST['cost']})");
+							"VALUES ('$title', '$id', $cost)");
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 
 		log_event($LOG_LEVEL_ADMIN, "admin/book/new_title_action.php", $LOG_ADMIN,

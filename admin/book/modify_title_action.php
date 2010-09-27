@@ -5,15 +5,15 @@
 	 * Run query to modify a current book title into the database.
 	 *****************************************************************/
 	 
-	$bookindex = dbfuncInt2String($_GET['key']);
+	$booktitleindex = dbfuncInt2String($_GET['key']);
 	$book      = dbfuncInt2String($_GET['keyname']);
 	$error         = false;                                       // Boolean to store any errors
 	
 	if($is_admin) {
-		$aRes =& $db->query("UPDATE book_title SET BookTitle='{$_POST['title']}', " .
-							"       BookTitleIndex='{$_POST['id']}', " .
-							"       Cost='{$_POST['cost']}' " .
-							"WHERE  BookTitleIndex = '$bookindex'");
+		$aRes =& $db->query("UPDATE book_title SET BookTitle='$title', " .
+							"       BookTitleIndex='$id', " .
+							"       Cost='$cost' " .
+							"WHERE  BookTitleIndex = '$booktitleindex'");
 		if(DB::isError($aRes)) die($aRes->getDebugInfo());           // Check for errors in query
 		log_event($LOG_LEVEL_ADMIN, "admin/book/modify_title_action.php", $LOG_ADMIN,
 				"Modified information about book title {$_POST['title']}.");
