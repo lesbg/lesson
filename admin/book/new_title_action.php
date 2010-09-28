@@ -13,6 +13,10 @@
 							"VALUES ('$title', '$id', $cost)");
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 
+		$res =&  $db->query("INSERT INTO book_title_owner (BookTitleIndex, YearIndex, Username) " .
+							"VALUES ('$id', $yearindex, '$teacher')");
+		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+
 		log_event($LOG_LEVEL_ADMIN, "admin/book/new_title_action.php", $LOG_ADMIN,
 				"Created new book type {$_POST['name']}.");
 	} else {

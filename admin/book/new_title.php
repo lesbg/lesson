@@ -50,6 +50,37 @@
 		echo "               <td><b>Cost (\$)</b></td>\n";
 		echo "               <td><input type='text' name='cost' value='{$_POST['cost']}' size=20></td>\n";
 		echo "            </tr>\n";
+		echo "            <tr>\n";
+		echo "               <td><b>Owner</b></td>\n";
+		echo "               <td>\n";
+		$query =	"SELECT year.Year FROM year WHERE YearIndex = $yearindex";
+		$res =&  $db->query($query);
+		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+		if ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+			$yearname = $row['Year'];
+		} else {
+			$yearname = "Unknown";
+		}
+		
+		echo "$yearname:\t";
+		echo "                <select name='teacher'>\n";
+		$query =	"SELECT user.Username, user.Title, user.FirstName, user.Surname " .
+					"FROM user WHERE ActiveTeacher = 1 " .
+					"ORDER BY Username";
+		$nres =&  $db->query($query);
+		if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
+		
+		while($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
+			if($nrow['Username'] == $_POST['teacher']) {
+				$default = "selected";
+			} else {
+				$default = "";
+			}
+			
+			echo "                     <option value='{$nrow['Username']}' $default>{$nrow['Username']} - {$nrow['Title']} {$nrow['FirstName']} {$nrow['Surname']}</option>\n";
+		}
+		echo "                 </select>\n";
+		echo "               </td>\n";
 		echo "         </table>\n";               // End of table
 		echo "         <p align='center'>\n";
 		echo "            <input type='submit' name='action' value='Save' />\n";

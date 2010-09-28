@@ -1,8 +1,8 @@
 <?php
 	/*****************************************************************
-	 * admin/book/new_or_modify_title_action.php  (c) 2010 Jonathan Dieter
+	 * admin/book/new_or_modify_copy_action.php  (c) 2010 Jonathan Dieter
 	 *
-	 * Change book title information
+	 * Change book copy information
 	 *****************************************************************/
 
 	/* Get variables */
@@ -15,39 +15,13 @@
 		/* Check for input errors */
 		$format_error = False;
 		$errorlist    = "";
-		if(!isset($_POST['title']) or is_null($_POST['title']) or $_POST['title'] == "") {  // Make sure name has been entered
-			$errorlist      .= "<p class='error' align='center'>You must specify the book's title!</p>\n";
+		if(!isset($_POST['number']) or is_null($_POST['number']) or $_POST['number'] == "") {  // Make sure number has been entered
+			$errorlist      .= "<p class='error' align='center'>You must specify a book number!</p>\n";
 			$format_error    = True;
 		}
 		
-		$title = safe($_POST['title']);
-		
-		if(!isset($_POST['id']) or is_null($_POST['id']) or $_POST['id'] == "") {  // Make sure name has been entered
-			$errorlist      .= "<p class='error' align='center'>You must specify the book's ID!</p>\n";
-			$format_error    = True;
-		} else {
-			$id = safe($_POST['id']);
-			if($_POST['type'] == "new") {
-				$query =	"SELECT BookTitleIndex FROM book_title " .
-							"WHERE BookTitleIndex = '$id'";
-				$res =& $db->query($query);
-				if(DB::isError($res)) die($res->getDebugInfo());             // Check for errors in query
-				if($res->numRows() > 0) {
-					$errorlist      .= "<p class='error' align='center'>This book ID is already being used.  Please choose another.</p>\n";
-					$format_error    = True;
-				}
-			}
-		}
+		$number = safe($_POST['number']);
 
-		$cost = floatval($_POST['cost']);
-
-		if(!isset($_POST['teacher']) or is_null($_POST['teacher']) or $_POST['teacher'] == "") {  // Make sure name has been entered
-			$errorlist      .= "<p class='error' align='center'>You must choose a teacher to be responsible for the title</p>\n";
-			$format_error    = True;
-		}
-		
-		$teacher = safe($_POST['teacher']);
-		
 		if(!$format_error){	
 			$errorlist = "";   // Clear error list.  This list will now only contain database errors.
 			
@@ -60,9 +34,9 @@
 			echo "      <p align='center'>Saving changes...";
 			
 			if($_POST['type'] == "new") {          // Create new title if "Save" was pressed
-				include "admin/book/new_title_action.php";
+				include "admin/book/new_copy_action.php";
 			} else {
-				include "admin/book/modify_title_action.php";    // Change title if "Update" was pressed
+				include "admin/book/modify_copy_action.php";    // Change title if "Update" was pressed
 			}
 			
 			if($error) {    // If we ran into any errors, print failed, otherwise print done
@@ -74,9 +48,9 @@
 			include "footer.php";
 		} else {
 			if($_POST['type'] == "new") {
-				include "admin/book/new_title.php";
+				include "admin/book/new_copy.php";
 			} else {
-				include "admin/book/modify_title.php";
+				include "admin/book/modify_copy.php";
 			}
 		}
 	} else { // if($_POST['action'] == "Cancel")

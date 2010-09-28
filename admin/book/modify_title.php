@@ -62,14 +62,6 @@
 			echo "            <tr>\n";
 			echo "               <td><b>Owner</b></td>\n";
 			echo "               <td>\n";
-			$query =	"SELECT year.Year FROM year WHERE YearIndex = $yearindex";
-			$res =&  $db->query($query);
-			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
-			if ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-				$yearname = $row['Year'];
-			} else {
-				$yearname = "Unknown";
-			}
 			$query =	"(SELECT user.Username, user.Title, user.FirstName, user.Surname, " .
 						"        year.Year, book_title_owner.YearIndex, year.YearNumber FROM " .
 						"        book_title_owner, year, user " .
@@ -90,7 +82,28 @@
 			while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 				echo "{$row['Year']}:\t";
 				if($row['YearIndex'] == $yearindex) {
-						echo "";
+					if(!isset($_POST['teacher'])) {
+						$_POST['teacher'] = htmlspecialchars($row['Username']);
+					} else {
+						$_POST['teacher'] = htmlspecialchars($_POST['teacher']);
+					}		
+					echo "<select name='teacher'>\n";
+					$query =	"SELECT user.Username, user.Title, user.FirstName, user.Surname " .
+								"FROM user WHERE ActiveTeacher = 1 " .
+								"ORDER BY Username";
+					$nres =&  $db->query($query);
+					if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
+					
+					while($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
+						if($nrow['Username'] == $_POST['teacher']) {
+							$default = "selected";
+						} else {
+							$default = "";
+						}
+
+						echo "                     <option value='{$nrow['Username']}' $default>{$nrow['Username']} - {$nrow['Title']} {$nrow['FirstName']} {$nrow['Surname']}</option>\n";
+					}
+					echo "</select>\n";
 				} else {
 					if(is_null($row['Username'])) {
 						echo "<i>None</i><br>";

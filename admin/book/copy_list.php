@@ -20,6 +20,8 @@
 		/* Get category list */
 
 		$newlink =  "index.php?location=" .  dbfuncString2Int("admin/book/new_copy.php") .
+					"&amp;key=" .            $_GET['key'] .
+					"&amp;keyname=" .        $_GET['keyname'] .
 					"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("admin/book/copy_list.php") .
 															  "&amp;key=" . $_GET['key'] .
 															  "&amp;keyname=" . $_GET['keyname'] .
@@ -42,17 +44,19 @@
 
 		$query =	"SELECT book.BookIndex, book.BookNumber, book.Retired, " .
 					"       in_book_state.BookState AS InBookState, book_status.InDate, " .
-					"       out_book_state.BookState AS OutBookState, book_status.Outdate, " .
+					"       out_book_state.BookState AS OutBookState, book_status.OutDate, " .
 					"       user.FirstName, user.Surname, user.Username " .
 					"       FROM book LEFT OUTER JOIN (book_status INNER JOIN user USING (Username) " .
 					"       INNER JOIN book_state AS out_book_state ON (book_status.OutState = out_book_state.BookStateIndex) " .
 					"       LEFT OUTER JOIN book_state AS in_book_state ON (book_status.InState = in_book_state.BookStateIndex)) " .
-					"       USING (BookIndex) ";
+					"       USING (BookIndex) " .
+					"WHERE book.BookTitleIndex = '$booktitleindex' ";
 		if(!$showall) {
-			$query .= "WHERE book.Retired=0 ";
+			$query .= "AND book.Retired=0 ";
 		}
-		$query .=	"ORDER BY book.BookNumber, book.BookIndex, book_status.OutDate DESC " .
-					"LIMIT 1";
+		$query .=	"GROUP BY book.BookIndex " .	
+					"ORDER BY book.BookNumber, book.BookIndex, book_status.OutDate DESC";
+		            
 
 		$res =& $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());
@@ -65,8 +69,9 @@
 			echo "            <th>Current State</th>\n";
 			echo "            <th>Student</th>\n";
 			echo "            <th>Checkout Date</th>\n";
-			echo "            <th>Retired</th>\n";
-			echo "            <th>Delete/Retire</th>\n";
+			if($showall) {
+				echo "            <th>Retired</th>\n";
+			}
 			echo "         </tr>\n";
 			
 			/* For each category, print a row with the category's name, # of subjects using it
@@ -79,7 +84,7 @@
 				} else {
 					$alt = " class='std'";
 				}
-				$dellink  = "index.php?location=" .  dbfuncString2Int("admin/book/delete_copy_confirm.php") .
+				$viewlink = "index.php?location=" .  dbfuncString2Int("admin/book/copy_history.php") .
 							"&amp;key=" .            dbfuncString2Int($row['BookIndex']) .
 							"&amp;keyname=" .        dbfuncString2Int($booktitle . " copy #" . $row['BookNumber']) .
 							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("admin/book/copy_list.php") .
@@ -87,6 +92,21 @@
 																	  "&amp;keyname=" . $_GET['keyname'] .
 																	  "&amp;key2=" . $_GET['key2']);
 				$editlink = "index.php?location=" .  dbfuncString2Int("admin/book/modify_copy.php") .
+							"&amp;key=" .            dbfuncString2Int($row['BookIndex']) .
+							"&amp;keyname=" .        dbfuncString2Int($booktitle) .
+							"&amp;keyname2=" .       dbfuncString2Int($row['BookNumber']) .
+							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("admin/book/copy_list.php") .
+																	  "&amp;key=" . $_GET['key'] .
+																	  "&amp;keyname=" . $_GET['keyname'] .
+																	  "&amp;key2=" . $_GET['key2']);
+				$retlink =  "index.php?location=" .  dbfuncString2Int("admin/book/retire_copy_confirm.php") .
+							"&amp;key=" .            dbfuncString2Int($row['BookIndex']) .
+							"&amp;keyname=" .        dbfuncString2Int($booktitle . " copy #" . $row['BookNumber']) .
+							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("admin/book/copy_list.php") .
+																	  "&amp;key=" . $_GET['key'] .
+																	  "&amp;keyname=" . $_GET['keyname'] .
+																	  "&amp;key2=" . $_GET['key2']);
+				$unrlink =  "index.php?location=" .  dbfuncString2Int("admin/book/unretire_copy_confirm.php") .
 							"&amp;key=" .            dbfuncString2Int($row['BookIndex']) .
 							"&amp;keyname=" .        dbfuncString2Int($booktitle . " copy #" . $row['BookNumber']) .
 							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("admin/book/copy_list.php") .
@@ -100,23 +120,34 @@
 				$editbutton = dbfuncGetButton($editlink, "E", "small", "edit", "Edit copy information");
 				$retbutton  = dbfuncGetButton($retlink,  "R", "small", "delete", "Retire copy");
 				$unrbutton  = dbfuncGetButton($unrlink,  "U", "small", "msg", "Unretire copy");
-				$delbutton  = dbfuncGetButton($dellink,  "X", "small", "delete", "Delete copy");
-				echo "            <td>$viewbutton $editbutton</td>\n"; 
+				echo "            <td>$viewbutton $editbutton ";
+				if($row['Retired']) {
+					echo "$unrbutton";
+				} else {
+					echo "$retbutton";
+				}
+				echo "</td>\n"; 
 				echo "            <td>{$row['BookNumber']}</td>\n";
 				if(is_null($row['InBookState'])) {
-					echo "            <td>{$row['OutBookState']}</td>\n";
-					echo "            <td>{$row['FirstName']} {$row['Surname']} ({$row['Username']})</td>\n";
-					echo "            <td>Not implemented</td>\n";
+					if(is_null($row['OutBookState'])) {
+						echo "            <td colspan='3' align='center'><i>Never been checked out</i></td>\n";
+					} else {
+						echo "            <td>{$row['OutBookState']}</td>\n";
+						echo "            <td>{$row['FirstName']} {$row['Surname']} ({$row['Username']})</td>\n";
+						$date = date($dateformat, strtotime($row['OutDate']));
+						echo "            <td>$date</td>";
+					}
 				} else {
 					echo "            <td>{$row['InBookState']}</td>\n";
 					echo "            <td colspan='2' align='center'>Not checked out</td>\n";
 				}
-				if($row['Retired']) {
-					echo "            <td align='center'>X</td>\n";
-				} else {
-					echo "            <td>&nbsp;</td>\n";
+				if($showall) {
+					if($row['Retired']) {
+						echo "            <td align='center'>X</td>\n";
+					} else {
+						echo "            <td>&nbsp;</td>\n";
+					}
 				}
-				echo "            <td align='center'>$delbutton</td>\n";
 			}
 			echo "      </table>\n";               // End of table
 		} else {

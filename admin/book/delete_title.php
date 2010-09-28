@@ -41,6 +41,10 @@
 				$query =	"DELETE FROM book_title WHERE BookTitleIndex='$booktitleindex'";
 				$res =&  $db->query($query);
 				if(DB::isError($res)) die($res->getDebugInfo());              // Check for errors in query
+
+				$query =	"DELETE FROM book_title_owner WHERE BookTitleIndex='$booktitleindex'";
+				$res =&  $db->query($query);
+				if(DB::isError($res)) die($res->getDebugInfo());              // Check for errors in query
 					
 				echo "      <p align=\"center\">$book successfully deleted.</p>\n";
 				log_event($LOG_LEVEL_ADMIN, "admin/book/delete_title.php", $LOG_ADMIN,
