@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * admin/book/copy_list.php  (c) 2010 Jonathan Dieter
+	 * teacher/book/copy_list.php  (c) 2010 Jonathan Dieter
 	 *
 	 * List copies of a book
 	 *****************************************************************/
@@ -16,25 +16,31 @@
 
 	include "header.php";
 
-	if($is_admin) {
+	$query =	"SELECT Username FROM book_title_owner " .
+				"WHERE BookTitleIndex='$booktitleindex' " .
+				"AND   Username='$username'";
+	$res =& $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());
+
+	if($is_admin or $res->numRows() > 0) {
 		/* Get category list */
 
-		$newlink =  "index.php?location=" .  dbfuncString2Int("admin/book/new_copy.php") .
+		$newlink =  "index.php?location=" .  dbfuncString2Int("teacher/book/new_copy.php") .
 					"&amp;key=" .            $_GET['key'] .
 					"&amp;keyname=" .        $_GET['keyname'] .
-					"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("admin/book/copy_list.php") .
+					"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("teacher/book/copy_list.php") .
 															  "&amp;key=" . $_GET['key'] .
 															  "&amp;keyname=" . $_GET['keyname'] .
 															  "&amp;key2=" . $_GET['key2']);
 		$newbutton = dbfuncGetButton($newlink, "New copy", "medium", "", "Add new copy of this book");
 		if($showall) {
-			$salink =	"index.php?location=" . dbfuncString2Int("admin/book/copy_list.php") .
+			$salink =	"index.php?location=" . dbfuncString2Int("teacher/book/copy_list.php") .
 						"&amp;key=" . $_GET['key'] .
 						"&amp;keyname=" . $_GET['keyname'] .
 						"&amp;key2=" . dbfuncString2Int("0");
 			$sabutton = dbfuncGetButton($salink, "Show active copies", "medium", "", "Show only active copies and not retired copies");
 		} else {
-			$salink =	"index.php?location=" . dbfuncString2Int("admin/book/copy_list.php") .
+			$salink =	"index.php?location=" . dbfuncString2Int("teacher/book/copy_list.php") .
 						"&amp;key=" . $_GET['key'] .
 						"&amp;keyname=" . $_GET['keyname'] .
 						"&amp;key2=" . dbfuncString2Int("1");
@@ -84,47 +90,74 @@
 				} else {
 					$alt = " class='std'";
 				}
-				$viewlink = "index.php?location=" .  dbfuncString2Int("admin/book/copy_history.php") .
+				$viewlink = "index.php?location=" .  dbfuncString2Int("teacher/book/copy_history.php") .
 							"&amp;key=" .            dbfuncString2Int($row['BookIndex']) .
 							"&amp;keyname=" .        dbfuncString2Int($booktitle . " copy #" . $row['BookNumber']) .
-							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("admin/book/copy_list.php") .
+							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("teacher/book/copy_list.php") .
 																	  "&amp;key=" . $_GET['key'] .
 																	  "&amp;keyname=" . $_GET['keyname'] .
 																	  "&amp;key2=" . $_GET['key2']);
-				$editlink = "index.php?location=" .  dbfuncString2Int("admin/book/modify_copy.php") .
+				$editlink = "index.php?location=" .  dbfuncString2Int("teacher/book/modify_copy.php") .
 							"&amp;key=" .            dbfuncString2Int($row['BookIndex']) .
 							"&amp;keyname=" .        dbfuncString2Int($booktitle) .
 							"&amp;keyname2=" .       dbfuncString2Int($row['BookNumber']) .
-							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("admin/book/copy_list.php") .
+							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("teacher/book/copy_list.php") .
 																	  "&amp;key=" . $_GET['key'] .
 																	  "&amp;keyname=" . $_GET['keyname'] .
 																	  "&amp;key2=" . $_GET['key2']);
-				$retlink =  "index.php?location=" .  dbfuncString2Int("admin/book/retire_copy_confirm.php") .
+				$retlink =  "index.php?location=" .  dbfuncString2Int("teacher/book/retire_copy_confirm.php") .
 							"&amp;key=" .            dbfuncString2Int($row['BookIndex']) .
 							"&amp;keyname=" .        dbfuncString2Int($booktitle . " copy #" . $row['BookNumber']) .
-							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("admin/book/copy_list.php") .
+							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("teacher/book/copy_list.php") .
 																	  "&amp;key=" . $_GET['key'] .
 																	  "&amp;keyname=" . $_GET['keyname'] .
 																	  "&amp;key2=" . $_GET['key2']);
-				$unrlink =  "index.php?location=" .  dbfuncString2Int("admin/book/unretire_copy_confirm.php") .
+				$unrlink =	"index.php?location=" .  dbfuncString2Int("teacher/book/unretire_copy_confirm.php") .
 							"&amp;key=" .            dbfuncString2Int($row['BookIndex']) .
 							"&amp;keyname=" .        dbfuncString2Int($booktitle . " copy #" . $row['BookNumber']) .
-							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("admin/book/copy_list.php") .
+							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("teacher/book/copy_list.php") .
 																	  "&amp;key=" . $_GET['key'] .
 																	  "&amp;keyname=" . $_GET['keyname'] .
 																	  "&amp;key2=" . $_GET['key2']);
-
+				$colink =	"index.php?location=" .  dbfuncString2Int("teacher/book/check_out_copy.php") .
+							"&amp;key=" .            dbfuncString2Int($row['BookIndex']) .
+							"&amp;keyname=" .        dbfuncString2Int($booktitle . " copy #" . $row['BookNumber']) .
+							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("teacher/book/copy_list.php") .
+																	  "&amp;key=" . $_GET['key'] .
+																	  "&amp;keyname=" . $_GET['keyname'] .
+																	  "&amp;key2=" . $_GET['key2']);
+				$cilink =	"index.php?location=" .  dbfuncString2Int("teacher/book/check_in_copy.php") .
+							"&amp;key=" .            dbfuncString2Int($row['BookIndex']) .
+							"&amp;keyname=" .        dbfuncString2Int($booktitle . " copy #" . $row['BookNumber']) .
+							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("teacher/book/copy_list.php") .
+																	  "&amp;key=" . $_GET['key'] .
+																	  "&amp;keyname=" . $_GET['keyname'] .
+																	  "&amp;key2=" . $_GET['key2']);
 				echo "         <tr$alt>\n";
 				/* Generate view and edit buttons */
+				$cobutton   = dbfuncGetButton($colink,   "O", "small", "cn", "Check out copy");
+				$cibutton   = dbfuncGetButton($cilink,   "I", "small", "msg", "Check in copy");
 				$viewbutton = dbfuncGetButton($viewlink, "V", "small", "view", "View history of this copy");
 				$editbutton = dbfuncGetButton($editlink, "E", "small", "edit", "Edit copy information");
 				$retbutton  = dbfuncGetButton($retlink,  "R", "small", "delete", "Retire copy");
 				$unrbutton  = dbfuncGetButton($unrlink,  "U", "small", "msg", "Unretire copy");
-				echo "            <td>$viewbutton $editbutton ";
+				echo "            <td>";
+				if($row['Retired']) {
+					echo "&nbsp;&nbsp;";
+				} else {
+					if(is_null($row['InBookState'] and !is_null($row['OutBookState']))) {
+						echo "$cibutton ";
+					} else {
+						echo "$cobutton ";
+					}
+				}
+				echo "$viewbutton $editbutton ";
 				if($row['Retired']) {
 					echo "$unrbutton";
 				} else {
-					echo "$retbutton";
+					if(!is_null($row['InBookState'])) {
+						echo "$retbutton";
+					}
 				}
 				echo "</td>\n"; 
 				echo "            <td>{$row['BookNumber']}</td>\n";
@@ -153,11 +186,11 @@
 		} else {
 			echo "      <p>No titles have been set up.</p>\n";
 		}
-		log_event($LOG_LEVEL_EVERYTHING, "admin/book/title_list.php", $LOG_ADMIN,
+		log_event($LOG_LEVEL_EVERYTHING, "teacher/book/copy_list.php", $LOG_ADMIN,
 				"Viewed book titles.");
 	} else {
 		/* Log unauthorized access attempt */
-		log_event($LOG_LEVEL_ERROR, "admin/book/title_list.php", $LOG_DENIED_ACCESS,
+		log_event($LOG_LEVEL_ERROR, "teacher/book/copy_list.php", $LOG_DENIED_ACCESS,
 				"Attempted to view book titles.");
 		
 		echo "      <p>You do not have permission to access this page</p>\n";

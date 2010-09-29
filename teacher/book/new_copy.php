@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * admin/book/new_copy.php  (c) 2010 Jonathan Dieter
+	 * teacher/book/new_copy.php  (c) 2010 Jonathan Dieter
 	 *
 	 * Create new copy of a book
 	 *****************************************************************/
@@ -8,7 +8,7 @@
 	/* Get variables */
 	$booktitleindex   = dbfuncInt2String($_GET['key']);
 	$title            = "New copy of " . dbfuncInt2String($_GET['keyname']);
-	$link             = "index.php?location=" . dbfuncString2Int("admin/book/new_or_modify_copy_action.php") .
+	$link             = "index.php?location=" . dbfuncString2Int("teacher/book/new_or_modify_copy_action.php") .
 						"&amp;key=" .           $_GET['key'] .
 						"&amp;keyname=" .       $_GET['keyname'] .
 						"&amp;next=" .          $_GET['next'];
@@ -16,7 +16,13 @@
 	include "header.php";                                              // Show header
 	
 	/* Check whether user is authorized to change subject */	
-	if($is_admin) {
+	$query =	"SELECT Username FROM book_title_owner " .
+				"WHERE BookTitleIndex='$booktitleindex' " .
+				"AND   Username='$username'";
+	$res =& $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());
+
+	if($is_admin or $res->numRows() > 0) {
 		if(isset($errorlist)) {
 			echo $errorlist;
 		}

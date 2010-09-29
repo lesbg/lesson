@@ -50,7 +50,7 @@
 				} else {
 					$alt = " class='std'";
 				}
-				$viewlink = "index.php?location=" .  dbfuncString2Int("admin/book/copy_list.php") .
+				$viewlink = "index.php?location=" .  dbfuncString2Int("teacher/book/copy_list.php") .
 							"&amp;key=" .            dbfuncString2Int($row['BookTitleIndex']) .
 							"&amp;keyname=" .        dbfuncString2Int($row['BookTitle']) .
 							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("admin/book/title_list.php"));

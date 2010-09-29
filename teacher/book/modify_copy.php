@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * admin/book/modify_copy.php  (c) 2010 Jonathan Dieter
+	 * teacher/book/modify_copy.php  (c) 2010 Jonathan Dieter
 	 *
 	 * Change information about book copy
 	 *****************************************************************/
@@ -8,7 +8,7 @@
 	/* Get variables */
 	$title            = "Change information for copy " . dbfuncInt2String($_GET['keyname2']) . " of " . dbfuncInt2String($_GET['keyname']);
 	$bookindex        = dbfuncInt2String($_GET['key']);
-	$link             = "index.php?location=" . dbfuncString2Int("admin/book/new_or_modify_copy_action.php") .
+	$link             = "index.php?location=" . dbfuncString2Int("teacher/book/new_or_modify_copy_action.php") .
 						"&amp;key=" .           $_GET['key'] .
 						"&amp;keyname=" .       $_GET['keyname'] .
 						"&amp;keyname2=" .      $_GET['keyname2'] .
@@ -17,7 +17,14 @@
 	include "header.php";                                              // Show header
 	
 	/* Check whether user is authorized to change subject */	
-	if($is_admin) {
+	$query =	"SELECT book_title_owner.Username FROM book_title_owner, book " .
+				"WHERE book_title_owner.BookTitleIndex=book.BookTitleIndex " .
+				"AND   book.BookIndex = $bookindex " .
+				"AND   book_title_owner.Username='$username'";
+	$res =& $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());
+
+	if($is_admin or $res->numRows() > 0) {
 		/* Get subject information */
 		$fRes =& $db->query("SELECT BookNumber FROM book " .
 							"WHERE BookIndex = '$bookindex'");
@@ -52,10 +59,10 @@
 			echo "      <p align='center'>Can't find book title.  Have you deleted it?</p>\n";
 			echo "      <p align='center'><a href='$backLink'>Click here to go back</a></p>\n";
 		}
-		log_event($LOG_LEVEL_EVERYTHING, "admin/book/modify_copy.php", $LOG_ADMIN,
+		log_event($LOG_LEVEL_EVERYTHING, "teacher/book/modify_copy.php", $LOG_ADMIN,
 				"Opened book title $title for editing.");
 	} else {
-		log_event($LOG_LEVEL_ERROR, "admin/book/modify_copy.php", $LOG_DENIED_ACCESS,
+		log_event($LOG_LEVEL_ERROR, "teacher/book/modify_copy.php", $LOG_DENIED_ACCESS,
 				"Attempted to change information about the book title $title.");
 		echo "      <p>You do not have permission to access this page</p>\n";
 		echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";

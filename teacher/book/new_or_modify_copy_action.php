@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * admin/book/new_or_modify_copy_action.php  (c) 2010 Jonathan Dieter
+	 * teacher/book/new_or_modify_copy_action.php  (c) 2010 Jonathan Dieter
 	 *
 	 * Change book copy information
 	 *****************************************************************/
@@ -34,9 +34,9 @@
 			echo "      <p align='center'>Saving changes...";
 			
 			if($_POST['type'] == "new") {          // Create new title if "Save" was pressed
-				include "admin/book/new_copy_action.php";
+				include "teacher/book/new_copy_action.php";
 			} else {
-				include "admin/book/modify_copy_action.php";    // Change title if "Update" was pressed
+				include "teacher/book/modify_copy_action.php";    // Change title if "Update" was pressed
 			}
 			
 			if($error) {    // If we ran into any errors, print failed, otherwise print done
@@ -48,9 +48,9 @@
 			include "footer.php";
 		} else {
 			if($_POST['type'] == "new") {
-				include "admin/book/new_copy.php";
+				include "teacher/book/new_copy.php";
 			} else {
-				include "admin/book/modify_copy.php";
+				include "teacher/book/modify_copy.php";
 			}
 		}
 	} else { // if($_POST['action'] == "Cancel")

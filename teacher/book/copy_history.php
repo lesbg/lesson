@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * admin/book/copy_history.php  (c) 2010 Jonathan Dieter
+	 * teacher/book/copy_history.php  (c) 2010 Jonathan Dieter
 	 *
 	 * Show history of a copy of a book
 	 *****************************************************************/
@@ -10,7 +10,14 @@
 
 	include "header.php";
 
-	if($is_admin) {
+	$query =	"SELECT book_title_owner.Username FROM book_title_owner, book " .
+				"WHERE book_title_owner.BookTitleIndex=book.BookTitleIndex " .
+				"AND   book.BookIndex = $bookindex " .
+				"AND   book_title_owner.Username='$username'";
+	$res =& $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());
+
+	if($is_admin or $res->numRows() > 0) {
 		$query =	"SELECT in_book_state.BookState AS InBookState, book_status.InDate, " .
 					"       out_book_state.BookState AS OutBookState, book_status.OutDate, " .
 					"       user.FirstName, user.Surname, user.Username, " .
@@ -54,28 +61,28 @@
 				$viewlink = "index.php?location=" .  dbfuncString2Int("admin/book/copy_history.php") .
 							"&amp;key=" .            dbfuncString2Int($row['BookIndex']) .
 							"&amp;keyname=" .        dbfuncString2Int($booktitle . " copy #" . $row['BookNumber']) .
-							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("admin/book/copy_list.php") .
+							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("teacher/book/copy_list.php") .
 																	  "&amp;key=" . $_GET['key'] .
 																	  "&amp;keyname=" . $_GET['keyname'] .
 																	  "&amp;key2=" . $_GET['key2']);
 				$editlink = "index.php?location=" .  dbfuncString2Int("admin/book/modify_copy.php") .
 							"&amp;key=" .            dbfuncString2Int($row['BookIndex']) .
 							"&amp;keyname=" .        dbfuncString2Int($booktitle . " copy #" . $row['BookNumber']) .
-							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("admin/book/copy_list.php") .
+							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("teacher/book/copy_list.php") .
 																	  "&amp;key=" . $_GET['key'] .
 																	  "&amp;keyname=" . $_GET['keyname'] .
 																	  "&amp;key2=" . $_GET['key2']);
 				$retlink =  "index.php?location=" .  dbfuncString2Int("admin/book/retire_copy_confirm.php") .
 							"&amp;key=" .            dbfuncString2Int($row['BookIndex']) .
 							"&amp;keyname=" .        dbfuncString2Int($booktitle . " copy #" . $row['BookNumber']) .
-							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("admin/book/copy_list.php") .
+							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("teacher/book/copy_list.php") .
 																	  "&amp;key=" . $_GET['key'] .
 																	  "&amp;keyname=" . $_GET['keyname'] .
 																	  "&amp;key2=" . $_GET['key2']);
 				$unrlink =  "index.php?location=" .  dbfuncString2Int("admin/book/unretire_copy_confirm.php") .
 							"&amp;key=" .            dbfuncString2Int($row['BookIndex']) .
 							"&amp;keyname=" .        dbfuncString2Int($booktitle . " copy #" . $row['BookNumber']) .
-							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("admin/book/copy_list.php") .
+							"&amp;next=" .           dbfuncString2Int("index.php?location=" . dbfuncString2Int("teacher/book/copy_list.php") .
 																	  "&amp;key=" . $_GET['key'] .
 																	  "&amp;keyname=" . $_GET['keyname'] .
 																	  "&amp;key2=" . $_GET['key2']);
@@ -99,11 +106,11 @@
 		} else {
 			echo "      <p>This copy has never been checked out</p>\n";
 		}
-		log_event($LOG_LEVEL_EVERYTHING, "admin/book/copy_history.php", $LOG_ADMIN,
+		log_event($LOG_LEVEL_EVERYTHING, "teacher/book/copy_history.php", $LOG_ADMIN,
 				"Viewed history of $title.");
 	} else {
 		/* Log unauthorized access attempt */
-		log_event($LOG_LEVEL_ERROR, "admin/book/copy_history.php", $LOG_DENIED_ACCESS,
+		log_event($LOG_LEVEL_ERROR, "teacher/book/copy_history.php", $LOG_DENIED_ACCESS,
 				"Attempted to view history of $title.");
 		
 		echo "      <p>You do not have permission to access this page</p>\n";
