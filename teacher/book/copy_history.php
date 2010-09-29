@@ -20,7 +20,7 @@
 	if($is_admin or $res->numRows() > 0) {
 		$query =	"SELECT in_book_state.BookState AS InBookState, book_status.InDate, " .
 					"       out_book_state.BookState AS OutBookState, book_status.OutDate, " .
-					"       user.FirstName, user.Surname, user.Username, " .
+					"       user.FirstName, user.Surname, user.Username, book_status.Comment, " .
 					"       t1user.Title AS t1Title, t1user.FirstName AS t1FirstName, t1user.Surname AS t1Surname, t1user.Username AS t1Username, " .
 					"       t2user.Title AS t2Title, t2user.FirstName AS t2FirstName, t2user.Surname AS t2Surname, t2user.Username AS t2Username " .
 					"       FROM user, user AS t1user, book, book_status " .
@@ -31,7 +31,8 @@
 					"AND   book_status.Username = user.Username " .
 					"AND   book_status.OutTeacherUsername = t1user.Username " .
 					"AND   book.BookIndex = $bookindex " .
-					"ORDER BY book_status.OutDate DESC ";
+					"ORDER BY book_status.InState IS NOT NULL, book_status.OutDate DESC, " .
+					"         book_status.BookStatusIndex DESC";
 
 		$res =& $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());
@@ -40,12 +41,11 @@
 			echo "      <table align='center' border='1'>\n"; // Table headers
 			echo "         <tr>\n";
 			echo "            <th>Student</th>\n";
-			echo "            <th>Checkout date</th>\n";
-			echo "            <th>Checkout state</th>\n";
-			echo "            <th>Checked out by</th>\n";
-			echo "            <th>Check in date</th>\n";
-			echo "            <th>Check in state</th>\n";
-			echo "            <th>Checked in by</th>\n";
+			echo "            <th>&nbsp;</th>\n";
+			echo "            <th>Date</th>\n";
+			echo "            <th>State</th>\n";
+			echo "            <th>Checked by</th>\n";
+			echo "            <th>Comment</th>\n";
 			echo "         </tr>\n";
 			
 			/* For each category, print a row with the category's name, # of subjects using it
@@ -88,11 +88,17 @@
 																	  "&amp;key2=" . $_GET['key2']);
 
 				echo "         <tr$alt>\n";
-				echo "            <td>{$row['FirstName']} {$row['Surname']} ({$row['Username']})</td>\n";
+				echo "            <td rowspan='2'>{$row['FirstName']} {$row['Surname']} ({$row['Username']})</td>\n";
 				$outdate = date($dateformat, strtotime($row['OutDate']));
+				echo "            <td><b>Out</b></td>\n";
 				echo "            <td>$outdate</td>";
 				echo "            <td>{$row['OutBookState']}</td>\n";
 				echo "            <td>{$row['t1Title']} {$row['t1FirstName']} {$row['t1Surname']}</td>\n";
+				$comment = htmlspecialchars($row['Comment'], ENT_QUOTES);
+				echo "            <td rowspan='2'>$comment</td>\n";
+				echo "         </tr>\n";
+				echo "         <tr$alt>\n";
+				echo "            <td><b>In</b></td>\n";
 				if(is_null($row['InBookState'])) {
 					echo "            <td colspan='3' align='center'><i>Still checked out</i></td>\n";
 				} else {
@@ -101,6 +107,7 @@
 					echo "            <td>{$row['InBookState']}</td>\n";
 					echo "            <td>{$row['t2Title']} {$row['t2FirstName']} {$row['t2Surname']}</td>\n";
 				}
+				
 			}
 			echo "      </table>\n";               // End of table
 		} else {

@@ -54,6 +54,9 @@
 				$textLink = "index.php?location=" .  dbfuncString2Int("admin/sms/send.php") .
 							"&amp;key=" .            dbfuncString2Int($row['Username']) .
 							"&amp;keyname=" .        dbfuncString2Int($row['FirstName'] . " " . $row['Surname']);
+				$bookLink = "index.php?location=" .  dbfuncString2Int("teacher/book/book_list.php") .
+							"&amp;key=" .            dbfuncString2Int($row['Username']) .
+							"&amp;keyname=" .        dbfuncString2Int($row['FirstName'] . " " . $row['Surname']);
 				$classResult =& $db->query("SELECT subject.Name FROM subject, subjectteacher, currentterm " .
 										   "WHERE subjectteacher.SubjectIndex = subject.SubjectIndex " .
 										   "AND   subjectteacher.Username     = \"{$row['Username']}\" " .
@@ -68,10 +71,11 @@
 				$editbutton = dbfuncGetButton($editlink, "E", "small", "edit", "Edit teacher");
 				$ttbutton =   dbfuncGetButton($ttlink,   "T", "small", "tt",   "View teacher's timetable");
 				$textbutton = dbfuncGetButton($textLink, "M", "small", "view", "Send text message");
+				$bookbutton = dbfuncGetButton($bookLink, "B", "small", "cn", "See teacher's books");
 				if($row['PhoneNumber'] == "") {
-					echo "            <td align=\"right\">$ttbutton $editbutton</td>\n";
+					echo "            <td align=\"right\">$ttbutton $editbutton $bookbutton</td>\n";
 				} else {
-					echo "            <td align=\"right\">$textbutton $ttbutton $editbutton</td>\n";
+					echo "            <td align=\"right\">$textbutton $ttbutton $editbutton $bookbutton</td>\n";
 				}
 				echo "            <td>{$row['Title']} {$row['FirstName']} {$row['Surname']} ({$row['Username']})</td>\n";
 				if($classRow =& $classResult->fetchRow(DB_FETCHMODE_ASSOC)) {

@@ -48,20 +48,25 @@
 		}
 		echo "      <p align='center'>$newbutton $sabutton</p>\n";
 
-		$query =	"SELECT book.BookIndex, book.BookNumber, book.Retired, " .
-					"       in_book_state.BookState AS InBookState, book_status.InDate, " .
-					"       out_book_state.BookState AS OutBookState, book_status.OutDate, " .
-					"       user.FirstName, user.Surname, user.Username " .
-					"       FROM book LEFT OUTER JOIN (book_status INNER JOIN user USING (Username) " .
-					"       INNER JOIN book_state AS out_book_state ON (book_status.OutState = out_book_state.BookStateIndex) " .
-					"       LEFT OUTER JOIN book_state AS in_book_state ON (book_status.InState = in_book_state.BookStateIndex)) " .
-					"       USING (BookIndex) " .
-					"WHERE book.BookTitleIndex = '$booktitleindex' ";
+		$query =	"SELECT * FROM (" .
+					" SELECT book.BookIndex, book.BookNumber, book.Retired, " .
+					"        in_book_state.BookState AS InBookState, book_status.InDate, " .
+					"        out_book_state.BookState AS OutBookState, book_status.OutDate, " .
+					"        book_status.Comment, " .
+					"        user.FirstName, user.Surname, user.Username " .
+					"        FROM book LEFT OUTER JOIN (book_status INNER JOIN user USING (Username) " .
+					"        INNER JOIN book_state AS out_book_state ON (book_status.OutState = out_book_state.BookStateIndex) " .
+					"        LEFT OUTER JOIN book_state AS in_book_state ON (book_status.InState = in_book_state.BookStateIndex)) " .
+					"        USING (BookIndex) " .
+					" WHERE book.BookTitleIndex = '$booktitleindex' ";
 		if(!$showall) {
-			$query .= "AND book.Retired=0 ";
+			$query .= " AND book.Retired=0 ";
 		}
-		$query .=	"GROUP BY book.BookIndex " .	
-					"ORDER BY book.BookNumber, book.BookIndex, book_status.OutDate DESC";
+		$query .=	" ORDER BY book.BookNumber, book.BookIndex, book_status.InState IS NOT NULL, book_status.OutDate DESC, " .
+					"          book_status.BookStatusIndex DESC " .
+					") AS sortgroup " .
+					"GROUP BY BookIndex ";
+					
 		            
 
 		$res =& $db->query($query);
@@ -75,6 +80,7 @@
 			echo "            <th>Current State</th>\n";
 			echo "            <th>Student</th>\n";
 			echo "            <th>Checkout Date</th>\n";
+			echo "            <th>Comment</th>\n";
 			if($showall) {
 				echo "            <th>Retired</th>\n";
 			}
@@ -145,7 +151,7 @@
 				if($row['Retired']) {
 					echo "&nbsp;&nbsp;";
 				} else {
-					if(is_null($row['InBookState'] and !is_null($row['OutBookState']))) {
+					if(is_null($row['InBookState']) and !is_null($row['OutBookState'])) {
 						echo "$cibutton ";
 					} else {
 						echo "$cobutton ";
@@ -156,7 +162,7 @@
 					echo "$unrbutton";
 				} else {
 					if(!is_null($row['InBookState'])) {
-						echo "$retbutton";
+						/*echo "$retbutton";*/
 					}
 				}
 				echo "</td>\n"; 
@@ -174,6 +180,8 @@
 					echo "            <td>{$row['InBookState']}</td>\n";
 					echo "            <td colspan='2' align='center'>Not checked out</td>\n";
 				}
+				$comment = htmlspecialchars($row['Comment'], ENT_QUOTES);
+				echo "            <td>$comment</td>\n";
 				if($showall) {
 					if($row['Retired']) {
 						echo "            <td align='center'>X</td>\n";
@@ -184,7 +192,7 @@
 			}
 			echo "      </table>\n";               // End of table
 		} else {
-			echo "      <p>No titles have been set up.</p>\n";
+			echo "      <p align='center'>You need to add a new copy of the book.</p>\n";
 		}
 		log_event($LOG_LEVEL_EVERYTHING, "teacher/book/copy_list.php", $LOG_ADMIN,
 				"Viewed book titles.");
