@@ -59,6 +59,7 @@
 						"WHERE subject.SubjectIndex = $subjectindex " .
 						"AND   subjectteacher.SubjectIndex = subject.SubjectIndex " .
 						"AND   subjectteacher.Username = new_teacher.Username " .
+						"AND   subjectteacher.Username = '$username' " .
 						"AND   new_subject.SubjectIndex = new_teacher.SubjectIndex " .
 						"AND   new_subject.SubjectIndex != $subjectindex " .
 						"AND   new_subject.YearIndex = subject.YearIndex " .
