@@ -632,14 +632,14 @@
 			} else {
 				echo "               <td colspan='2'>N/A</td>\n";
 			}
-			if($row['ReportDone'] == 0) {
-				echo "               <td><b>No</b></td>\n";
-			} else {
-				echo "               <td><i>Yes</i></td>\n";
-			}
-			if(!$student_info['ReportDone']) {
-				echo "               <td><input type='submit' name='edit_{$row['SubjectIndex']}' value='Change'></td>\n";
-			}
+		}
+		if($row['ReportDone'] == 0) {
+			echo "               <td><b>No</b></td>\n";
+		} else {
+			echo "               <td><i>Yes</i></td>\n";
+		}
+		if(!$student_info['ReportDone']) {
+			echo "               <td><input type='submit' name='edit_{$row['SubjectIndex']}' value='Change'></td>\n";
 		}
 		echo "            </tr>\n";
 	}

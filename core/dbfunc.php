@@ -786,8 +786,8 @@
 		$query =	"SELECT classlist.ClassListIndex, classlist.Average FROM classterm, classlist " .
 					"WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
 					"AND   classterm.TermIndex      = $term_index " .
-					"AND   classterm.ClassIndex     = $class_index";
-					"AND   classterm.Average        >= 0 " .
+					"AND   classterm.ClassIndex     = $class_index " .
+					"AND   classlist.Average        >= 0 " .
 					"ORDER BY Average DESC";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query

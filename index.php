@@ -100,7 +100,12 @@
 	//update_conduct_year_term(6, 1);
         //update_classterm(149, 1);
         
-
+	//$query = "SELECT SubjectIndex FROM subject";
+	//$res =&  $db->query($query);
+	//if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+	//while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+	//	update_subject($row["SubjectIndex"]);
+	//}	
 
 
 //	update_conduct_year_term(5, 7);

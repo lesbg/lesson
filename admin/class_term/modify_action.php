@@ -164,7 +164,10 @@
 			$report_file  = $_FILES['report_template']['tmp_name'];
 
 			$report_handle = fopen($report_file, "r");
-			$data = safe(fread($report_handle, filesize($report_file)));
+			$data = fread($report_handle, filesize($report_file)*2);
+			print strlen($data);
+			$data = addslashes($data);
+			print strlen($data);
 		
 			$query =	"UPDATE classterm SET " .
 						"       ReportTemplate='$data', " .
