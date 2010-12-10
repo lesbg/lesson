@@ -78,7 +78,7 @@
 			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		}
 	
-		$res =& $db->query("SELECT subjectstudent.Username FROM " .        // Get list of students
+		$res =& $db->query("SELECT subjectstudent.Username, mark.MarkIndex FROM " .        // Get list of students
 						   "       subjectstudent LEFT OUTER JOIN mark ON (mark.AssignmentIndex = $assignmentindex " .
 						   "       AND mark.Username = subjectstudent.Username), assignment " .
 						   "WHERE assignment.AssignmentIndex = $assignmentindex " .
@@ -87,6 +87,8 @@
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		
 		/* For each student, insert new mark */
+		$query =	"INSERT INTO mark (MarkIndex, Username, AssignmentIndex, Score, " . 
+					"                  Comment) VALUES "; 
 		while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {	
 			if($average_type != $AVG_TYPE_NONE) {
 				$score = $_POST["score_{$row['Username']}"];          // Get score for username from POST data
@@ -144,16 +146,18 @@
 			}
 			
 			/* Insert scores into database */
-			$update =& $db->query("INSERT INTO mark (MarkIndex, Username, AssignmentIndex, Score, " . 
-								"Comment) VALUES ('', '{$row['Username']}', $assignmentindex, $score, " .
-								"$comment);"); 
-			if(DB::isError($update)) {
-				echo "</p>\n      <p>Insert: " . $update->getDebugInfo() . "</p>\n      <p>"; // Print any errors
-				$error = true;
-			}
+			$query .=	"('', '{$row['Username']}', $assignmentindex, $score, " .
+						" $comment), ";
 
 		}
-		if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
+		$query = rtrim($query, " ,") . ";";
+		$update =& $db->query($query); 
+		if(DB::isError($update)) {
+			echo "</p>\n      <p>Insert: " . $update->getDebugInfo() . "</p>\n      <p>"; // Print any errors
+			$error = true;
+		}
+		
+		if(($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) and $_POST['hidden'] == '0') {
 			update_marks($assignmentindex);
 		}
 

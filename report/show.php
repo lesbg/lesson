@@ -43,13 +43,14 @@
 	if(isset($_GET['key3'])) $termindex = safe(dbfuncInt2String($_GET['key3']));
 
 	/* Check whether subject is open for report editing */
-	$query =	"SELECT classterm.AverageType, classterm.EffortType, classterm.ConductType, " .
+	$query =	"SELECT classterm.Average, classterm.Effort, classterm.Conduct, " .
+				"       classterm.AverageType, classterm.EffortType, classterm.ConductType, " .
 				"       classterm.AverageTypeIndex, classterm.EffortTypeIndex, " .
 				"       classterm.ConductTypeIndex, classterm.CTCommentType, " .
 				"       classterm.HODCommentType, classterm.PrincipalCommentType, " .
 				"       classterm.CanDoReport, classterm.AbsenceType, " .
 				"       classterm.ReportTemplate, classterm.ReportTemplateType, " .
-				"       class.ClassName, " .
+				"       class.ClassName, class.Grade, " .
 				"       MIN(classlist.ReportDone) AS ReportDone " .
 				"       FROM classterm, class, classlist " .
 				"WHERE classterm.ClassTermIndex    = $classtermindex " .
@@ -78,6 +79,28 @@
 
 	}
 
+	$class_average = $row['Average'];
+	if($class_average == -1) {
+		$class_average = "-";
+	} else {
+		$scorestr = round($class_average);
+		$class_average = "$scorestr%";
+	}
+	$class_conduct = $row['Conduct'];
+	if($class_conduct == -1) {
+		$class_conduct = "-";
+	} else {
+		$scorestr = round($class_conduct);
+		$class_conduct = "$scorestr%";
+	}
+	$class_effort = $row['Effort'];
+	if($class_effort == -1) {
+		$class_effort = "-";
+	} else {
+		$scorestr = round($class_effort);
+		$class_effort = "$scorestr%";
+	}
+
 	$average_type         = $row['AverageType'];
 	$absence_type         = $row['AbsenceType'];
 	$effort_type          = $row['EffortType'];
@@ -90,6 +113,7 @@
 	$effort_type_index    = $row['EffortTypeIndex'];
 	$conduct_type_index   = $row['ConductTypeIndex'];
 	$class_name           = $row['ClassName'];
+	$class_grade          = $row['Grade'];
 	$report_template     =& $row['ReportTemplate'];
 	$report_template_type = $row['ReportTemplateType'];
 
@@ -147,6 +171,7 @@
 	}
 
 	$query =	"SELECT user.Gender, user.FirstName, user.Surname, term.TermName, " .
+				"       user.User1, user.User2, user.User3, " .
 				"       huser.Title AS HODTitle, huser.FirstName AS HODFirstName, " .
 				"       huser.Surname AS HODSurname, " .
 				"       tuser.Title AS CTTitle, tuser.FirstName AS CTFirstName, " .
@@ -161,10 +186,11 @@
 				"       classlist.PrincipalUsername, classlist.HODUsername, " .
 				"       classlist.ReportDone, classlist.ReportProofread, " .
 				"       classlist.ReportProofDone, classlist.Absences, " .
+				"       COUNT(bclasslist.Username) AS ClassCount, " .
 				"       average_index.Display AS AverageDisplay, " .
 				"       effort_index.Display AS EffortDisplay, " .
 				"       conduct_index.Display AS ConductDisplay " .
-				"       FROM user, term, year, " .
+				"       FROM user, term, year, classlist AS bclasslist, " .
 				"            (classterm INNER JOIN classlist ON classterm.ClassTermIndex = $classtermindex " .
 				"                                            AND classlist.ClassTermIndex = $classtermindex) " .
 				"             INNER JOIN class USING (ClassIndex) " .
@@ -180,10 +206,11 @@
 				"            classlist.PrincipalUsername = puser.Username " .
 				"       LEFT OUTER JOIN user AS tuser ON " .
 				"            class.ClassTeacherUsername = tuser.Username " .
-				"WHERE classlist.Username       = '$student_username' " .
-				"AND   user.Username            = classlist.Username " .
-				"AND   term.TermIndex           = classterm.TermIndex " .
-				"AND   year.YearIndex           = class.YearIndex";
+				"WHERE classlist.Username        = '$student_username' " .
+				"AND   bclasslist.ClassTermIndex = classlist.ClassTermIndex " .
+				"AND   user.Username             = classlist.Username " .
+				"AND   term.TermIndex            = classterm.TermIndex " .
+				"AND   year.YearIndex            = class.YearIndex";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 
@@ -226,12 +253,18 @@
 	$data = fread($handle, $MAX_SIZE);
 	fclose($handle);
 
+	/* Work out rank */
+	$rank = "-";
+	if($student_info['Rank'] != -1) {
+		$rank = "{$student_info['Rank']}";
+	}
+	
 	/* Work out average string */
 	if($average_type == $CLASS_AVG_TYPE_NONE) {
-		$average = "N/A";
+		$average = "-";
 	} elseif($average_type == $CLASS_AVG_TYPE_PERCENT or $average_type == $CLASS_AVG_TYPE_CALC) {
 		if($student_info['Average'] == -1) {
-			$average = "N/A";
+			$average = "-";
 		} else {
 			$scorestr = round($student_info['Average']);
 			$average = "$scorestr%";
@@ -246,17 +279,17 @@
 		if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
 			$average = $nrow['Display'];
 		} else {
-			$average = "N/A";
+			$average = "-";
 		}
 	} else {
-		$average = "N/A";
+		$average = "-";
 	}
 
 	if($effort_type == $CLASS_EFFORT_TYPE_NONE) {
-		$effort = "N/A";
+		$effort = "-";
 	} elseif($effort_type == $CLASS_EFFORT_TYPE_PERCENT or $effort_type == $CLASS_EFFORT_TYPE_CALC) {
 		if($student_info['Effort'] == -1) {
-			$effort = "N/A";
+			$effort = "-";
 		} else {
 			$scorestr = round($student_info['Effort']);
 			$effort = "$scorestr%";
@@ -271,17 +304,17 @@
 		if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
 			$effort = $nrow['Display'];
 		} else {
-			$effort = "N/A";
+			$effort = "-";
 		}
 	} else {
-		$effort = "N/A";
+		$effort = "-";
 	}
 
 	if($conduct_type == $CLASS_CONDUCT_TYPE_NONE) {
-		$conduct = "N/A";
+		$conduct = "-";
 	} elseif($conduct_type == $CLASS_CONDUCT_TYPE_PERCENT or $conduct_type == $CLASS_CONDUCT_TYPE_CALC or $conduct_type == $CLASS_CONDUCT_TYPE_PUN) {
 		if($student_info['Conduct'] == -1) {
-			$conduct = "N/A";
+			$conduct = "-";
 		} else {
 			$scorestr = round($student_info['Conduct']);
 			$conduct = "$scorestr%";
@@ -296,14 +329,14 @@
 		if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
 			$conduct = $nrow['Display'];
 		} else {
-			$conduct = "N/A";
+			$conduct = "-";
 		}
 	} else {
-		$conduct = "N/A";
+		$conduct = "-";
 	}
 
 	if($absence_type == $ABSENCE_TYPE_NONE) {
-		$absences = "N/A";
+		$absences = "-";
 	} elseif($absence_type == $ABSENCE_TYPE_NUM) {
 		if($student_info['Absences'] == -1) {
 			$absences = "0";
@@ -334,25 +367,25 @@
 			}
 			$absences = $absent + $suspended;
 	} else {
-		$absences = "N/A";
+		$absences = "-";
 	}
 
 	if($ct_comment_type == $COMMENT_TYPE_NONE) {
-		$ct_comment = "N/A";
+		$ct_comment = "-";
 	} elseif($ct_comment_type == $COMMENT_TYPE_MANDATORY or
 		     $ct_comment_type == $COMMENT_TYPE_OPTIONAL) {
 		$ct_comment = htmlspecialchars($student_info['CTComment'], ENT_QUOTES);
 	}
 
 	if($hod_comment_type == $COMMENT_TYPE_NONE) {
-		$hod_comment = "N/A";
+		$hod_comment = "-";
 	} elseif($hod_comment_type == $COMMENT_TYPE_MANDATORY or
 		     $hod_comment_type == $COMMENT_TYPE_OPTIONAL) {
 		$hod_comment = htmlspecialchars($student_info['HODComment'], ENT_QUOTES);
 	}
 
 	if($pr_comment_type == $COMMENT_TYPE_NONE) {
-		$pr_comment = "N/A";
+		$pr_comment = "-";
 	} elseif($pr_comment_type == $COMMENT_TYPE_MANDATORY or
 		     $pr_comment_type == $COMMENT_TYPE_OPTIONAL) {
 		$pr_comment = htmlspecialchars($student_info['PrincipalComment'], ENT_QUOTES);
@@ -365,13 +398,43 @@
 	$hod_name = "{$student_info['HODTitle']} {$student_info['HODFirstName']} {$student_info['HODSurname']}";
 	$pr_name  = "{$student_info['PrincipalTitle']} {$student_info['PrincipalFirstName']} " .
 	            "{$student_info['PrincipalSurname']}";
+	$class_count = "{$student_info['ClassCount']}";
 	$data = str_replace("&lt;&lt;name&gt;&gt;", htmlspecialchars($student_name, ENT_QUOTES), $data);
+	$data = str_replace("&lt;&lt;username&gt;&gt;", htmlspecialchars($student_username, ENT_QUOTES), $data);
 	$data = str_replace("&lt;&lt;term&gt;&gt;", htmlspecialchars($student_info['TermName'], ENT_QUOTES), $data);
 	$data = str_replace("&lt;&lt;year&gt;&gt;", htmlspecialchars($student_info['Year'], ENT_QUOTES), $data);
 	$data = str_replace("&lt;&lt;class&gt;&gt;", htmlspecialchars($class_name, ENT_QUOTES), $data);
+	
+	// Temporary class fix for LESL
+	if($student_info['User2'] == 1) {
+		if($student_info['User3'] == 1) {
+			$grade = $class_grade + 1;
+		} else {
+			$grade = $class_grade;
+		}
+		$query = "SELECT GradeName FROM grade WHERE Grade=$grade";
+		$nres =& $db->query($query);
+		if(DB::isError($nres)) die($nres->getDebugInfo());
+
+		if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
+			$hacked_class = "Grade {$nrow['GradeName']}";
+		} else {
+			$hacked_class = "Unknown";
+		}
+	} else {
+		$hacked_class = $class_name;
+	}
+	$data = str_replace("&lt;&lt;hacked_class&gt;&gt;", htmlspecialchars($hacked_class, ENT_QUOTES), $data);
+	// End Temporary fix
+	
+	$data = str_replace("&lt;&lt;class_count&gt;&gt;", htmlspecialchars($class_count, ENT_QUOTES), $data);
 	$data = str_replace("&lt;&lt;average&gt;&gt;", htmlspecialchars($average, ENT_QUOTES), $data);
+	$data = str_replace("&lt;&lt;class_average&gt;&gt;", htmlspecialchars($class_average, ENT_QUOTES), $data);
+	$data = str_replace("&lt;&lt;rank&gt;&gt;", htmlspecialchars($rank, ENT_QUOTES), $data);
 	$data = str_replace("&lt;&lt;conduct&gt;&gt;", htmlspecialchars($conduct, ENT_QUOTES), $data);
+	$data = str_replace("&lt;&lt;class_conduct&gt;&gt;", htmlspecialchars($class_conduct, ENT_QUOTES), $data);
 	$data = str_replace("&lt;&lt;effort&gt;&gt;", htmlspecialchars($effort, ENT_QUOTES), $data);
+	$data = str_replace("&lt;&lt;class_effort&gt;&gt;", htmlspecialchars($class_effort, ENT_QUOTES), $data);
 	$data = str_replace("&lt;&lt;absences&gt;&gt;", htmlspecialchars($absences, ENT_QUOTES), $data);
 	$data = str_replace("&lt;&lt;class_teacher&gt;&gt;", htmlspecialchars($ct_name, ENT_QUOTES), $data);
 	$data = str_replace("&lt;&lt;head_of_department&gt;&gt;", htmlspecialchars($hod_name, ENT_QUOTES), $data);
@@ -387,6 +450,9 @@
 	}
 	if($pos === false) {
 		$pos = strpos($data, "&lt;&lt;subject_strippedname&gt;&gt;");
+	}
+	if($pos === false) {
+		$pos = strpos($data, "&lt;&lt;subject_type&gt;&gt;");
 	}
 	if ($pos > 0) {
 		$startpos = strrpos(substr($data, 0, $pos), "<table:table-row");
@@ -407,7 +473,9 @@
 					"       subject.ConductTypeIndex, subject.CommentType, " .
 					"       subjectstudent.Comment, subjectstudent.CommentValue, " .
 					"       subjectstudent.ReportDone, classterm.TermIndex, " .
-					"       class.ClassIndex, subjecttype.SubjectTypeIndex " .
+					"       class.ClassIndex, subjecttype.SubjectTypeIndex, " .
+					"       subjecttype.Title AS SubjectType, " .
+					"       get_weight(subject.SubjectIndex, CURDATE()) " .
 					"       FROM subject, subjecttype, class, classterm, subjectstudent " .
 					"       LEFT OUTER JOIN nonmark_index AS average_index ON " .
 					"            subjectstudent.Average = average_index.NonmarkIndex " .
@@ -424,62 +492,61 @@
 					"AND   classterm.ClassTermIndex     = $classtermindex " .
 					"AND   class.ClassIndex             = classterm.ClassIndex " .
 					"AND   subjecttype.SubjectTypeIndex = subject.SubjectTypeIndex " .
-					"ORDER BY subject.AverageType DESC, subjecttype.Weight DESC, " .
+					"ORDER BY subjecttype.HighPriority DESC, get_weight(subject.SubjectIndex, CURDATE()) DESC, " .
 					"         subjecttype.Title, subject.Name, subject.SubjectIndex";
-	
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 	
 		while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 			if($row['AverageType'] == $AVG_TYPE_NONE) {
-				$average = "N/A";
-				$subject_average = "N/A";
+				$average = "-";
+				$subject_average = "-";
 			} elseif($row['AverageType'] == $AVG_TYPE_PERCENT) {
 				if($row['Average'] == -1) {
-					$average = "N/A";
+					$average = "-";
 				} else {
 					$average = round($row['Average']);
 					$average = "$average%";
 				}
 				if($row['SubjectAverage'] == -1) {
-					$subject_average = "N/A";
+					$subject_average = "-";
 				} else {
 					$subject_average = round($row['SubjectAverage']);
 					$subject_average = "$subject_average%";
 				}
 			} elseif($row['AverageType'] == $AVG_TYPE_INDEX or $row['AverageType'] == $AVG_TYPE_GRADE) {
 				if(is_null($row['AverageDisplay'])) {
-					$average = "N/A";
+					$average = "-";
 				} else {
 					$average = $row['AverageDisplay'];
 				}
-				$subject_average = "N/A";
+				$subject_average = "-";
 			} else {
-				$average = "N/A";
-				$subject_average = "N/A";
+				$average = "-";
+				$subject_average = "-";
 			}
 	
 			if($row['EffortType'] == $EFFORT_TYPE_NONE) {
-				$effort = "N/A";
+				$effort = "-";
 			} elseif($row['EffortType'] == $EFFORT_TYPE_PERCENT) {
 				if($row['Effort'] == -1) {
-					$effort = "N/A";
+					$effort = "-";
 				} else {
 					$effort = round($row['Effort']);
 					$effort = "$effort%";
 				}
 			} elseif($row['EffortType'] == $EFFORT_TYPE_INDEX) {
 				if(is_null($row['EffortDisplay'])) {
-					$effort = "N/A";
+					$effort = "-";
 				} else {
 					$effort = $row['EffortDisplay'];
 				}
 			} else {
-				$effort = "N/A";
+				$effort = "-";
 			}
 		
 			if($row['ConductType'] == $CONDUCT_TYPE_NONE) {
-				$conduct = "N/A";
+				$conduct = "-";
 			} elseif($row['ConductType'] == $CONDUCT_TYPE_PERCENT) {
 				if($row['Conduct'] == -1) {
 					$conduct = "&nbsp;";
@@ -494,11 +561,11 @@
 					$conduct = $row['ConductDisplay'];
 				}
 			} else {
-				$conduct = "N/A";
+				$conduct = "-";
 			}
 	
 			if($row['CommentType'] == $COMMENT_TYPE_NONE) {
-				$comment = "N/A";
+				$comment = "-";
 			} elseif($row['CommentType'] == $COMMENT_TYPE_MANDATORY or
 					$row['CommentType'] == $COMMENT_TYPE_OPTIONAL) {
 				if(!is_null($row['Comment'])) {
@@ -507,14 +574,15 @@
 					$comment = "";
 				}
 			} else {
-				$comment = "N/A";
+				$comment = "-";
 			}
 
 			$stripped_name = trim(str_replace($class_name, "", $row['SubjectName']));
 
 			$reprow = str_replace("&lt;&lt;subject_name&gt;&gt;",         htmlspecialchars($row['SubjectName'], ENT_QUOTES), $data_row);
 			$reprow = str_replace("&lt;&lt;subject_shortname&gt;&gt;",    htmlspecialchars($row['ShortName'], ENT_QUOTES),   $reprow);
-			$reprow = str_replace("&lt;&lt;subject_strippedname&gt;&gt;", htmlspecialchars($stripped_name, ENT_QUOTES),      $reprow);
+			$reprow = str_replace("&lt;&lt;subject_type&gt;&gt;",         htmlspecialchars($row['SubjectType'], ENT_QUOTES), $reprow);
+			$reprow = str_replace("&lt;&lt;subject_strippedname&gt;&gt;", $stripped_name,                                    $reprow);
 			$reprow = str_replace("&lt;&lt;subject_average&gt;&gt;",      htmlspecialchars($subject_average, ENT_QUOTES),    $reprow);
 			$reprow = str_replace("&lt;&lt;subject_mark&gt;&gt;",         htmlspecialchars($average, ENT_QUOTES),            $reprow);
 			$reprow = str_replace("&lt;&lt;subject_effort&gt;&gt;",       htmlspecialchars($effort, ENT_QUOTES),             $reprow);
@@ -558,54 +626,54 @@
 				$termnum = $nrow['TermNumber'];
 				
 				if($nrow['AverageType'] == $AVG_TYPE_NONE) {
-					$average = "N/A";
-					$subject_average = "N/A";
+					$average = "-";
+					$subject_average = "-";
 				} elseif($nrow['AverageType'] == $AVG_TYPE_PERCENT) {
 					if($nrow['Average'] == -1) {
-						$average = "N/A";
+						$average = "-";
 					} else {
 						$average = round($nrow['Average']);
 						$average = "$average%";
 					}
 					if($nrow['SubjectAverage'] == -1) {
-						$subject_average = "N/A";
+						$subject_average = "-";
 					} else {
 						$subject_average = round($nrow['SubjectAverage']);
 						$subject_average = "$subject_average%";
 					}
 				} elseif($nrow['AverageType'] == $AVG_TYPE_INDEX or $nrow['AverageType'] == $AVG_TYPE_GRADE) {
 					if(is_null($nrow['AverageDisplay'])) {
-						$average = "N/A";
+						$average = "-";
 					} else {
 						$average = $nrow['AverageDisplay'];
 					}
-					$subject_average = "N/A";
+					$subject_average = "-";
 				} else {
-					$average = "N/A";
-					$subject_average = "N/A";
+					$average = "-";
+					$subject_average = "-";
 				}
 		
 				if($nrow['EffortType'] == $EFFORT_TYPE_NONE) {
-					$effort = "N/A";
+					$effort = "-";
 				} elseif($nrow['EffortType'] == $EFFORT_TYPE_PERCENT) {
 					if($nrow['Effort'] == -1) {
-						$effort = "N/A";
+						$effort = "-";
 					} else {
 						$effort = round($nrow['Effort']);
 						$effort = "$effort%";
 					}
 				} elseif($nrow['EffortType'] == $EFFORT_TYPE_INDEX) {
 					if(is_null($nrow['EffortDisplay'])) {
-						$effort = "N/A";
+						$effort = "-";
 					} else {
 						$effort = $nrow['EffortDisplay'];
 					}
 				} else {
-					$effort = "N/A";
+					$effort = "-";
 				}
 			
 				if($nrow['ConductType'] == $CONDUCT_TYPE_NONE) {
-					$conduct = "N/A";
+					$conduct = "-";
 				} elseif($nrow['ConductType'] == $CONDUCT_TYPE_PERCENT) {
 					if($nrow['Conduct'] == -1) {
 						$conduct = "&nbsp;";
@@ -620,11 +688,11 @@
 						$conduct = $nrow['ConductDisplay'];
 					}
 				} else {
-					$conduct = "N/A";
+					$conduct = "-";
 				}
 		
 				if($nrow['CommentType'] == $COMMENT_TYPE_NONE) {
-					$comment = "N/A";
+					$comment = "-";
 				} elseif($nrow['CommentType'] == $COMMENT_TYPE_MANDATORY or
 						$nrow['CommentType'] == $COMMENT_TYPE_OPTIONAL) {
 					if(!is_null($nrow['Comment'])) {
@@ -633,7 +701,7 @@
 						$comment = "";
 					}
 				} else {
-					$comment = "N/A";
+					$comment = "-";
 				}
 				$reprow = str_replace("&lt;&lt;subject_average_t$termnum&gt;&gt;",      htmlspecialchars($subject_average, ENT_QUOTES),    $reprow);
 				$reprow = str_replace("&lt;&lt;subject_mark_t$termnum&gt;&gt;",         htmlspecialchars($average, ENT_QUOTES),            $reprow);

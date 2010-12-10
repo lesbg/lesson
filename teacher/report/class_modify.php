@@ -130,28 +130,31 @@
 	update_conduct_input($classindex, $termindex);*/
 
 	$query =	"SELECT user.Gender, user.FirstName, user.Surname, user.Username, " .
-			"       classlist.Average, classlist.Conduct, classlist.Effort, " .
-			"       classlist.Rank, classlist.CTComment, classlist.HODComment, " .
-			"       classlist.CTCommentDone, classlist.HODCommentDone, " .
-			"       classlist.PrincipalComment, classlist.PrincipalCommentDone, " .
-			"       classlist.PrincipalUsername, classlist.HODUsername, " .
-			"       classlist.ReportDone, classlist.ReportProofread, " .
-			"       classlist.ReportPrinted, classlist.Absences, " .
-			"       classlist.ReportProofDone, " .
-			"       average_index.Display AS AverageDisplay, " .
-			"       effort_index.Display AS EffortDisplay, " .
-			"       conduct_index.Display AS ConductDisplay " .
-			"       FROM user, classlist " .
-			"       LEFT OUTER JOIN nonmark_index AS average_index ON " .
-			"            classlist.Average = average_index.NonmarkIndex " .
-			"       LEFT OUTER JOIN nonmark_index AS effort_index ON " .
-			"            classlist.Effort = effort_index.NonmarkIndex " .
-			"       LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
-			"            classlist.Conduct = conduct_index.NonmarkIndex " .
-			"WHERE user.Username            = classlist.Username " .
-			"AND   classlist.ClassTermIndex = $classtermindex " .
-			"AND   classlist.Username       = '$student_username' " .
-			"ORDER BY user.FirstName, user.Surname, user.Username";
+				"       user.User1, user.User2, user.User3, " .
+				"       classlist.Average, classlist.Conduct, classlist.Effort, " .
+				"       classlist.Rank, classlist.CTComment, classlist.HODComment, " .
+				"       classlist.CTCommentDone, classlist.HODCommentDone, " .
+				"       classlist.PrincipalComment, classlist.PrincipalCommentDone, " .
+				"       classlist.PrincipalUsername, classlist.HODUsername, " .
+				"       classlist.ReportDone, classlist.ReportProofread, " .
+				"       classlist.ReportPrinted, classlist.Absences, " .
+				"       classlist.ReportProofDone, classterm.Average AS ClassAverage, " .
+				"       classterm.Conduct AS ClassConduct, classterm.Effort AS ClassEffort, " .
+				"       average_index.Display AS AverageDisplay, " .
+				"       effort_index.Display AS EffortDisplay, " .
+				"       conduct_index.Display AS ConductDisplay " .
+				"       FROM user, classterm, classlist " .
+				"       LEFT OUTER JOIN nonmark_index AS average_index ON " .
+				"            classlist.Average = average_index.NonmarkIndex " .
+				"       LEFT OUTER JOIN nonmark_index AS effort_index ON " .
+				"            classlist.Effort = effort_index.NonmarkIndex " .
+				"       LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
+				"            classlist.Conduct = conduct_index.NonmarkIndex " .
+				"WHERE user.Username            = classlist.Username " .
+				"AND   classlist.ClassTermIndex = $classtermindex " .
+				"AND   classterm.ClassTermIndex = classlist.ClassTermIndex " .
+				"AND   classlist.Username       = '$student_username' " .
+				"ORDER BY user.FirstName, user.Surname, user.Username";
 			
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
@@ -330,6 +333,30 @@
 		$classname = "";
 	}
 
+	$rpt_sentence = "";
+	$query =	"SELECT Grade, ClassCount FROM " .
+				"  (SELECT class.Grade, COUNT(DISTINCT class.YearIndex) AS ClassCount " .
+				"          FROM class, classterm, classlist " .
+				"   WHERE classlist.Username = '$student_username' " .
+				"   AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+				"   AND   classterm.ClassIndex     = class.ClassIndex " .
+				"   GROUP BY Grade) AS classcount " .
+				"WHERE ClassCount > 1";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		$rpt_sentence = "<p class='error' align='center'>{$student_info['FirstName']} has repeated class {$row['Grade']}";
+		while($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+			$rpt_sentence .= " and {$row['Grade']}";
+		}
+		$rpt_sentence .= ".</p>";
+	}
+
+	$new_sentence = "";
+	if($student_info['User1'] == 1) {
+		$new_sentence = "<p align='center'>{$student_info['FirstName']} is a new student.";
+	}
+	
 	$query =	"SELECT MAX(subject.AverageType) AS MaxAverage, " .
 				"       MAX(subject.ConductType) AS MaxConduct, " .
 				"       MAX(subject.CommentType) AS MaxComment, " .
@@ -381,11 +408,13 @@
 				"       average_index.Display AS AverageDisplay, " .
 				"       effort_index.Display AS EffortDisplay, " .
 				"       conduct_index.Display AS ConductDisplay, " .
+				"       subject.Average AS SubjectAverage, " .
 				"       subject.AverageType, subject.EffortType, subject.ConductType, " .
 				"       subject.AverageTypeIndex, subject.EffortTypeIndex, " .
 				"       subject.ConductTypeIndex, subject.CommentType, " .
 				"       subjectstudent.Comment, subjectstudent.CommentValue, " .
-				"       subjectstudent.ReportDone " .
+				"       subjectstudent.ReportDone, " .
+				"       get_weight(subject.SubjectIndex, CURDATE()) AS SubjectWeight " .
 				"       FROM subject, subjecttype, subjectstudent " .
 				"       LEFT OUTER JOIN nonmark_index AS average_index ON " .
 				"            subjectstudent.Average = average_index.NonmarkIndex " .
@@ -398,8 +427,9 @@
 				"AND   subject.TermIndex            = $termindex " .
 				"AND   subject.YearIndex            = $yearindex " .
 				"AND   subject.ShowInList           = 1 " .
+				"AND   (subject.AverageType != $AVG_TYPE_NONE OR subject.EffortType != $EFFORT_TYPE_NONE OR subject.ConductType != $CONDUCT_TYPE_NONE OR subject.CommentType != $COMMENT_TYPE_NONE) " .
 				"AND   subjecttype.SubjectTypeIndex = subject.SubjectTypeIndex " .
-				"ORDER BY subject.AverageType DESC, subjecttype.Weight DESC, " .
+				"ORDER BY subjecttype.HighPriority DESC, get_weight(subject.SubjectIndex, CURDATE()) DESC, " .
 				"         subjecttype.Title, subject.Name, subject.SubjectIndex";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
@@ -503,12 +533,15 @@
 		include "core/titletermyear.php";
 	}
 
+	echo $rpt_sentence;
+	echo $new_sentence;
 	echo "         <table align='center' border='1'>\n"; // Table headers
 	echo "            <tr>\n";
 	echo "               <th>Subject</th>\n";
 	if($is_ct or $is_admin or $is_principal or $is_hod) {
 		if($subject_average_type != $AVG_TYPE_NONE) {
-			echo "               <th>Average</th>\n";
+			echo "               <th>Weight</th>\n";
+			echo "               <th>Average (Class)</th>\n";
 		}
 		if($subject_effort_type != $EFFORT_TYPE_NONE) {
 			echo "               <th>Effort</th>\n";
@@ -543,18 +576,32 @@
 		echo "               <td>{$row['SubjectName']}</td>\n";
 		if($is_admin or $is_ct or $is_hod or $is_principal) {
 			if($subject_average_type != $AVG_TYPE_NONE) {
+				echo "               <td>{$row['SubjectWeight']}</td>\n";
 				if($row['AverageType'] == $AVG_TYPE_NONE) {
 					$score = "N/A";
 				} elseif($row['AverageType'] == $AVG_TYPE_PERCENT) {
 					if($row['Average'] == -1) {
-						$score = "&nbsp;";
+						$score = "-";
 					} else {
-						$score = round($row['Average']);
-						$score = "$score%";
+						$scorestr = round($row['Average']);
+						if($scorestr < 60) {
+							$color = "#CC0000";
+						} elseif($scorestr < 75) {
+							$color = "#666600";
+						} elseif($scorestr < 90) {
+							$color = "#000000";
+						} else {
+							$color = "#339900";
+						}
+						$score = "<span style='color: $color'>$scorestr%</span>";
+					}
+					if($row['SubjectAverage'] != -1) {
+						$subjscore = round($row['SubjectAverage']);
+						$score ="<b>$score</b> ($subjscore%)";
 					}
 				} elseif($row['AverageType'] == $AVG_TYPE_INDEX or $row['AverageType'] == $AVG_TYPE_GRADE) {
 					if(is_null($row['AverageDisplay'])) {
-						$score = "&nbsp;";
+						$score = "-";
 					} else {
 						$score = $row['AverageDisplay'];
 					}
@@ -569,14 +616,14 @@
 					$score = "N/A";
 				} elseif($row['EffortType'] == $EFFORT_TYPE_PERCENT) {
 					if($row['Effort'] == -1) {
-						$score = "&nbsp;";
+						$score = "-";
 					} else {
 						$score = round($row['Effort']);
 						$score = "$score%";
 					}
 				} elseif($row['EffortType'] == $EFFORT_TYPE_INDEX) {
 					if(is_null($row['EffortDisplay'])) {
-						$score = "&nbsp;";
+						$score = "-";
 					} else {
 						$score = $row['EffortDisplay'];
 					}
@@ -591,14 +638,14 @@
 					$score = "N/A";
 				} elseif($row['ConductType'] == $CONDUCT_TYPE_PERCENT) {
 					if($row['Conduct'] == -1) {
-						$score = "&nbsp;";
+						$score = "-";
 					} else {
 						$score = round($row['Conduct']);
 						$score = "$score%";
 					}
 				} elseif($row['ConductType'] == $CONDUCT_TYPE_INDEX) {
 					if(is_null($row['ConductDisplay'])) {
-						$score = "&nbsp;";
+						$score = "-";
 					} else {
 						$score = $row['ConductDisplay'];
 					}
@@ -710,8 +757,24 @@
 						$score = "N/A";
 					} else {
 						$scorestr = round($student_info['Average']);
-						$score = "$scorestr%";
+						if($scorestr < 60) {
+							$color = "#CC0000";
+						} elseif($scorestr < 75) {
+							$color = "#666600";
+						} elseif($scorestr < 90) {
+							$color = "#000000";
+						} else {
+							$color = "#339900";
+						}
+						$score = "<span style='color: $color'>$scorestr%</span>";
 					}
+					if($student_info['ClassAverage'] == -1) {
+						$score = "<b>$score</b> (N/A)";
+					} else {
+						$scorestr = round($student_info['ClassAverage']);
+						$score = "<b>$score</b> ($scorestr%)";
+					}
+					
 				} else {
 					$score = "N/A";
 				}
@@ -724,6 +787,18 @@
 			}
 			echo "            </tr>\n";
 		}
+		if($average_type == $CLASS_AVG_TYPE_CALC) {
+			echo "            <tr>\n";
+			echo "               <td>Rank:</td>\n";
+			if($student_info['Rank'] == -1) {
+				$rank = "N/A";
+			} else {
+				$rank = htmlspecialchars($student_info['Rank']);
+			}
+			echo "               <td><b>$rank</b></td>\n";
+			echo "            </tr>\n";
+		}
+				
 		if($effort_type != $CLASS_EFFORT_TYPE_NONE) {
 			echo "            <tr>\n";
 			echo "               <td>Effort:</td>\n";
@@ -786,6 +861,12 @@
 					} else {
 						$scorestr = round($student_info['Effort']);
 						$score = "$scorestr%";
+					}
+					if($student_info['ClassEffort'] == -1) {
+						$score = "<b>$score</b> (N/A)";
+					} else {
+						$scorestr = round($student_info['ClassEffort']);
+						$score = "<b>$score</b> ($scorestr%)";
 					}
 				} else {
 					$score = "N/A";
@@ -855,19 +936,27 @@
 							$score    = "N/A";
 						}
 					}
-				} elseif($conduct_type == $CLASS_CONDUCT_TYPE_CALC) {
+				} elseif($conduct_type == $CLASS_CONDUCT_TYPE_CALC or $conduct_type = $CLASS_CONDUCT_TYPE_PUN) {
 					if($student_info['Conduct'] == -1) {
 						$score = "N/A";
 					} else {
 						$scorestr = round($student_info['Conduct']);
-						$score = "$scorestr%";
+						if($scorestr < 60) {
+							$color = "#CC0000";
+						} elseif($scorestr < 75) {
+							$color = "#666600";
+						} elseif($scorestr < 90) {
+							$color = "#000000";
+						} else {
+							$color = "#339900";
+						}
+						$score = "<span style='color: $color'>$scorestr%</span>";
 					}
-				} elseif($conduct_type == $CLASS_CONDUCT_TYPE_PUN) {
-					if($student_info['Conduct'] == -1) {
-						$score = "N/A";
+					if($student_info['ClassConduct'] == -1) {
+						$score = "<b>$score</b> (N/A)";
 					} else {
-						$scorestr = round($student_info['Conduct']);
-						$score = "$scorestr%";
+						$scorestr = round($student_info['ClassConduct']);
+						$score = "<b>$score</b> ($scorestr%)";
 					}
 				} else {
 					$score = "N/A";
@@ -924,6 +1013,7 @@
 						if($cRow['AttendanceTypeIndex'] == $ATT_SUSPENDED) $suspended = $cRow['Count'];
 					}
 					$score = $absent + $suspended;
+					$score = "<b>$score</b>";
 				} else {
 					$score = "N/A";
 				}

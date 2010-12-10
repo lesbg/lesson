@@ -726,10 +726,24 @@
 	}
 
 	
+	function update_year_term($year_index, $term_index) {
+		global $db;
+		global $AVG_TYPE_PERCENT;
+		
+		$query =	"SELECT ClassIndex FROM class " .
+					"WHERE YearIndex = $year_index";
+		$res =&  $db->query($query);
+		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+		
+		while($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+			update_classterm($row['ClassIndex'], $term_index);
+		}
+	}
 	function update_classterm($class_index, $term_index) {
 		global $db;
 		global $AVG_TYPE_PERCENT;
 
+		/*
 		$query =	"UPDATE classlist, classterm " .
 					"       SET classlist.Average=-1, classlist.Rank=-1 " .
 					"WHERE classterm.TermIndex = $term_index " .
@@ -737,7 +751,8 @@
 					"AND   classterm.ClassTermIndex = classlist.ClassTermIndex ";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
-
+		*/
+		
 		$query =	"SELECT classlist.Username, classlist.ClassListIndex, " .
 					"       classterm.ClassTermIndex, class.YearIndex " .
 					"       FROM classlist, classterm, class " .
@@ -749,40 +764,69 @@
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 
 		while($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-			$query =	"UPDATE classlist, classterm, " .
-						"  (SELECT SUM(subject_weight.DistWeight * subjectstudent.Average) * 100 / " .
-						"          SUM(subject_weight.DistWeight * 100) AS Avg " .
-						"          FROM subjectstudent, subject, " .
-						"               (SELECT subjecttype.SubjectTypeIndex, " .
-						"                       subjecttype.Weight / COUNT(subject.SubjectIndex) " .
-						"                                                         AS DistWeight, " .
-						"                       subjecttype.Weight FROM subjecttype, subject, subjectstudent " .
-						"                WHERE subject.YearIndex            =  {$row['YearIndex']} " .
-						"                AND   subject.TermIndex            =  $term_index " .
-						"                AND   subject.AverageType          =  $AVG_TYPE_PERCENT " .
-						"                AND   subjectstudent.subjectIndex  =  subject.SubjectIndex " .
-						"                AND   subjectstudent.Average       >= 0 " .
-						"                AND   subjectstudent.Username      =  '{$row['Username']}' " .
-						"                AND   subjecttype.SubjectTypeIndex =  subject.SubjectTypeIndex " .
-						"                AND   subjecttype.Weight           IS NOT NULL " .
-						"                GROUP BY subjecttype.SubjectTypeIndex) AS subject_weight " .
-						"   WHERE subject.YearIndex               =  {$row['YearIndex']} " .
-						"   AND   subject.TermIndex               =  $term_index " .
-						"   AND   subject.AverageType             =  $AVG_TYPE_PERCENT " .
-						"   AND   subjectstudent.subjectIndex     =  subject.SubjectIndex " .
-						"   AND   subjectstudent.Average          >= 0 " .
-						"   AND   subjectstudent.Username         =  '{$row['Username']}' " .
-						"   AND   subject_weight.SubjectTypeIndex =  subject.SubjectTypeIndex " .
-						"   GROUP BY subjectstudent.Username) AS ctinfo " .
-						"SET classlist.Average = ctinfo.Avg " .
-						"WHERE classlist.Username  = '{$row['Username']}' " .
-						"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
-						"AND   classterm.TermIndex = $term_index " .
-						"AND   classterm.ClassIndex = $class_index";
+			$query =	"SELECT SUM(DistWeight * Average) / SUM(DistWeight) AS Avg " .
+						"     FROM " .
+						"    ((SELECT subjectstudent.Username, subjectstudent.Average, subject_weight.DistWeight" .
+						"        FROM subjectstudent, subject, " .
+						"       (SELECT subjecttype.SubjectTypeIndex, " .
+						"          get_weight(subject.SubjectIndex, CURDATE()) / COUNT(subject.SubjectIndex) AS DistWeight, " .
+						"          get_weight(subject.SubjectIndex, CURDATE()) AS Weight " .
+						"          FROM subjecttype, subject, subjectstudent " .
+						"        WHERE subject.YearIndex            =  {$row['YearIndex']} " .
+						"        AND   subject.TermIndex            =  $term_index " .
+						"        AND   subject.AverageType          =  $AVG_TYPE_PERCENT " .
+						"        AND   subjectstudent.SubjectIndex  =  subject.SubjectIndex " .
+						"        AND   subjectstudent.Average       >= 0 " .
+						"        AND   subjectstudent.Username      =  '{$row['Username']}' " .
+						"        AND   subjecttype.SubjectTypeIndex =  subject.SubjectTypeIndex " .
+						"        AND   get_weight(subject.SubjectIndex, CURDATE()) > 0 " .
+						"        GROUP BY subjecttype.SubjectTypeIndex) AS subject_weight " .
+						"      WHERE subject.YearIndex               =  {$row['YearIndex']} " .
+						"      AND   subject.TermIndex               =  $term_index " .
+						"      AND   subject.AverageType             =  $AVG_TYPE_PERCENT " .
+						"      AND   subjectstudent.subjectIndex     =  subject.SubjectIndex " .
+						"      AND   subjectstudent.Average          >= 0 " .
+						"      AND   subjectstudent.Username         =  '{$row['Username']}' " .
+						"      AND   subject_weight.SubjectTypeIndex =  subject.SubjectTypeIndex " .
+						"     ) UNION (" .
+						"      SELECT classlist.Username, classlist.Conduct AS Average, 1.0 AS DistWeight " .
+						"        FROM classlist, classterm, class " .
+						"      WHERE classlist.Username           = '{$row['Username']}' " .
+						"      AND   classlist.ClassTermIndex     = classterm.ClassTermIndex " .
+						"      AND   classterm.TermIndex          = $term_index " .
+						"      AND   classterm.ClassIndex         = class.ClassIndex " .
+						"      AND   class.YearIndex              = {$row['YearIndex']} " .
+						"      AND classlist.Conduct >= 0" .
+						"     )) AS ctgrade " .
+						"   GROUP BY Username";
 			$nres =&  $db->query($query);
 			if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
+			
+			if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
+				$query =	"UPDATE classlist, classterm " .
+							"SET classlist.Average = {$nrow['Avg']} " .
+							"WHERE classlist.Username  = '{$row['Username']}' " .
+							"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+							"AND   classterm.TermIndex = $term_index " .
+							"AND   classterm.ClassIndex = $class_index";
+				$nres =&  $db->query($query);
+				if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
+			}
 		}
 
+		// Update class average
+		$query =	"UPDATE classterm, " .
+					" (SELECT ClassTermIndex, AVG(Average) AS ClassAverage " .
+					"  FROM classlist " .
+					"  WHERE Average >= 0 " .
+					"  GROUP BY ClassTermIndex) AS ctaverage " .
+					"SET    classterm.Average = ctaverage.ClassAverage " .
+					"WHERE  ctaverage.ClassTermIndex = classterm.ClassTermIndex " .
+					"AND    classterm.TermIndex = $term_index " .
+					"AND    classterm.ClassIndex = $class_index ";
+		$nres =&  $db->query($query);
+		if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
+					
 		$query =	"SELECT classlist.ClassListIndex, classlist.Average FROM classterm, classlist " .
 					"WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
 					"AND   classterm.TermIndex      = $term_index " .
@@ -875,11 +919,12 @@
 					"   GROUP BY Username) AS score " .
 					"SET subjectstudent.Average = score.Average " .
 					"WHERE subjectstudent.SubjectIndex = $subject_index " .
+					"AND   subjectstudent.Average != score.Average " .
 					"AND   subjectstudent.Username = score.Username";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 
-		$query =	"SELECT Username, Average FROM subjectstudent " .
+		$query =	"SELECT Username, Average, Rank FROM subjectstudent " .
 					"WHERE SubjectIndex = $subject_index " .
 					"AND   Average >= 0 " .
 					"ORDER BY Average DESC";
@@ -891,18 +936,20 @@
 		$prevmark = 0;
 		$count = 0;
 		while($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-			if($prevmark > intval($row['Average'])) {
+			if($prevmark > round($row['Average'])) {
 				$rank += $count;
 				$count = 1;
 			} else {
 				$count += 1;
 			}
 			$prevmark = round($row['Average']);
-			$query =	"UPDATE subjectstudent SET Rank=$rank " .
-						"WHERE SubjectIndex = $subject_index " .
-						"AND Username = '{$row['Username']}'";
-			$nres =&  $db->query($query);
-			if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
+			if($rank != $row['Rank']) {
+				$query =	"UPDATE subjectstudent SET Rank=$rank " .
+							"WHERE SubjectIndex = $subject_index " .
+							"AND Username = '{$row['Username']}'";
+				$nres =&  $db->query($query);
+				if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
+			}
 		}
 
 
@@ -1064,23 +1111,65 @@
 			} else {
 				$score = 100;
 			}
-	
-			$query =	"UPDATE classlist SET Conduct=$score " .
+
+			$query =	"SELECT classlist.Conduct FROM classlist " .
 						"WHERE Username       = '$studentusername' " .
 						"AND   ClassTermIndex = $classterm";
 			$res =&  $db->query($query);
 			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+			
+			$check_conduct = -1;
+			if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+				$check_conduct = $row['Conduct'];
+			}
+			
+			if($check_conduct != $score) {
+				$query =	"UPDATE classlist SET Conduct=$score " .
+							"WHERE Username       = '$studentusername' " .
+							"AND   ClassTermIndex = $classterm";
+				$res =&  $db->query($query);
+				if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+
+				$query =	"UPDATE classterm, " .
+							" (SELECT ClassTermIndex, AVG(Conduct) AS ClassAverage " .
+							"  FROM classlist " .
+							"  WHERE Conduct >= 0 " .
+							"  GROUP BY ClassTermIndex) AS ctaverage " .
+							"SET    classterm.Conduct = ctaverage.ClassAverage " .
+							"WHERE  ctaverage.ClassTermIndex = classterm.ClassTermIndex " .
+							"AND    classterm.ClassTermIndex = $classterm";
+				$res =&  $db->query($query);
+				if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+			}
 		} else {
 			$classterm = $row['ClassTermIndex'];
 			
 			if(!isset($classterm) or is_null($classterm)){
 				return;
 			}
-			$query =	"UPDATE classlist SET Conduct=-1 " .
+
+			$query =	"SELECT classlist.Conduct FROM classlist " .
 						"WHERE Username       = '$studentusername' " .
 						"AND   ClassTermIndex = $classterm";
 			$res =&  $db->query($query);
 			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+			
+			$check_conduct = 100;
+			if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+				$check_conduct = $row['Conduct'];
+			}
+
+			if($check_conduct != -1) {
+				$query =	"UPDATE classlist SET Conduct=-1 " .
+							"WHERE ClassTermIndex = $classterm";
+				$res =&  $db->query($query);
+				if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+	
+				$query =	"UPDATE classterm SET Conduct=-1 " .
+							"WHERE ClassTermIndex = $classterm";
+				$res =&  $db->query($query);
+				if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+			}
 		}
 	}
 

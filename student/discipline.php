@@ -68,7 +68,7 @@
 		include "core/titletermyear.php";
 
 		/* Calculate conduct mark */
-		$query =	"SELECT Conduct FROM classlist, classterm, class " .
+		$query =	"SELECT classlist.Conduct FROM classlist, classterm, class " .
 					"WHERE class.YearIndex = $yearindex " .
 					"AND   classterm.ClassIndex = class.ClassIndex " .
 					"AND   classterm.TermIndex = $termindex " .
