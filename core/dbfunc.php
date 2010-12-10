@@ -766,28 +766,22 @@
 		while($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 			$query =	"SELECT SUM(DistWeight * Average) / SUM(DistWeight) AS Avg " .
 						"     FROM " .
-						"    ((SELECT subjectstudent.Username, subjectstudent.Average, subject_weight.DistWeight" .
-						"        FROM subjectstudent, subject, " .
-						"       (SELECT subjecttype.SubjectTypeIndex, " .
-						"          get_weight(subject.SubjectIndex, CURDATE()) / COUNT(subject.SubjectIndex) AS DistWeight, " .
-						"          get_weight(subject.SubjectIndex, CURDATE()) AS Weight " .
-						"          FROM subjecttype, subject, subjectstudent " .
-						"        WHERE subject.YearIndex            =  {$row['YearIndex']} " .
-						"        AND   subject.TermIndex            =  $term_index " .
-						"        AND   subject.AverageType          =  $AVG_TYPE_PERCENT " .
-						"        AND   subjectstudent.SubjectIndex  =  subject.SubjectIndex " .
-						"        AND   subjectstudent.Average       >= 0 " .
-						"        AND   subjectstudent.Username      =  '{$row['Username']}' " .
-						"        AND   subjecttype.SubjectTypeIndex =  subject.SubjectTypeIndex " .
-						"        AND   get_weight(subject.SubjectIndex, CURDATE()) > 0 " .
-						"        GROUP BY subjecttype.SubjectTypeIndex) AS subject_weight " .
-						"      WHERE subject.YearIndex               =  {$row['YearIndex']} " .
-						"      AND   subject.TermIndex               =  $term_index " .
-						"      AND   subject.AverageType             =  $AVG_TYPE_PERCENT " .
-						"      AND   subjectstudent.subjectIndex     =  subject.SubjectIndex " .
-						"      AND   subjectstudent.Average          >= 0 " .
-						"      AND   subjectstudent.Username         =  '{$row['Username']}' " .
-						"      AND   subject_weight.SubjectTypeIndex =  subject.SubjectTypeIndex " .
+						"    ((SELECT subject_weight.Username, subject_weight.Average, " .
+						"             subject_weight.Weight / COUNT(subject_weight.SubjectIndex) AS DistWeight " .
+						"        FROM subjecttype, " .
+						"          (SELECT get_weight(subject.SubjectIndex, CURDATE()) AS Weight, " .
+						"                  subject.SubjectIndex, subject.SubjectTypeIndex, subjectstudent.Average, " .
+						"                  subjectstudent.Username FROM subject, subjectstudent " .
+						"                WHERE subject.TermIndex   = $term_index " .
+						"                AND   subject.YearIndex   = {$row['YearIndex']} " .
+						"                AND   subject.AverageType = $AVG_TYPE_PERCENT " .
+						"                AND   subjectstudent.SubjectIndex  =  subject.SubjectIndex " .
+						"                AND   subjectstudent.Average       >= 0 " .
+						"                AND   subjectstudent.Username      =  '{$row['Username']}' " .
+						"          ) AS subject_weight " .
+						"        WHERE subjecttype.SubjectTypeIndex = subject_weight.SubjectTypeIndex " .
+						"        AND   subject_weight.Weight > 0 " .
+						"        GROUP BY subjecttype.SubjectTypeIndex " .
 						"     ) UNION (" .
 						"      SELECT classlist.Username, classlist.Conduct AS Average, 1.0 AS DistWeight " .
 						"        FROM classlist, classterm, class " .
@@ -797,8 +791,7 @@
 						"      AND   classterm.ClassIndex         = class.ClassIndex " .
 						"      AND   class.YearIndex              = {$row['YearIndex']} " .
 						"      AND classlist.Conduct >= 0" .
-						"     )) AS ctgrade " .
-						"   GROUP BY Username";
+						"     )) AS ctgrade ";
 			$nres =&  $db->query($query);
 			if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
 			
