@@ -577,12 +577,16 @@
 				$comment = "-";
 			}
 
-			$stripped_name = trim(str_replace($class_name, "", $row['SubjectName']));
-
+			if(strpos('0123456789', substr($row['SubjectName'], 0, 1)) !== false) {
+				$stripped_name = trim(strstr($row['SubjectName'], " "));
+			} else {
+				$stripped_name = trim($row['SubjectName']);
+			}
+			
 			$reprow = str_replace("&lt;&lt;subject_name&gt;&gt;",         htmlspecialchars($row['SubjectName'], ENT_QUOTES), $data_row);
 			$reprow = str_replace("&lt;&lt;subject_shortname&gt;&gt;",    htmlspecialchars($row['ShortName'], ENT_QUOTES),   $reprow);
 			$reprow = str_replace("&lt;&lt;subject_type&gt;&gt;",         htmlspecialchars($row['SubjectType'], ENT_QUOTES), $reprow);
-			$reprow = str_replace("&lt;&lt;subject_strippedname&gt;&gt;", $stripped_name,                                    $reprow);
+			$reprow = str_replace("&lt;&lt;subject_strippedname&gt;&gt;", htmlspecialchars($stripped_name, ENT_QUOTES),      $reprow);
 			$reprow = str_replace("&lt;&lt;subject_average&gt;&gt;",      htmlspecialchars($subject_average, ENT_QUOTES),    $reprow);
 			$reprow = str_replace("&lt;&lt;subject_mark&gt;&gt;",         htmlspecialchars($average, ENT_QUOTES),            $reprow);
 			$reprow = str_replace("&lt;&lt;subject_effort&gt;&gt;",       htmlspecialchars($effort, ENT_QUOTES),             $reprow);
