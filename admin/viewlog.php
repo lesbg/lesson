@@ -29,33 +29,33 @@
 		$sort[intval($_GET['sort'])] = "bsort";
 		
 		if($_GET['sort'] == '1') {
-			$sortorder = "ORDER BY log.Time ";
+			$sortorder = "ORDER BY log.Time, log.LogIndex ";
 		} elseif($_GET['sort'] == '2') {
-			$sortorder = "ORDER BY user.Username, log.Time DESC ";
+			$sortorder = "ORDER BY user.Username, log.Time DESC, log.LogIndex DESC ";
 		} elseif($_GET['sort'] == '3') {
-			$sortorder = "ORDER BY user.Username DESC, log.Time DESC ";
+			$sortorder = "ORDER BY user.Username DESC, log.Time DESC, log.LogIndex DESC ";
 		} elseif($_GET['sort'] == '4') {
-			$sortorder = "ORDER BY log.Level, log.Time DESC ";
+			$sortorder = "ORDER BY log.Level, log.Time DESC, log.LogIndex DESC ";
 		} elseif($_GET['sort'] == '5') {
-			$sortorder = "ORDER BY log.Level DESC, log.Time DESC ";
+			$sortorder = "ORDER BY log.Level DESC, log.Time DESC, log.LogIndex DESC ";
 		} elseif($_GET['sort'] == '6') {
-			$sortorder = "ORDER BY log.Code, log.Time DESC ";
+			$sortorder = "ORDER BY log.Code, log.Time DESC, log.LogIndex DESC ";
 		} elseif($_GET['sort'] == '7') {
-			$sortorder = "ORDER BY log.Code DESC, log.Time DESC ";
+			$sortorder = "ORDER BY log.Code DESC, log.Time DESC, log.LogIndex DESC ";
 		} elseif($_GET['sort'] == '8') {
-			$sortorder = "ORDER BY log.Comment, log.Time DESC ";
+			$sortorder = "ORDER BY log.Comment, log.Time DESC, log.LogIndex DESC ";
 		} elseif($_GET['sort'] == '9') {
-			$sortorder = "ORDER BY log.Comment DESC, log.Time DESC ";
+			$sortorder = "ORDER BY log.Comment DESC, log.Time DESC, log.LogIndex DESC ";
 		} elseif($_GET['sort'] == '10') {
-			$sortorder = "ORDER BY log.Page, log.Time DESC ";
+			$sortorder = "ORDER BY log.Page, log.Time DESC, log.LogIndex DESC ";
 		} elseif($_GET['sort'] == '11') {
-			$sortorder = "ORDER BY log.Page DESC, log.Time DESC ";
+			$sortorder = "ORDER BY log.Page DESC, log.Time DESC, log.LogIndex DESC ";
 		} elseif($_GET['sort'] == '12') {
-			$sortorder = "ORDER BY log.RemoteHost, log.Time DESC ";
+			$sortorder = "ORDER BY log.RemoteHost, log.Time DESC, log.LogIndex DESC ";
 		} elseif($_GET['sort'] == '13') {
-			$sortorder = "ORDER BY log.RemoteHost DESC, log.Time DESC ";
+			$sortorder = "ORDER BY log.RemoteHost DESC, log.Time DESC, log.LogIndex DESC ";
 		} else {
-			$sortorder = "ORDER BY log.Time DESC ";
+			$sortorder = "ORDER BY log.Time DESC, log.LogIndex DESC ";
 		}
 		
 		$sessionAsc = dbfuncGetButton("index.php?location=" . dbfuncString2Int("admin/viewlog.php") . 
