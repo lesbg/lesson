@@ -55,20 +55,21 @@
 		include "core/titletermyear.php";
 		
 		/* Get class list */
-		$res =&  $db->query("SELECT class.ClassName, class.Grade, class.ClassIndex, " .
-							"       user.Username, user.Title, user.FirstName, user.Surname, " .
-							"       classterm.ClassTermIndex, classterm.CanDoReport, " .
-							"       MIN(classlist.ReportDone) AS ReportDone, " .
-							"       COUNT(classlist.Username) AS StudentCount " .
-							"       FROM class INNER JOIN classterm USING (ClassIndex) " .
-							"       LEFT OUTER JOIN user ON " .
-							"       user.Username = class.ClassTeacherUsername " .
-							"       LEFT OUTER JOIN classlist USING (ClassTermIndex) " .
-							"WHERE  class.YearIndex = $yearindex " .
-							"AND    classterm.TermIndex = $termindex " .
-							"AND    class.DepartmentIndex = $depindex " .
-							"GROUP BY classterm.ClassTermIndex " .
-							"ORDER BY class.Grade, class.ClassName, class.ClassIndex");
+		$query =	"SELECT class.ClassName, class.Grade, class.ClassIndex, " .
+					"       user.Username, user.Title, user.FirstName, user.Surname, " .
+					"       classterm.ClassTermIndex, classterm.CanDoReport, " .
+					"       MIN(classlist.ReportDone) AS ReportDone, " .
+					"       COUNT(classlist.Username) AS StudentCount " .
+					"       FROM class INNER JOIN classterm USING (ClassIndex) " .
+					"       LEFT OUTER JOIN user ON " .
+					"       user.Username = class.ClassTeacherUsername " .
+					"       LEFT OUTER JOIN classlist USING (ClassTermIndex) " .
+					"WHERE  class.YearIndex = $yearindex " .
+					"AND    classterm.TermIndex = $termindex " .
+					"AND    class.DepartmentIndex = $depindex " .
+					"GROUP BY classterm.ClassTermIndex " .
+					"ORDER BY class.Grade, class.ClassName, class.ClassIndex";
+		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 			
 		/* Print classes and the # of students in each class */

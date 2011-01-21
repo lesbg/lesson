@@ -403,6 +403,30 @@
 	$subject_comment_avg  = $row['CommentAverage'];
 	$subject_report_done  = $row['ReportDone'];
 
+	$query =	"SELECT COUNT(TermIndex) AS TermCount, MIN(TermIndex) AS LowTerm FROM (" .
+				" SELECT subject.TermIndex, 1 AS TGroup FROM " .
+				"        subject, subjectstudent, term, term AS depterm " .
+				" WHERE  subjectstudent.Username = '$student_username' " .
+				" AND    subject.SubjectIndex    = subjectstudent.SubjectIndex " .
+				" AND    subject.YearIndex       = $yearindex " .
+				" AND    subject.TermIndex       = term.TermIndex " .
+				" AND    subject.ShowInList      = 1 " .
+				" AND   (subject.AverageType != $AVG_TYPE_NONE OR subject.EffortType != $EFFORT_TYPE_NONE OR subject.ConductType != $CONDUCT_TYPE_NONE OR subject.CommentType != $COMMENT_TYPE_NONE) " .
+				" AND    term.DepartmentIndex    = depterm.DepartmentIndex " .
+				" AND    term.TermIndex         <= $termindex " .
+				" AND    depterm.TermIndex       = $termindex " .
+				" GROUP BY subject.TermIndex) AS SubList " .
+				"GROUP BY TGroup";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		$termcount = $row['TermCount'];
+		$lowtermindex = $row['LowTerm'];
+	} else {
+		$termcount = 0;
+	}
+	
+				
 	$query =	"SELECT subject.Name AS SubjectName, subject.SubjectIndex, " .
 				"       subjectstudent.Average, subjectstudent.Effort, subjectstudent.Conduct, " .
 				"       average_index.Display AS AverageDisplay, " .
@@ -415,7 +439,7 @@
 				"       subjectstudent.Comment, subjectstudent.CommentValue, " .
 				"       subjectstudent.ReportDone, " .
 				"       get_weight(subject.SubjectIndex, CURDATE()) AS SubjectWeight " .
-				"       FROM subject, subjecttype, subjectstudent " .
+				"       FROM subject, subjecttype, term, term AS depterm, subjectstudent " .
 				"       LEFT OUTER JOIN nonmark_index AS average_index ON " .
 				"            subjectstudent.Average = average_index.NonmarkIndex " .
 				"       LEFT OUTER JOIN nonmark_index AS effort_index ON " .
@@ -424,13 +448,17 @@
 				"            subjectstudent.Conduct = conduct_index.NonmarkIndex " .
 				"WHERE subjectstudent.Username      = '$student_username' " .
 				"AND   subjectstudent.SubjectIndex  = subject.SubjectIndex " .
-				"AND   subject.TermIndex            = $termindex " .
+				"AND   subject.TermIndex            = term.TermIndex " .
+				"AND   subject.TermIndex           <= $termindex " .
 				"AND   subject.YearIndex            = $yearindex " .
 				"AND   subject.ShowInList           = 1 " .
 				"AND   (subject.AverageType != $AVG_TYPE_NONE OR subject.EffortType != $EFFORT_TYPE_NONE OR subject.ConductType != $CONDUCT_TYPE_NONE OR subject.CommentType != $COMMENT_TYPE_NONE) " .
+				"AND   term.DepartmentIndex         = depterm.DepartmentIndex " .
+				"AND   depterm.TermIndex            = $termindex " .
 				"AND   subjecttype.SubjectTypeIndex = subject.SubjectTypeIndex " .
+				"GROUP BY subject.Name " .
 				"ORDER BY subjecttype.HighPriority DESC, get_weight(subject.SubjectIndex, CURDATE()) DESC, " .
-				"         subjecttype.Title, subject.Name, subject.SubjectIndex";
+				"         subjecttype.Title, subject.Name, subject.TermIndex DESC, subject.SubjectIndex ";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 
@@ -541,7 +569,16 @@
 	if($is_ct or $is_admin or $is_principal or $is_hod) {
 		if($subject_average_type != $AVG_TYPE_NONE) {
 			echo "               <th>Weight</th>\n";
-			echo "               <th>Average (Class)</th>\n";
+			$query =	"SELECT TermName FROM term " .
+						"WHERE TermIndex >= $lowtermindex " .
+						"AND   TermIndex <= $termindex";
+			$nres =&  $db->query($query);
+			if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
+			while($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
+				$name = htmlentities($nrow['TermName']);
+				$pname = htmlentities(substr($nrow['TermName'], 0, 1));
+				echo "               <th><a title='$name'>$pname</a></th>\n";
+			}
 		}
 		if($subject_effort_type != $EFFORT_TYPE_NONE) {
 			echo "               <th>Effort</th>\n";
@@ -563,7 +600,8 @@
 	
 	/* For each student, print a row with the student's name and score on each report*/
 	$alt_count   = 0;
-	while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+	
+	while($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {		
 		$alt_count   += 1;
 		
 		if($alt_count % 2 == 0) {
@@ -571,44 +609,85 @@
 		} else {
 			$alt = " class='std'";
 		}
-		
+	
+	
 		echo "            <tr$alt id='row_{$row['SubjectIndex']}'>\n";
-		echo "               <td>{$row['SubjectName']}</td>\n";
+		echo "               <td nowrap>{$row['SubjectName']}</td>\n";
+
+		if($subject_average_type != $AVG_TYPE_NONE) {
+			echo "               <td nowrap>{$row['SubjectWeight']}</td>\n";
+		}
+
 		if($is_admin or $is_ct or $is_hod or $is_principal) {
 			if($subject_average_type != $AVG_TYPE_NONE) {
-				echo "               <td>{$row['SubjectWeight']}</td>\n";
-				if($row['AverageType'] == $AVG_TYPE_NONE) {
-					$score = "N/A";
-				} elseif($row['AverageType'] == $AVG_TYPE_PERCENT) {
-					if($row['Average'] == -1) {
-						$score = "-";
-					} else {
-						$scorestr = round($row['Average']);
-						if($scorestr < 60) {
-							$color = "#CC0000";
-						} elseif($scorestr < 75) {
-							$color = "#666600";
-						} elseif($scorestr < 90) {
-							$color = "#000000";
+				$subject_name = safe($row['SubjectName']);
+				$query =	"SELECT subject.AverageType, subject.AverageTypeIndex, subjectstudent.Average, " .
+							"       subject.EffortType, subject.EffortTypeIndex, subjectstudent.Effort, " .
+							"       subject.ConductType, subject.ConductTypeIndex, subjectstudent.Conduct, " .
+							"       subject.CommentType, subjectstudent.Comment, subject.Average AS SubjectAverage, " .
+							"       average_index.Display AS AverageDisplay, " .
+							"       effort_index.Display AS EffortDisplay, " .
+							"       conduct_index.Display AS ConductDisplay, " .
+							"		subject.TermIndex " .
+							" FROM " .
+							" (term INNER JOIN term AS depterm " .
+							"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+							"       AND depterm.TermIndex = $termindex" .
+							"       AND term.TermIndex <= $termindex) " .
+							" LEFT OUTER JOIN " .
+							" (subjectstudent INNER JOIN subject " .
+							"       ON  subjectstudent.Username = '$student_username' " .
+							"       AND subjectstudent.SubjectIndex = subject.SubjectIndex " .
+							"       AND subject.YearIndex = $yearindex " .
+							"       AND subject.Name = '$subject_name') " .
+							" ON term.TermIndex = subject.TermIndex " .
+							" LEFT OUTER JOIN nonmark_index AS average_index ON " .
+							"       subjectstudent.Average = average_index.NonmarkIndex " .
+							" LEFT OUTER JOIN nonmark_index AS effort_index ON " .
+							"       subjectstudent.Effort = effort_index.NonmarkIndex " .
+							" LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
+							"       subjectstudent.Conduct = conduct_index.NonmarkIndex " .
+							"ORDER BY subject.TermIndex";
+				$dres =&  $db->query($query);
+				if(DB::isError($dres)) die($dres->getDebugInfo());           // Check for errors in query
+				while($drow =& $dres->fetchRow(DB_FETCHMODE_ASSOC)) {
+					if($drow['AverageType'] == $AVG_TYPE_NONE) {
+						$score = "N/A";
+					} elseif($drow['AverageType'] == $AVG_TYPE_PERCENT) {
+						if($drow['Average'] == -1 or is_null($drow['Average'])) {
+							$score = "-";
 						} else {
-							$color = "#339900";
+							$scorestr = round($drow['Average']);
+							if($scorestr < 60) {
+								$color = "#CC0000";
+							} elseif($scorestr < 75) {
+								$color = "#666600";
+							} elseif($scorestr < 90) {
+								$color = "#000000";
+							} else {
+								$color = "#339900";
+							}
+							$score = "<span style='color: $color'>$scorestr</span>";
 						}
-						$score = "<span style='color: $color'>$scorestr%</span>";
-					}
-					if($row['SubjectAverage'] != -1) {
-						$subjscore = round($row['SubjectAverage']);
-						$score ="<b>$score</b> ($subjscore%)";
-					}
-				} elseif($row['AverageType'] == $AVG_TYPE_INDEX or $row['AverageType'] == $AVG_TYPE_GRADE) {
-					if(is_null($row['AverageDisplay'])) {
-						$score = "-";
+						if($drow['SubjectAverage'] != -1) {
+							$subjscore = round($drow['SubjectAverage']);
+							$score ="<b>$score</b> ($subjscore)";
+						}
+					} elseif($drow['AverageType'] == $AVG_TYPE_INDEX or $drow['AverageType'] == $AVG_TYPE_GRADE) {
+						if(is_null($drow['AverageDisplay'])) {
+							$score = "-";
+						} else {
+							$score = $drow['AverageDisplay'];
+						}
 					} else {
-						$score = $row['AverageDisplay'];
+						$score = "N/A";
 					}
-				} else {
-					$score = "N/A";
+					if ($drow['TermIndex'] != $termindex) {
+						$score = str_replace("<b>", "", $score);
+						$score = str_replace("</b>", "", $score);
+					}
+					echo "               <td nowrap>$score</td>\n";
 				}
-				echo "               <td>$score</td>\n";
 			}
 	
 			if($subject_effort_type != $EFFORT_TYPE_NONE) {
@@ -630,7 +709,7 @@
 				} else {
 					$score = "N/A";
 				}
-				echo "               <td>$score</td>\n";
+				echo "               <td nowrap>$score</td>\n";
 			}
 	
 			if($subject_conduct_type != $CONDUCT_TYPE_NONE) {
@@ -652,7 +731,7 @@
 				} else {
 					$score = "N/A";
 				}
-				echo "               <td>$score</td>\n";
+				echo "               <td nowrap>$score</td>\n";
 			}
 		}
 
@@ -681,12 +760,12 @@
 			}
 		}
 		if($row['ReportDone'] == 0) {
-			echo "               <td><b>No</b></td>\n";
+			echo "               <td nowrap><b>No</b></td>\n";
 		} else {
-			echo "               <td><i>Yes</i></td>\n";
+			echo "               <td nowrap><i>Yes</i></td>\n";
 		}
 		if(!$student_info['ReportDone']) {
-			echo "               <td><input type='submit' name='edit_{$row['SubjectIndex']}' value='Change'></td>\n";
+			echo "               <td nowrap><input type='submit' name='edit_{$row['SubjectIndex']}' value='Change'></td>\n";
 		}
 		echo "            </tr>\n";
 	}
