@@ -796,6 +796,8 @@
 			if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
 			
 			if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
+				if(is_null($nrow['Avg']))
+					$nrow['Avg'] = "-1";
 				$query =	"UPDATE classlist, classterm " .
 							"SET classlist.Average = {$nrow['Avg']} " .
 							"WHERE classlist.Username  = '{$row['Username']}' " .
