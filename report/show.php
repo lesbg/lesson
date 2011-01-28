@@ -391,6 +391,70 @@
 		$pr_comment = htmlspecialchars($student_info['PrincipalComment'], ENT_QUOTES);
 	}
 
+	/* Get overall averages */
+	$query =	"SELECT term.TermNumber, classlist.Average, classterm.Average AS ClassAverage FROM " .
+				" (term INNER JOIN term AS depterm " .
+				"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+				"       AND depterm.TermIndex = $termindex" .
+				"       AND term.TermIndex <= $termindex) " .
+				" INNER JOIN " .
+				" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
+				"       ON  classlist.Username = '$student_username' " .
+				"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+				"       AND class.YearIndex = $yearindex) " .
+				" ON term.TermIndex = classterm.TermIndex ";
+	$cRes =&   $db->query($query);
+	if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
+	
+	$ovl_average = 0;
+	$ovl_average_max = 0;
+	$cls_ovl_average = 0;
+	$cls_ovl_average_max = 0;
+	
+	while($cRow =& $cRes->fetchrow(DB_FETCHMODE_ASSOC)) {
+		if($cRow['Average'] != -1 and !is_null($cRow['Average'])) {
+			$term_average     = round($cRow['Average']);
+			$ovl_average     += $term_average;
+			$ovl_average_max += 100;
+			
+			$term_average     = "$term_average%";
+		}
+		if($cRow['ClassAverage'] != -1 and !is_null($cRow['ClassAverage'])) {
+			$class_term_average   = round($cRow['ClassAverage']);
+			$cls_ovl_average     += $class_term_average;
+			$cls_ovl_average_max += 100;
+			
+			$class_term_average   = "$class_term_average%";
+		}
+		$termnum = $cRow['TermNumber'];
+		$data = str_replace("&lt;&lt;average_t$termnum&gt;&gt;", htmlspecialchars($term_average, ENT_QUOTES), $data);
+		$data = str_replace("&lt;&lt;class_average_t$termnum&gt;&gt;", htmlspecialchars($class_term_average, ENT_QUOTES), $data);
+	}
+	
+	# Remove fields for terms not used yet
+	$query = "SELECT TermNumber FROM term WHERE DepartmentIndex=$depindex";
+	$nres =&  $db->query($query);
+	if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
+	while ($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
+		$termnum = $nrow["TermNumber"];
+		$data = str_replace("&lt;&lt;average_t$termnum&gt;&gt;",       "", $data);
+		$data = str_replace("&lt;&lt;class_average_t$termnum&gt;&gt;", "", $data);
+	}
+ 
+	
+	if($ovl_average_max > 0) {
+		$scorestr = round($ovl_average * 100 / $ovl_average_max);
+		$ovl_average = "$scorestr%";
+	} else {
+		$ovl_average = "-";
+	}
+	if($cls_ovl_average_max > 0) {
+		$scorestr = round($cls_ovl_average * 100 / $cls_ovl_average_max);
+		$cls_ovl_average = "$scorestr%";
+	} else {
+		$cls_ovl_average = "-";
+	}
+	
 	// Replace obvious data points
 	$depindex = $student_info['DepartmentIndex'];
 	$student_name = "{$student_info['FirstName']} {$student_info['Surname']}";
@@ -430,6 +494,8 @@
 	$data = str_replace("&lt;&lt;class_count&gt;&gt;", htmlspecialchars($class_count, ENT_QUOTES), $data);
 	$data = str_replace("&lt;&lt;average&gt;&gt;", htmlspecialchars($average, ENT_QUOTES), $data);
 	$data = str_replace("&lt;&lt;class_average&gt;&gt;", htmlspecialchars($class_average, ENT_QUOTES), $data);
+	$data = str_replace("&lt;&lt;overall_average&gt;&gt;", htmlspecialchars($ovl_average, ENT_QUOTES), $data);
+	$data = str_replace("&lt;&lt;class_overall_average&gt;&gt;", htmlspecialchars($cls_ovl_average, ENT_QUOTES), $data);
 	$data = str_replace("&lt;&lt;rank&gt;&gt;", htmlspecialchars($rank, ENT_QUOTES), $data);
 	$data = str_replace("&lt;&lt;conduct&gt;&gt;", htmlspecialchars($conduct, ENT_QUOTES), $data);
 	$data = str_replace("&lt;&lt;class_conduct&gt;&gt;", htmlspecialchars($class_conduct, ENT_QUOTES), $data);
@@ -595,37 +661,46 @@
 			
 			$classindex = $row['ClassIndex'];
 			$subjecttypeindex = $row['SubjectTypeIndex'];
-			$subjectname = $row['SubjectName'];
-			 
-			$query =	"SELECT subject.Average AS SubjectAverage, " .
-					    "       subjectstudent.Average, subjectstudent.Effort, subjectstudent.Conduct, " .
-                        "       average_index.Display AS AverageDisplay, " .
+			$subject_name = $row['SubjectName'];
+
+			$query =	"SELECT subject.AverageType, subject.AverageTypeIndex, subjectstudent.Average, " .
+						"       subject.EffortType, subject.EffortTypeIndex, subjectstudent.Effort, " .
+						"       subject.ConductType, subject.ConductTypeIndex, subjectstudent.Conduct, " .
+						"       subject.CommentType, subjectstudent.Comment, subjectstudent.CommentValue, " .
+						"       subject.Average AS SubjectAverage, " .
+						"       average_index.Display AS AverageDisplay, " .
 						"       effort_index.Display AS EffortDisplay, " .
 						"       conduct_index.Display AS ConductDisplay, " .
-						"       subject.AverageType, subject.EffortType, subject.ConductType, " .
-						"       subject.AverageTypeIndex, subject.EffortTypeIndex, " .
-						"       subject.ConductTypeIndex, subject.CommentType, " .
-						"       subjectstudent.Comment, subjectstudent.CommentValue, " .
-						"       term.TermNumber " .
-						"       FROM subject, subjecttype, term, subjectstudent " .
-						"       LEFT OUTER JOIN nonmark_index AS average_index ON " .
-						"            subjectstudent.Average = average_index.NonmarkIndex " .
-						"       LEFT OUTER JOIN nonmark_index AS effort_index ON " .
-						"            subjectstudent.Effort = effort_index.NonmarkIndex " .
-						"       LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
-						"            subjectstudent.Conduct = conduct_index.NonmarkIndex " .
-						"WHERE subjectstudent.Username      = '$student_username' " .
-						"AND   subjectstudent.SubjectIndex  = subject.SubjectIndex " .
-						"AND   subject.YearIndex            = $yearindex " .
-						"AND   subject.ShowInList           = 1 " .
-						"AND   subject.Name                 = '$subjectname' " .
-						"AND   (subject.AverageType != $AVG_TYPE_NONE OR subject.EffortType != $EFFORT_TYPE_NONE OR subject.ConductType != $CONDUCT_TYPE_NONE OR subject.CommentType != $COMMENT_TYPE_NONE) " .
-						"AND   subjecttype.SubjectTypeIndex = $subjecttypeindex " .
-						"AND   term.TermIndex               = subject.TermIndex " .
-						"ORDER BY term.TermNumber ASC";
+						"		subject.TermIndex, term.TermNumber " .
+						" FROM " .
+						" (term INNER JOIN term AS depterm " .
+						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+						"       AND depterm.TermIndex = $termindex" .
+						"       AND term.TermIndex <= $termindex) " .
+						" LEFT OUTER JOIN " .
+						" (subjectstudent INNER JOIN subject " .
+						"       ON  subjectstudent.Username = '$student_username' " .
+						"       AND subjectstudent.SubjectIndex = subject.SubjectIndex " .
+						"       AND subject.YearIndex = $yearindex " .
+						"       AND subject.Name = '$subject_name' " .
+						"       AND subject.ShowInList = 1 " .
+						"       AND (subject.AverageType != $AVG_TYPE_NONE OR subject.EffortType != $EFFORT_TYPE_NONE OR subject.ConductType != $CONDUCT_TYPE_NONE OR subject.CommentType != $COMMENT_TYPE_NONE)) " .
+						" ON term.TermIndex = subject.TermIndex " .
+						" LEFT OUTER JOIN nonmark_index AS average_index ON " .
+						"       subjectstudent.Average = average_index.NonmarkIndex " .
+						" LEFT OUTER JOIN nonmark_index AS effort_index ON " .
+						"       subjectstudent.Effort = effort_index.NonmarkIndex " .
+						" LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
+						"       subjectstudent.Conduct = conduct_index.NonmarkIndex " .
+						"ORDER BY term.TermNumber ASC";			 
 			$nres =&  $db->query($query);
 			if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
-		
+			
+			$std_average = 0;
+			$std_average_max = 0;
+			$subj_average = 0;
+			$subj_average_max = 0;
+			
 			while ($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
 				$termnum = $nrow['TermNumber'];
 				
@@ -636,13 +711,19 @@
 					if($nrow['Average'] == -1) {
 						$average = "-";
 					} else {
-						$average = round($nrow['Average']);
+						$average          = round($nrow['Average']);
+						$std_average     += $average;
+						$std_average_max += 100;
+						
 						$average = "$average%";
 					}
 					if($nrow['SubjectAverage'] == -1) {
 						$subject_average = "-";
 					} else {
-						$subject_average = round($nrow['SubjectAverage']);
+						$subject_average   = round($nrow['SubjectAverage']);
+						$subj_average     += $subject_average;
+						$subj_average_max += 100;
+						
 						$subject_average = "$subject_average%";
 					}
 				} elseif($nrow['AverageType'] == $AVG_TYPE_INDEX or $nrow['AverageType'] == $AVG_TYPE_GRADE) {
@@ -713,6 +794,24 @@
 				$reprow = str_replace("&lt;&lt;subject_conduct_t$termnum&gt;&gt;",      htmlspecialchars($conduct, ENT_QUOTES),            $reprow);
 				$reprow = str_replace("&lt;&lt;subject_comment_t$termnum&gt;&gt;",      $comment,                                          $reprow);
 			}
+			
+			# Year to date averages
+			if($std_average_max > 0) {
+				$scorestr = round($std_average * 100 / $std_average_max);
+				$std_average = "$scorestr%";
+			} else {
+				$std_average = "-";
+			}
+			if($subj_average_max > 0) {
+				$subjscore = round($subj_average * 100 / $subj_average_max);
+				$subj_average ="$subjscore%";
+			} else {
+				$subj_average = "-";
+			}
+			$reprow = str_replace("&lt;&lt;overall_subject_average&gt;&gt;",      htmlspecialchars($subj_average, ENT_QUOTES), $reprow);
+			$reprow = str_replace("&lt;&lt;overall_subject_mark&gt;&gt;",         htmlspecialchars($std_average, ENT_QUOTES),  $reprow);
+			
+			# Remove fields for terms not used yet
 			$query = "SELECT TermNumber FROM term WHERE DepartmentIndex=$depindex";
 			$nres =&  $db->query($query);
 			if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query

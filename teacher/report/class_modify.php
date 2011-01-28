@@ -571,7 +571,8 @@
 			echo "               <th>Weight</th>\n";
 			$query =	"SELECT TermName FROM term " .
 						"WHERE TermIndex >= $lowtermindex " .
-						"AND   TermIndex <= $termindex";
+						"AND   TermIndex <= $termindex ".
+						"ORDER BY term.TermNumber ASC";
 			$nres =&  $db->query($query);
 			if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
 			while($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
@@ -579,6 +580,7 @@
 				$pname = htmlentities(substr($nrow['TermName'], 0, 1));
 				echo "               <th><a title='$name'>$pname</a></th>\n";
 			}
+			echo "               <th><a title='Average'>A</a></th>\n";
 		}
 		if($subject_effort_type != $EFFORT_TYPE_NONE) {
 			echo "               <th>Effort</th>\n";
@@ -639,7 +641,9 @@
 							"       ON  subjectstudent.Username = '$student_username' " .
 							"       AND subjectstudent.SubjectIndex = subject.SubjectIndex " .
 							"       AND subject.YearIndex = $yearindex " .
-							"       AND subject.Name = '$subject_name') " .
+							"       AND subject.Name = '$subject_name' " .
+							"       AND subject.ShowInList = 1 " .
+							"       AND (subject.AverageType != $AVG_TYPE_NONE OR subject.EffortType != $EFFORT_TYPE_NONE OR subject.ConductType != $CONDUCT_TYPE_NONE OR subject.CommentType != $COMMENT_TYPE_NONE)) " .
 							" ON term.TermIndex = subject.TermIndex " .
 							" LEFT OUTER JOIN nonmark_index AS average_index ON " .
 							"       subjectstudent.Average = average_index.NonmarkIndex " .
@@ -647,9 +651,15 @@
 							"       subjectstudent.Effort = effort_index.NonmarkIndex " .
 							" LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
 							"       subjectstudent.Conduct = conduct_index.NonmarkIndex " .
-							"ORDER BY subject.TermIndex";
+							"ORDER BY term.TermNumber ASC";
 				$dres =&  $db->query($query);
 				if(DB::isError($dres)) die($dres->getDebugInfo());           // Check for errors in query
+				
+				$average = 0;
+				$average_max = 0;
+				$subj_average = 0;
+				$subj_average_max = 0;
+				
 				while($drow =& $dres->fetchRow(DB_FETCHMODE_ASSOC)) {
 					if($drow['AverageType'] == $AVG_TYPE_NONE) {
 						$score = "N/A";
@@ -657,7 +667,10 @@
 						if($drow['Average'] == -1 or is_null($drow['Average'])) {
 							$score = "-";
 						} else {
-							$scorestr = round($drow['Average']);
+							$scorestr     = round($drow['Average']);
+							$average     += $scorestr;
+							$average_max += 100;
+							
 							if($scorestr < 60) {
 								$color = "#CC0000";
 							} elseif($scorestr < 75) {
@@ -670,7 +683,10 @@
 							$score = "<span style='color: $color'>$scorestr</span>";
 						}
 						if($drow['SubjectAverage'] != -1) {
-							$subjscore = round($drow['SubjectAverage']);
+							$subjscore         = round($drow['SubjectAverage']);
+							$subj_average     += $subjscore;
+							$subj_average_max += 100;
+							
 							$score ="<b>$score</b> ($subjscore)";
 						}
 					} elseif($drow['AverageType'] == $AVG_TYPE_INDEX or $drow['AverageType'] == $AVG_TYPE_GRADE) {
@@ -688,6 +704,28 @@
 					}
 					echo "               <td nowrap>$score</td>\n";
 				}
+				if($average_max > 0) {
+					$scorestr = round($average * 100 / $average_max);
+					if($scorestr < 60) {
+						$color = "#CC0000";
+					} elseif($scorestr < 75) {
+						$color = "#666600";
+					} elseif($scorestr < 90) {
+						$color = "#000000";
+					} else {
+						$color = "#339900";
+					}
+					$score = "<span style='color: $color'>$scorestr</span>";
+				} else {
+					$score = "-";
+				}
+				if($subj_average_max > 0) {
+					$subjscore = round($subj_average * 100 / $subj_average_max);
+					$score ="<i>$score</i> ($subjscore)";
+				} else {
+					$score = "<i>$score</i>";
+				}
+				echo "               <td nowrap>$score</td>\n";
 			}
 	
 			if($subject_effort_type != $EFFORT_TYPE_NONE) {
