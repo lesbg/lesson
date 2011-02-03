@@ -170,9 +170,6 @@
 		exit(0);
 	}
 
-	header("Content-type: $report_template_type");
-	header("Content-disposition: attachment; filename=reports.odt");
-
 	// Extract odt template
 	$retval = 0;
 	$tempdir = tempnam("/tmp", "lesson");
@@ -835,6 +832,9 @@
 	unset($output);
 
 	// Output temporary odt
+	header("Content-type: $report_template_type");
+	header("Content-disposition: attachment; filename=reports.odt");
+
 	readfile("$tempdir.odt");
 
 	// Remove temporary files

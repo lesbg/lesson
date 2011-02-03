@@ -230,9 +230,6 @@
 	
 	$student_info = $row;
 
-	header("Content-type: $report_template_type");
-	header("Content-disposition: attachment; filename=report.odt");
-
 	// Extract odt template
 	$retval = 0;
 	$tempdir = tempnam("/tmp", "lesson");
@@ -692,7 +689,7 @@
 						"       subjectstudent.Effort = effort_index.NonmarkIndex " .
 						" LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
 						"       subjectstudent.Conduct = conduct_index.NonmarkIndex " .
-						"ORDER BY term.TermNumber ASC";			 
+						"ORDER BY term.TermNumber ASC";						 
 			$nres =&  $db->query($query);
 			if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
 			
@@ -838,6 +835,9 @@
 	unset($output);
 
 	// Output temporary odt
+	header("Content-type: $report_template_type");
+	header("Content-disposition: attachment; filename=report.odt");
+
 	readfile("$tempdir.odt");
 
 	// Remove temporary files

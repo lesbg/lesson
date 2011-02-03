@@ -439,7 +439,7 @@
 				"       subjectstudent.Comment, subjectstudent.CommentValue, " .
 				"       subjectstudent.ReportDone, " .
 				"       get_weight(subject.SubjectIndex, CURDATE()) AS SubjectWeight " .
-				"       FROM subject, subjecttype, term, term AS depterm, subjectstudent " .
+				"       FROM subject, subjecttype, subjectstudent " .
 				"       LEFT OUTER JOIN nonmark_index AS average_index ON " .
 				"            subjectstudent.Average = average_index.NonmarkIndex " .
 				"       LEFT OUTER JOIN nonmark_index AS effort_index ON " .
@@ -448,15 +448,11 @@
 				"            subjectstudent.Conduct = conduct_index.NonmarkIndex " .
 				"WHERE subjectstudent.Username      = '$student_username' " .
 				"AND   subjectstudent.SubjectIndex  = subject.SubjectIndex " .
-				"AND   subject.TermIndex            = term.TermIndex " .
-				"AND   subject.TermIndex           <= $termindex " .
+				"AND   subject.TermIndex            = $termindex " .
 				"AND   subject.YearIndex            = $yearindex " .
 				"AND   subject.ShowInList           = 1 " .
 				"AND   (subject.AverageType != $AVG_TYPE_NONE OR subject.EffortType != $EFFORT_TYPE_NONE OR subject.ConductType != $CONDUCT_TYPE_NONE OR subject.CommentType != $COMMENT_TYPE_NONE) " .
-				"AND   term.DepartmentIndex         = depterm.DepartmentIndex " .
-				"AND   depterm.TermIndex            = $termindex " .
 				"AND   subjecttype.SubjectTypeIndex = subject.SubjectTypeIndex " .
-				"GROUP BY subject.Name " .
 				"ORDER BY subjecttype.HighPriority DESC, get_weight(subject.SubjectIndex, CURDATE()) DESC, " .
 				"         subjecttype.Title, subject.Name, subject.TermIndex DESC, subject.SubjectIndex ";
 	$res =&  $db->query($query);
