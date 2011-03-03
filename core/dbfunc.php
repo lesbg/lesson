@@ -742,6 +742,8 @@
 	function update_classterm($class_index, $term_index) {
 		global $db;
 		global $AVG_TYPE_PERCENT;
+		global $CLASS_CONDUCT_TYPE_CALC;
+		global $CLASS_CONDUCT_TYPE_PUN;
 
 		/*
 		$query =	"UPDATE classlist, classterm " .
@@ -789,6 +791,8 @@
 						"      AND   classlist.ClassTermIndex     = classterm.ClassTermIndex " .
 						"      AND   classterm.TermIndex          = $term_index " .
 						"      AND   classterm.ClassIndex         = class.ClassIndex " .
+						"      AND   (classterm.ConductType       = $CLASS_CONDUCT_TYPE_CALC OR " .
+						"             classterm.ConductType       = $CLASS_CONDUCT_TYPE_PUN) " .
 						"      AND   class.YearIndex              = {$row['YearIndex']} " .
 						"      AND classlist.Conduct >= 0" .
 						"     )) AS ctgrade ";
@@ -810,6 +814,13 @@
 		}
 
 		// Update class average
+		$query =	"UPDATE classterm SET classterm.Average=-1 " .
+					"WHERE classterm.TermIndex = $term_index " .
+					"AND   classterm.ClassIndex = $class_index";
+		$nres =&  $db->query($query);
+		if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
+					
+
 		$query =	"UPDATE classterm, " .
 					" (SELECT ClassTermIndex, AVG(Average) AS ClassAverage " .
 					"  FROM classlist " .
@@ -822,7 +833,7 @@
 		$nres =&  $db->query($query);
 		if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
 					
-		$query =	"SELECT classlist.ClassListIndex, classlist.Average FROM classterm, classlist " .
+		$query =	"SELECT classlist.ClassListIndex, classlist.Username, classlist.Rank, classlist.Average FROM classterm, classlist " .
 					"WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
 					"AND   classterm.TermIndex      = $term_index " .
 					"AND   classterm.ClassIndex     = $class_index " .
@@ -831,7 +842,7 @@
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 
-		/* Set subject ranking */
+		/* Set class ranking */
 		$rank = 1;
 		$prevmark = 0;
 		$count = 0;
@@ -843,10 +854,13 @@
 				$count += 1;
 			}
 			$prevmark = round($row['Average']);
-			$query =	"UPDATE classlist SET Rank=$rank " .
-						"WHERE ClassListIndex = {$row['ClassListIndex']}";
-			$nres =&  $db->query($query);
-			if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
+			
+			if($row['Rank'] != $rank) {
+				$query =	"UPDATE classlist SET Rank=$rank " .
+							"WHERE ClassListIndex = {$row['ClassListIndex']}";
+				$nres =&  $db->query($query);
+				if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
+			}
 		}
 
 	}

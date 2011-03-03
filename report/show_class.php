@@ -383,7 +383,9 @@
 		}
 	
 		/* Get overall averages */
-		$query =	"SELECT term.TermNumber, classlist.Average, classterm.Average AS ClassAverage FROM " .
+		$query =	"SELECT term.TermNumber, classlist.Rank, " .
+					"       classlist.Average, classterm.Average AS ClassAverage, classterm.AverageType, " .
+					"       classlist.Conduct, classterm.Conduct AS ClassConduct, classterm.ConductType FROM " .
 					" (term INNER JOIN term AS depterm " .
 					"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
 					"       AND depterm.TermIndex = $termindex" .
@@ -401,25 +403,120 @@
 		$ovl_average_max = 0;
 		$cls_ovl_average = 0;
 		$cls_ovl_average_max = 0;
+	
+		$ovl_conduct = 0;
+		$ovl_conduct_max = 0;
+		$cls_ovl_conduct = 0;
+		$cls_ovl_conduct_max = 0;
 		
 		while($cRow =& $cRes->fetchrow(DB_FETCHMODE_ASSOC)) {
-			if($cRow['Average'] != -1 and !is_null($cRow['Average'])) {
-				$term_average     = round($cRow['Average']);
-				$ovl_average     += $term_average;
-				$ovl_average_max += 100;
-				
-				$term_average     = "$term_average%";
+			$term_average = "";
+			$term_rank = "";
+			$class_term_average = "";
+			
+			$term_conduct = "";
+			$class_term_conduct = "";
+			
+			if($cRow['AverageType'] == $CLASS_AVG_TYPE_PERCENT or $cRow['AverageType'] == $CLASS_AVG_TYPE_CALC) {
+				if($cRow['Average'] != -1 and !is_null($cRow['Average'])) {
+					$term_average     = round($cRow['Average']);
+					$ovl_average     += $term_average;
+					$ovl_average_max += 100;
+					
+					$term_average     = "$term_average%";
+					$term_rank        = $cRow['Rank'];
+				}
+				if($cRow['ClassAverage'] != -1 and !is_null($cRow['ClassAverage'])) {
+					$class_term_average   = round($cRow['ClassAverage']);
+					$cls_ovl_average     += $class_term_average;
+					$cls_ovl_average_max += 100;
+					
+					$class_term_average   = "$class_term_average%";
+				}
+			} elseif($cRow['AverageType'] == $CLASS_AVG_TYPE_INDEX) {
+				// TODO: Make this work
+				$term_average = "";
+				$class_term_average = "";
+			} else {
+				$term_average = "";
+				$class_term_average = "";			
 			}
-			if($cRow['ClassAverage'] != -1 and !is_null($cRow['ClassAverage'])) {
-				$class_term_average   = round($cRow['ClassAverage']);
-				$cls_ovl_average     += $class_term_average;
-				$cls_ovl_average_max += 100;
-				
-				$class_term_average   = "$class_term_average%";
+			
+			if($cRow['ConductType'] == $CLASS_CONDUCT_TYPE_PERCENT or $cRow['ConductType'] == $CLASS_CONDUCT_TYPE_CALC
+			                                                       or $cRow['ConductType'] == $CLASS_CONDUCT_TYPE_PUN) {
+				if($cRow['Conduct'] != -1 and !is_null($cRow['Conduct'])) {
+					$term_conduct     = round($cRow['Conduct']);
+					$ovl_conduct     += $term_conduct;
+					$ovl_conduct_max += 100;
+					
+					$term_conduct     = "$term_conduct%";
+				}
+				if($cRow['ClassConduct'] != -1 and !is_null($cRow['ClassConduct'])) {
+					$class_term_conduct   = round($cRow['ClassConduct']);
+					$cls_ovl_conduct     += $class_term_conduct;
+					$cls_ovl_conduct_max += 100;
+					
+					$class_term_conduct   = "$class_term_conduct%";
+				}
+			} elseif($cRow['ConductType'] == $CLASS_CONDUCT_TYPE_INDEX) {
+				// TODO: Make this work
+				$term_conduct = "";
+				$class_term_conduct = "";
+			} else {
+				$term_conduct = "";
+				$class_term_conduct = "";			
 			}
 			$termnum = $cRow['TermNumber'];
 			$data = str_replace("&lt;&lt;average_t$termnum&gt;&gt;", htmlspecialchars($term_average, ENT_QUOTES), $data);
 			$data = str_replace("&lt;&lt;class_average_t$termnum&gt;&gt;", htmlspecialchars($class_term_average, ENT_QUOTES), $data);
+			$data = str_replace("&lt;&lt;conduct_t$termnum&gt;&gt;", htmlspecialchars($term_conduct, ENT_QUOTES), $data);
+			$data = str_replace("&lt;&lt;class_conduct_t$termnum&gt;&gt;", htmlspecialchars($class_term_conduct, ENT_QUOTES), $data);
+			$data = str_replace("&lt;&lt;rank_t$termnum&gt;&gt;", htmlspecialchars($term_rank, ENT_QUOTES), $data);
+		}
+		
+		$query =	"SELECT classlist.Username, term.TermNumber, term.TermIndex, " .
+					"       ROUND(AVG(classlist.Average)) AS Average FROM " .
+					" (term INNER JOIN term AS depterm " .
+					"  ON  term.DepartmentIndex = depterm.DepartmentIndex " .
+					"  AND depterm.TermIndex = $termindex " .
+					"  AND term.TermIndex <= $termindex) " .
+					" INNER JOIN " .
+					" (classlist AS tclasslist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
+					"  ON  tclasslist.Username = '{$student_info['Username']}' " .
+					"  AND tclasslist.ClassTermIndex = classterm.ClassTermIndex " .
+					"  AND class.YearIndex = $yearindex) " .
+					" ON term.TermIndex = classterm.TermIndex " .
+					" INNER JOIN classlist " .
+					"  ON classterm.ClassTermIndex = classlist.ClassTermIndex " .
+					"  AND classlist.Average > -1 " .
+					" GROUP BY classlist.Username " .
+					" ORDER BY Average DESC";
+		$cRes =&   $db->query($query);
+		if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
+		
+		$countrank = 0;
+		$ovl_rank  = -1;
+		$prevmark  = -1;
+		$same      = 1;
+		/* Student username may not show up if they don't have any marks in any subjects */
+		while($cRow =& $cRes->fetchrow(DB_FETCHMODE_ASSOC)) {
+			if($cRow['Average'] != $prevmark) {
+				$countrank += $same;
+				$same = 1;
+			} else {
+				$same += 1;
+			}
+			$prevmark = $cRow['Average'];
+			
+			if($cRow['Username'] == $student_info['Username']) {
+				$ovl_rank = $countrank;
+				break;
+			}
+		}
+		if($ovl_rank == -1) {
+			$ovl_rank = "-";
+		} else { 
+			$ovl_rank = "$ovl_rank";
 		}
 		
 		# Remove fields for terms not used yet
@@ -429,8 +526,12 @@
 		while ($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
 			$termnum = $nrow["TermNumber"];
 			$data = str_replace("&lt;&lt;average_t$termnum&gt;&gt;",       "", $data);
+			$data = str_replace("&lt;&lt;rank_t$termnum&gt;&gt;",          "", $data);
 			$data = str_replace("&lt;&lt;class_average_t$termnum&gt;&gt;", "", $data);
+			$data = str_replace("&lt;&lt;conduct_t$termnum&gt;&gt;",       "", $data);
+			$data = str_replace("&lt;&lt;class_conduct_t$termnum&gt;&gt;", "", $data);
 		}
+
 	
 		if($ovl_average_max > 0) {
 			$scorestr = round($ovl_average * 100 / $ovl_average_max);
@@ -443,6 +544,18 @@
 			$cls_ovl_average = "$scorestr%";
 		} else {
 			$cls_ovl_average = "-";
+		}
+		if($ovl_conduct_max > 0) {
+			$scorestr = round($ovl_conduct * 100 / $ovl_conduct_max);
+			$ovl_conduct = "$scorestr%";
+		} else {
+			$ovl_conduct = "-";
+		}
+		if($cls_ovl_conduct_max > 0) {
+			$scorestr = round($cls_ovl_conduct * 100 / $cls_ovl_conduct_max);
+			$cls_ovl_conduct = "$scorestr%";
+		} else {
+			$cls_ovl_conduct = "-";
 		}
 		
 		// Replace obvious data points
@@ -485,7 +598,10 @@
 		$data = str_replace("&lt;&lt;average&gt;&gt;", htmlspecialchars($average, ENT_QUOTES), $data);
 		$data = str_replace("&lt;&lt;class_average&gt;&gt;", htmlspecialchars($class_average, ENT_QUOTES), $data);
 		$data = str_replace("&lt;&lt;overall_average&gt;&gt;", htmlspecialchars($ovl_average, ENT_QUOTES), $data);
+		$data = str_replace("&lt;&lt;overall_rank&gt;&gt;", htmlspecialchars($ovl_rank, ENT_QUOTES), $data);
 		$data = str_replace("&lt;&lt;class_overall_average&gt;&gt;", htmlspecialchars($cls_ovl_average, ENT_QUOTES), $data);
+		$data = str_replace("&lt;&lt;overall_conduct&gt;&gt;", htmlspecialchars($ovl_conduct, ENT_QUOTES), $data);
+		$data = str_replace("&lt;&lt;class_overall_conduct&gt;&gt;", htmlspecialchars($cls_ovl_conduct, ENT_QUOTES), $data);	
 		$data = str_replace("&lt;&lt;rank&gt;&gt;", htmlspecialchars($rank, ENT_QUOTES), $data);
 		$data = str_replace("&lt;&lt;conduct&gt;&gt;", htmlspecialchars($conduct, ENT_QUOTES), $data);
 		$data = str_replace("&lt;&lt;class_conduct&gt;&gt;", htmlspecialchars($class_conduct, ENT_QUOTES), $data);
@@ -510,7 +626,7 @@
 		if($pos === false) {
 			$pos = strpos($data, "&lt;&lt;subject_type&gt;&gt;");
 		}
-		if ($pos > 0) {
+		while ($pos != false) {
 			$startpos = strrpos(substr($data, 0, $pos), "<table:table-row");
 			$endpos   = $pos + strpos(substr($data, $pos), "</table:table-row>") + strlen("</table:table-row>");
 			$length = $endpos - $startpos;
@@ -817,8 +933,19 @@
 				$rep .= $reprow;
 			}
 			$data = str_replace($data_row, $rep, $data);
-			$final_data .= $data;
-		}
+			$old_pos = $pos + 1;
+			$pos = strpos($data, "&lt;&lt;subject_name&gt;&gt;", $old_pos);
+			if($pos === false) {
+				$pos = strpos($data, "&lt;&lt;subject_shortname&gt;&gt;", $old_pos);
+			}
+			if($pos === false) {
+				$pos = strpos($data, "&lt;&lt;subject_strippedname&gt;&gt;", $old_pos);
+			}
+			if($pos === false) {
+				$pos = strpos($data, "&lt;&lt;subject_type&gt;&gt;", $old_pos);
+			}
+		}				
+		$final_data .= $data;
 	}
 	// Write back to temporary odt
 	$handle = fopen("$tempdir/content.xml", "w");

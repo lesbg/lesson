@@ -557,6 +557,7 @@
 		include "core/titletermyear.php";
 	}
 
+	$colcount = 0;
 	echo $rpt_sentence;
 	echo $new_sentence;
 	echo "         <table align='center' border='1'>\n"; // Table headers
@@ -580,18 +581,23 @@
 		}
 		if($subject_effort_type != $EFFORT_TYPE_NONE) {
 			echo "               <th>Effort</th>\n";
+			$colcount += 1;
 		}
 		if($subject_conduct_type != $CONDUCT_TYPE_NONE) {
 			echo "               <th>Conduct</th>\n";
+			$colcount += 1;
 		}
 	}
 	if($subject_comment_type != $COMMENT_TYPE_NONE) {
 		echo "               <th>Comment</th>\n";
 		echo "               <th>Tone</th>\n";
+		$colcount += 2;
 	}
 	echo "               <th>Finished</th>\n";
+	$colcount += 1;
 	if(!$student_info['ReportDone']) {
 		echo "               <th>&nbsp;</th>\n";
+		$colcount += 1;
 	}
 
 	echo "            </tr>\n";
@@ -803,410 +809,861 @@
 		}
 		echo "            </tr>\n";
 	}
-	echo "         </table>\n";               // End of table
 
-
-
-	echo "         <table class='transparent' align='center' width=600px>\n";
 	if($is_admin or $is_ct or $is_hod or $is_principal) {
-		if($average_type != $CLASS_AVG_TYPE_NONE) {
-			echo "            <tr>\n";
-			echo "               <td>Average:</td>\n";
-	
-			/* Check for type of average mark and put in appropriate information */
-			if($average_type != $CLASS_AVG_TYPE_NONE) {
-				if($average_type == $CLASS_AVG_TYPE_PERCENT) {
-					if(isset($_POST["average"])) {
-						$scorestr = $_POST["average"];
-						if(strval(intval($scorestr)) != $scorestr) {
-							$score = "N/A";
-						} elseif(intval($scorestr) > 100) {
-							$score = "100%";
-						} elseif(intval($scorestr) < 0) {
-							$score = "0%";
-						} else {
-							$score = "$scorestr%";
-						}
-					} else {
-						if($student_info['Average'] == -1) {
-							$scorestr = "";
-							$score = "N/A";
-						} else {
-							$scorestr = round($student_info['Average']);
-							$score = "$scorestr%";
-						}
-					}
-				} elseif($average_type == $CLASS_AVG_TYPE_INDEX) {
-					if(isset($_POST["average"])) {
-						$scorestr = safe($_POST["average"]);
-						$query =	"SELECT Display FROM nonmark_index " .
-									"WHERE Input='$scorestr' " .
-									"AND   NonmarkTypeIndex=$average_type_index";
-						$nres =& $db->query($query);
-						if(DB::isError($nres)) die($nres->getDebugInfo());
+		if($conduct_type != $CLASS_CONDUCT_TYPE_NONE) {
+			$query =	"SELECT term.TermNumber, term.TermIndex, classlist.Conduct, " .
+						"       classterm.Conduct AS ClassConduct, classterm.ConductType FROM " .
+						" (term INNER JOIN term AS depterm " .
+						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+						"       AND depterm.TermIndex = $termindex" .
+						"       AND term.TermIndex <= $termindex) " .
+						" INNER JOIN " .
+						" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
+						"       ON  classlist.Username = '$student_username' " .
+						"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+						"       AND class.YearIndex = $yearindex) " .
+						" ON term.TermIndex = classterm.TermIndex ";
+			$cRes =&   $db->query($query);
+			if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
+			
+			$ovl_conduct = 0;
+			$ovl_conduct_max = 0;
+			$cls_ovl_conduct = 0;
+			$cls_ovl_conduct_max = 0;
 		
-						if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-							$score = $nrow['Display'];
-						} else {
-							$score = "N/A";
-						}
-					} else {
-						$scoreindex = $student_info['Average'];
-						$query =	"SELECT Input, Display FROM nonmark_index " .
-									"WHERE NonmarkIndex=$scoreindex";
-						$nres =& $db->query($query);
-						if(DB::isError($nres)) die($nres->getDebugInfo());
+			$alt_count   += 1;
+			
+			if($alt_count % 2 == 0) {
+				$alt = " class='alt'";
+			} else {
+				$alt = " class='std'";
+			}
 		
-						if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-							$scorestr = $nrow['Input'];
-							$score    = $nrow['Display'];
+		
+			echo "            <tr$alt id='row_average']}'>\n";
+			echo "               <td nowrap>Conduct</td>\n";
+			echo "               <td nowrap>1</td>\n";
+			
+			while($cRow =& $cRes->fetchrow(DB_FETCHMODE_ASSOC)) {
+				if($cRow['Conduct'] != -1 and !is_null($cRow['Conduct'])) {
+					$term_conduct     = round($cRow['Conduct']);
+					$ovl_conduct     += $term_conduct;
+					$ovl_conduct_max += 100;
+					
+					$term_conduct     = "$term_conduct%";
+				}
+				if($cRow['ClassConduct'] != -1 and !is_null($cRow['ClassConduct'])) {
+					
+					$class_term_conduct   = "$class_term_conduct%";
+				}
+				
+				$conduct_type = $cRow['ConductType'];
+				if($conduct_type != $CLASS_CONDUCT_TYPE_NONE) {
+					if($conduct_type == $CLASS_CONDUCT_TYPE_PERCENT) {
+						if(isset($_POST["conduct"]) and $termindex == $cRow['TermIndex']) {
+							$scorestr = $_POST["conduct"];
+									
+							if(strval(intval($scorestr)) != $scorestr) {
+								$score = "-";
+							} elseif(intval($scorestr) > 100) {
+								$score = "100";
+							} elseif(intval($scorestr) < 0) {
+								$score = "0";
+							} else {
+								$score = "$scorestr";
+							}
 						} else {
-							$scorestr = "";
-							$score    = "N/A";
+							if($cRow['Conduct'] == -1) {
+								$scorestr = "";
+								$score = "-";
+							} else {
+								$scorestr = round($cRow['Conduct']);
+								$score = "$scorestr";
+							}
 						}
-					}
-				} elseif($average_type == $CLASS_AVG_TYPE_CALC) {
-					if($student_info['Average'] == -1) {
-						$score = "N/A";
-					} else {
-						$scorestr = round($student_info['Average']);
-						if($scorestr < 60) {
-							$color = "#CC0000";
-						} elseif($scorestr < 75) {
-							$color = "#666600";
-						} elseif($scorestr < 90) {
-							$color = "#000000";
+						if($score != "-") {
+							$term_conduct     = round(intval($score));
+							$ovl_conduct     += $term_conduct;
+							$ovl_conduct_max += 100;
+						}
+					} elseif($conduct_type == $CLASS_CONDUCT_TYPE_INDEX) {
+						if(isset($_POST["conduct"]) and $termindex == $cRow['TermIndex']) {
+							$scorestr = safe($_POST["conduct"]);
+							$query =	"SELECT Display FROM nonmark_index " .
+										"WHERE Input='$scorestr' " .
+										"AND   NonmarkTypeIndex=$conduct_type_index";
+							$nres =& $db->query($query);
+							if(DB::isError($nres)) die($nres->getDebugInfo());
+			
+							if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
+								$score = $nrow['Display'];
+							} else {
+								$score = "-";
+							}
 						} else {
-							$color = "#339900";
+							$scoreindex = $cRow['Conduct'];
+							$query =	"SELECT Input, Display FROM nonmark_index " .
+										"WHERE NonmarkIndex=$scoreindex";
+							$nres =& $db->query($query);
+							if(DB::isError($nres)) die($nres->getDebugInfo());
+			
+							if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
+								$scorestr = $nrow['Input'];
+								$score    = $nrow['Display'];
+							} else {
+								$scorestr = "";
+								$score    = "-";
+							}
 						}
-						$score = "<span style='color: $color'>$scorestr%</span>";
-					}
-					if($student_info['ClassAverage'] == -1) {
-						$score = "<b>$score</b> (N/A)";
+					} elseif($conduct_type == $CLASS_CONDUCT_TYPE_CALC or $conduct_type == $CLASS_CONDUCT_TYPE_PUN) {
+						if($cRow['Conduct'] == -1) {
+							$score = "-";
+						} else {
+							$scorestr = round($cRow['Conduct']);
+							if($scorestr < 60) {
+								$color = "#CC0000";
+							} elseif($scorestr < 75) {
+								$color = "#666600";
+							} elseif($scorestr < 90) {
+								$color = "#000000";
+							} else {
+								$color = "#339900";
+							}
+							$score = "<span style='color: $color'>$scorestr%</span>";
+						}
+						if($cRow['ClassConduct'] == -1) {
+							$score = "<b>$score</b>";
+						} else {
+							$class_term_conduct   = round($cRow['ClassConduct']);
+							$cls_ovl_conduct     += $class_term_conduct;
+							$cls_ovl_conduct_max += 100;
+							
+							$score = "<b>$score</b> ($class_term_conduct)";
+						}
+						if($cRow['Conduct'] != -1) {
+							$term_conduct     = round($cRow['Conduct']);
+							$ovl_conduct     += $term_conduct;
+							$ovl_conduct_max += 100;
+						}
+						
 					} else {
-						$scorestr = round($student_info['ClassAverage']);
-						$score = "<b>$score</b> ($scorestr%)";
+						$score = "-";
+					}
+					if ($cRow['TermIndex'] != $termindex) {
+						$score = str_replace("<b>", "", $score);
+						$score = str_replace("</b>", "", $score);
 					}
 					
-				} else {
-					$score = "N/A";
-				}
-				if(($average_type == $CLASS_AVG_TYPE_INDEX or $average_type == $CLASS_AVG_TYPE_PERCENT) and !$student_info['ReportDone']) {
-					echo "               <td><input type='text' name='average' " .
-										"id='average' value='$scorestr' size='4' onChange='recalc_avg();'> = <label name='aavg' id='aavg' for='average'>$score</label</td>\n";
-				} else {
-					echo "               <td>$score</td>\n";
+					if(($conduct_type == $CLASS_CONDUCT_TYPE_INDEX or $conduct_type == $CLASS_CONDUCT_TYPE_PERCENT) and !$student_info['ReportDone'] and $termindex == $cRow['TermIndex']) {
+						echo "               <td><input type='text' name='conduct' " .
+											"id='conduct' value='$scorestr' size='4' onChange='recalc_conduct();'> = <label name='c' id='cavg' for='conduct'>$score</label></td>\n";
+					} else {
+						echo "               <td>$score</td>\n";
+					}
 				}
 			}
-			echo "            </tr>\n";
-		}
-		if($average_type == $CLASS_AVG_TYPE_CALC) {
-			echo "            <tr>\n";
-			echo "               <td>Rank:</td>\n";
-			if($student_info['Rank'] == -1) {
-				$rank = "N/A";
+	
+			if($cls_ovl_conduct_max > 0) {
+				$scorestr = round($cls_ovl_conduct * 100 / $cls_ovl_conduct_max);
+				$cls_ovl_conduct = " ($scorestr)";
 			} else {
-				$rank = htmlspecialchars($student_info['Rank']);
+				$cls_ovl_conduct = "";
 			}
-			echo "               <td><b>$rank</b></td>\n";
-			echo "            </tr>\n";
-		}
+	
+			if($ovl_conduct_max > 0) {
+				$scorestr = round($ovl_conduct * 100 / $ovl_conduct_max);
+				$ovl_conduct = "$scorestr";
 				
+				if($scorestr < 60) {
+					$color = "#CC0000";
+				} elseif($scorestr < 75) {
+					$color = "#666600";
+				} elseif($scorestr < 90) {
+					$color = "#000000";
+				} else {
+					$color = "#339900";
+				}
+				$ovl_conduct = "<i><span style='color: $color'>$scorestr%</span></i>";
+			} else {
+				$ovl_conduct = "-";
+			}
+			echo "               <td>$ovl_conduct$cls_ovl_conduct</td>";
+			echo "               <td colspan='$colcount'>&nbsp;</td>\n";
+			echo "            </tr>\n";
+		}
+	
+		if($average_type != $CLASS_AVG_TYPE_NONE) {
+			$query =	"SELECT term.TermNumber, term.TermIndex, classlist.Average, " .
+						"       classterm.Average AS ClassAverage, classterm.AverageType FROM " .
+						" (term INNER JOIN term AS depterm " .
+						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+						"       AND depterm.TermIndex = $termindex" .
+						"       AND term.TermIndex <= $termindex) " .
+						" INNER JOIN " .
+						" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
+						"       ON  classlist.Username = '$student_username' " .
+						"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+						"       AND class.YearIndex = $yearindex) " .
+						" ON term.TermIndex = classterm.TermIndex ";
+			$cRes =&   $db->query($query);
+			if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
+			
+			$ovl_average = 0;
+			$ovl_average_max = 0;
+			$cls_ovl_average = 0;
+			$cls_ovl_average_max = 0;
+		
+			$alt_count   += 1;
+			
+			if($alt_count % 2 == 0) {
+				$alt = " class='alt'";
+			} else {
+				$alt = " class='std'";
+			}	
+		
+			echo "            <tr$alt id='row_average']}'>\n";
+			echo "               <td nowrap colspan='2'><b>Average</b></td>\n";
+			
+			while($cRow =& $cRes->fetchrow(DB_FETCHMODE_ASSOC)) {
+				if($cRow['Average'] != -1 and !is_null($cRow['Average'])) {
+					$term_average     = round($cRow['Average']);
+					$ovl_average     += $term_average;
+					$ovl_average_max += 100;
+					
+					$term_average     = "$term_average%";
+				}
+				if($cRow['ClassAverage'] != -1 and !is_null($cRow['ClassAverage'])) {
+					
+					$class_term_average   = "$class_term_average%";
+				}
+				
+				$average_type = $cRow['AverageType'];
+				if($average_type != $CLASS_AVG_TYPE_NONE) {
+					if($average_type == $CLASS_AVG_TYPE_PERCENT) {
+						if(isset($_POST["average"]) and $termindex == $cRow['TermIndex']) {
+							$scorestr = $_POST["average"];
+									
+							if(strval(intval($scorestr)) != $scorestr) {
+								$score = "N/A";
+							} elseif(intval($scorestr) > 100) {
+								$score = "100";
+							} elseif(intval($scorestr) < 0) {
+								$score = "0";
+							} else {
+								$score = "$scorestr";
+							}
+						} else {
+							if($cRow['Average'] == -1) {
+								$scorestr = "";
+								$score = "N/A";
+							} else {
+								$scorestr = round($cRow['Average']);
+								$score = "$scorestr";
+							}
+						}
+						if($score != "N/A") {
+							$term_average     = round(intval($score));
+							$ovl_average     += $term_average;
+							$ovl_average_max += 100;
+						}
+					} elseif($average_type == $CLASS_AVG_TYPE_INDEX) {
+						if(isset($_POST["average"]) and $termindex == $cRow['TermIndex']) {
+							$scorestr = safe($_POST["average"]);
+							$query =	"SELECT Display FROM nonmark_index " .
+										"WHERE Input='$scorestr' " .
+										"AND   NonmarkTypeIndex=$average_type_index";
+							$nres =& $db->query($query);
+							if(DB::isError($nres)) die($nres->getDebugInfo());
+			
+							if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
+								$score = $nrow['Display'];
+							} else {
+								$score = "N/A";
+							}
+						} else {
+							$scoreindex = $cRow['Average'];
+							$query =	"SELECT Input, Display FROM nonmark_index " .
+										"WHERE NonmarkIndex=$scoreindex";
+							$nres =& $db->query($query);
+							if(DB::isError($nres)) die($nres->getDebugInfo());
+			
+							if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
+								$scorestr = $nrow['Input'];
+								$score    = $nrow['Display'];
+							} else {
+								$scorestr = "";
+								$score    = "N/A";
+							}
+						}
+					} elseif($average_type == $CLASS_AVG_TYPE_CALC) {
+						if($cRow['Average'] == -1) {
+							$score = "N/A";
+						} else {
+							$scorestr = round($cRow['Average']);
+							if($scorestr < 60) {
+								$color = "#CC0000";
+							} elseif($scorestr < 75) {
+								$color = "#666600";
+							} elseif($scorestr < 90) {
+								$color = "#000000";
+							} else {
+								$color = "#339900";
+							}
+							$score = "<span style='color: $color'>$scorestr%</span>";
+						}
+						if($cRow['ClassAverage'] == -1) {
+							$score = "<b>$score</b>";
+						} else {
+							$class_term_average   = round($cRow['ClassAverage']);
+							$cls_ovl_average     += $class_term_average;
+							$cls_ovl_average_max += 100;
+							
+							$score = "<b>$score</b> ($class_term_average)";
+						}
+						if($cRow['Average'] != -1) {
+							$term_average     = round($cRow['Average']);
+							$ovl_average     += $term_average;
+							$ovl_average_max += 100;
+						}
+						
+					} else {
+						$score = "N/A";
+					}
+					if(($average_type == $CLASS_AVG_TYPE_INDEX or $average_type == $CLASS_AVG_TYPE_PERCENT) and !$student_info['ReportDone'] and $termindex == $cRow['TermIndex']) {
+						echo "               <td><input type='text' name='average' " .
+											"id='average' value='$scorestr' size='4' onChange='recalc_avg();'> = <label name='aavg' id='aavg' for='average'>$score</label></td>\n";
+					} else {
+						echo "               <td>$score</td>\n";
+					}
+				}
+			}
+		
+			if($cls_ovl_average_max > 0) {
+				$scorestr = round($cls_ovl_average * 100 / $cls_ovl_average_max);
+				$cls_ovl_average = " ($scorestr)";
+			} else {
+				$cls_ovl_average = "";
+			}
+	
+			if($ovl_average_max > 0) {
+				$scorestr = round($ovl_average * 100 / $ovl_average_max);
+				$ovl_average = "$scorestr";
+				
+				if($scorestr < 60) {
+					$color = "#CC0000";
+				} elseif($scorestr < 75) {
+					$color = "#666600";
+				} elseif($scorestr < 90) {
+					$color = "#000000";
+				} else {
+					$color = "#339900";
+				}
+				$ovl_average = "<b><i><span style='color: $color'>$scorestr%</span></i></b>";
+			} else {
+				$ovl_average = "-";
+			}
+			echo "               <td>$ovl_average$cls_ovl_average</td>";
+			echo "               <td colspan='$colcount'>&nbsp;</td>\n";
+			echo "            </tr>\n";
+		}
+		
+		if($average_type == $CLASS_AVG_TYPE_PERCENT or $average_type == $CLASS_AVG_TYPE_CALC) {
+			$query =	"SELECT term.TermNumber, term.TermIndex, classlist.Rank FROM " .
+						" (term INNER JOIN term AS depterm " .
+						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+						"       AND depterm.TermIndex = $termindex" .
+						"       AND term.TermIndex <= $termindex) " .
+						" INNER JOIN " .
+						" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
+						"       ON  classlist.Username = '$student_username' " .
+						"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+						"       AND class.YearIndex = $yearindex) " .
+						" ON term.TermIndex = classterm.TermIndex ";
+			$cRes =&   $db->query($query);
+			if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
+					
+			$alt_count   += 1;
+			
+			if($alt_count % 2 == 0) {
+				$alt = " class='alt'";
+			} else {
+				$alt = " class='std'";
+			}
+		
+			echo "            <tr$alt id='row_rank']}'>\n";
+			echo "               <td nowrap colspan='2'>Rank</td>\n";
+			
+			while($cRow =& $cRes->fetchrow(DB_FETCHMODE_ASSOC)) {
+				if($cRow['Rank'] == -1) {
+					$scorestr = "";
+					$score = "-";
+				} else {
+					$scorestr = round($cRow['Rank']);
+					$score = "$scorestr";
+				}
+				$score = "<b>$score</b>";
+				if ($cRow['TermIndex'] != $termindex) {
+					$score = str_replace("<b>", "", $score);
+					$score = str_replace("</b>", "", $score);
+				}
+					
+				echo "               <td>$score</td>\n";
+			}
+			
+			$query =	"SELECT classlist.Username, term.TermNumber, term.TermIndex, " .
+						"       ROUND(AVG(classlist.Average)) AS Average FROM " .
+						" (term INNER JOIN term AS depterm " .
+						"  ON  term.DepartmentIndex = depterm.DepartmentIndex " .
+						"  AND depterm.TermIndex = $termindex " .
+						"  AND term.TermIndex <= $termindex) " .
+						" INNER JOIN " .
+						" (classlist AS tclasslist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
+						"  ON  tclasslist.Username = '$student_username' " .
+						"  AND tclasslist.ClassTermIndex = classterm.ClassTermIndex " .
+						"  AND class.YearIndex = $yearindex) " .
+						" ON term.TermIndex = classterm.TermIndex " .
+						" INNER JOIN classlist " .
+						"  ON classterm.ClassTermIndex = classlist.ClassTermIndex " .
+						"  AND classlist.Average > -1 " .
+						" GROUP BY classlist.Username " .
+						" ORDER BY Average DESC";
+			$cRes =&   $db->query($query);
+			if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
+
+			$countrank = 0;
+			$rank      = -1;
+			$prevmark  = -1;
+			$same      = 1;
+			/* Student username may not show up if they don't have any marks in any subjects */
+			while($cRow =& $cRes->fetchrow(DB_FETCHMODE_ASSOC)) {
+				if($cRow['Average'] != $prevmark) {
+					$countrank += $same;
+					$same = 1;
+				} else {
+					$same += 1;
+				}
+				$prevmark = $cRow['Average'];
+				
+				if($cRow['Username'] == $student_username) {
+					$rank = $countrank;
+					break;
+				}
+			}
+			
+			if($rank == -1) {
+				$ovl_rank = "-";
+			} else { 
+				$ovl_rank = "<i>$rank</i>";
+			}
+			echo "               <td>$ovl_rank</td>";
+			echo "               <td colspan='$colcount'>&nbsp;</td>\n";
+			echo "            </tr>\n";
+		}
+	
 		if($effort_type != $CLASS_EFFORT_TYPE_NONE) {
-			echo "            <tr>\n";
-			echo "               <td>Effort:</td>\n";
-	
-			/* Check for type of effort mark and put in appropriate information */
-			if($effort_type != $CLASS_EFFORT_TYPE_NONE) {
-				if($effort_type == $CLASS_EFFORT_TYPE_PERCENT) {
-					if(isset($_POST["effort"])) {
-						$scorestr = $_POST["effort"];
-						if(strval(intval($scorestr)) != $scorestr) {
-							$score = "N/A";
-						} elseif(intval($scorestr) > 100) {
-							$score = "100%";
-						} elseif(intval($scorestr) < 0) {
-							$score = "0%";
-						} else {
-							$score = "$scorestr%";
-						}
-					} else {
-						if($student_info['Effort'] == -1) {
-							$scorestr = "";
-							$score = "N/A";
-						} else {
-							$scorestr = round($student_info['Effort']);
-							$score = "$scorestr%";
-						}
-					}
-				} elseif($effort_type == $CLASS_EFFORT_TYPE_INDEX) {
-					if(isset($_POST["effort"])) {
-						$scorestr = safe($_POST["effort"]);
-						$query =	"SELECT Display FROM nonmark_index " .
-									"WHERE Input='$scorestr' " .
-									"AND   NonmarkTypeIndex=$effort_type_index";
-						$nres =& $db->query($query);
-						if(DB::isError($nres)) die($nres->getDebugInfo());
+			$query =	"SELECT term.TermNumber, term.TermIndex, classlist.Effort, " .
+						"       classterm.Effort AS ClassEffort, classterm.EffortType FROM " .
+						" (term INNER JOIN term AS depterm " .
+						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+						"       AND depterm.TermIndex = $termindex" .
+						"       AND term.TermIndex <= $termindex) " .
+						" INNER JOIN " .
+						" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
+						"       ON  classlist.Username = '$student_username' " .
+						"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+						"       AND class.YearIndex = $yearindex) " .
+						" ON term.TermIndex = classterm.TermIndex ";
+			$cRes =&   $db->query($query);
+			if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
+			
+			$ovl_effort = 0;
+			$ovl_effort_max = 0;
+			$cls_ovl_effort = 0;
+			$cls_ovl_effort_max = 0;
 		
-						if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-							$score = $nrow['Display'];
-						} else {
-							$score = "N/A";
-						}
-					} else {
-						$scoreindex = $student_info['Effort'];
-						$query =	"SELECT Input, Display FROM nonmark_index " .
-									"WHERE NonmarkIndex=$scoreindex";
-						$nres =& $db->query($query);
-						if(DB::isError($nres)) die($nres->getDebugInfo());
+			$alt_count   += 1;
+			
+			if($alt_count % 2 == 0) {
+				$alt = " class='alt'";
+			} else {
+				$alt = " class='std'";
+			}
 		
-						if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-							$scorestr = $nrow['Input'];
-							$score    = $nrow['Display'];
-						} else {
-							$scorestr = "";
-							$score    = "N/A";
-						}
-					}
-				} elseif($effort_type == $CLASS_EFFORT_TYPE_CALC) {
-					if($student_info['Effort'] == -1) {
-						$score = "N/A";
-					} else {
-						$scorestr = round($student_info['Effort']);
-						$score = "$scorestr%";
-					}
-					if($student_info['ClassEffort'] == -1) {
-						$score = "<b>$score</b> (N/A)";
-					} else {
-						$scorestr = round($student_info['ClassEffort']);
-						$score = "<b>$score</b> ($scorestr%)";
-					}
-				} else {
-					$score = "N/A";
+			echo "            <tr$alt id='row_average']}'>\n";
+			echo "               <td nowrap colspan='2'>Effort</td>\n";
+			
+			while($cRow =& $cRes->fetchrow(DB_FETCHMODE_ASSOC)) {
+				if($cRow['Effort'] != -1 and !is_null($cRow['Effort'])) {
+					$term_effort     = round($cRow['Effort']);
+					$ovl_effort     += $term_effort;
+					$ovl_effort_max += 100;
+					
+					$term_effort     = "$term_effort%";
 				}
-				if(($effort_type == $CLASS_EFFORT_TYPE_INDEX or $effort_type == $CLASS_EFFORT_TYPE_PERCENT) and !$student_info['ReportDone']) {
-					echo "               <td><input type='text' name='effort' " .
-										"id='effort' value='$scorestr' size='4' onChange='recalc_effort();'> = <label name='eavg' id='eavg' for='effort'>$score</label</td>\n";
-				} else {
-					echo "               <td>$score</td>\n";
+				if($cRow['ClassEffort'] != -1 and !is_null($cRow['ClassEffort'])) {
+					
+					$class_term_effort   = "$class_term_effort%";
+				}
+				
+				$effort_type = $cRow['EffortType'];
+				if($effort_type != $CLASS_EFFORT_TYPE_NONE) {
+					if($effort_type == $CLASS_EFFORT_TYPE_PERCENT) {
+						if(isset($_POST["effort"]) and $termindex == $cRow['TermIndex']) {
+							$scorestr = $_POST["effort"];
+									
+							if(strval(intval($scorestr)) != $scorestr) {
+								$score = "-";
+							} elseif(intval($scorestr) > 100) {
+								$score = "100";
+							} elseif(intval($scorestr) < 0) {
+								$score = "0";
+							} else {
+								$score = "$scorestr";
+							}
+						} else {
+							if($cRow['Effort'] == -1) {
+								$scorestr = "";
+								$score = "-";
+							} else {
+								$scorestr = round($cRow['Effort']);
+								$score = "$scorestr";
+							}
+						}
+						if($score != "-") {
+							$term_effort     = round(intval($score));
+							$ovl_effort     += $term_effort;
+							$ovl_effort_max += 100;
+						}
+					} elseif($effort_type == $CLASS_EFFORT_TYPE_INDEX) {
+						if(isset($_POST["effort"]) and $termindex == $cRow['TermIndex']) {
+							$scorestr = safe($_POST["effort"]);
+							$query =	"SELECT Display FROM nonmark_index " .
+										"WHERE Input='$scorestr' " .
+										"AND   NonmarkTypeIndex=$effort_type_index";
+							$nres =& $db->query($query);
+							if(DB::isError($nres)) die($nres->getDebugInfo());
+			
+							if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
+								$score = $nrow['Display'];
+							} else {
+								$score = "-";
+							}
+						} else {
+							$scoreindex = $cRow['Effort'];
+							$query =	"SELECT Input, Display FROM nonmark_index " .
+										"WHERE NonmarkIndex=$scoreindex";
+							$nres =& $db->query($query);
+							if(DB::isError($nres)) die($nres->getDebugInfo());
+			
+							if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
+								$scorestr = $nrow['Input'];
+								$score    = $nrow['Display'];
+							} else {
+								$scorestr = "";
+								$score    = "-";
+							}
+						}
+					} elseif($effort_type == $CLASS_EFFORT_TYPE_CALC) {
+						if($cRow['Effort'] == -1) {
+							$score = "-";
+						} else {
+							$scorestr = round($cRow['Effort']);
+							if($scorestr < 60) {
+								$color = "#CC0000";
+							} elseif($scorestr < 75) {
+								$color = "#666600";
+							} elseif($scorestr < 90) {
+								$color = "#000000";
+							} else {
+								$color = "#339900";
+							}
+							$score = "<span style='color: $color'>$scorestr%</span>";
+						}
+						if($cRow['ClassEffort'] == -1) {
+							$score = "<b>$score</b>";
+						} else {
+							$class_term_effort   = round($cRow['ClassEffort']);
+							$cls_ovl_effort     += $class_term_effort;
+							$cls_ovl_effort_max += 100;
+							
+							$score = "<b>$score</b> ($class_term_effort)";
+						}
+						if($cRow['Effort'] != -1) {
+							$term_effort     = round($cRow['Effort']);
+							$ovl_effort     += $term_effort;
+							$ovl_effort_max += 100;
+						}
+						
+					} else {
+						$score = "-";
+					}
+					if ($cRow['TermIndex'] != $termindex) {
+						$score = str_replace("<b>", "", $score);
+						$score = str_replace("</b>", "", $score);
+					}
+					
+					if(($effort_type == $CLASS_EFFORT_TYPE_INDEX or $effort_type == $CLASS_EFFORT_TYPE_PERCENT) and !$student_info['ReportDone'] and $termindex == $cRow['TermIndex']) {
+						echo "               <td><input type='text' name='effort' " .
+											"id='effort' value='$scorestr' size='4' onChange='recalc_effort();'> = <label name='e' id='eavg' for='effort'>$score</label></td>\n";
+					} else {
+						echo "               <td>$score</td>\n";
+					}
 				}
 			}
-			echo "            </tr>\n";
-		}
-		if($conduct_type != $CLASS_CONDUCT_TYPE_NONE) {
-			echo "            <tr>\n";
-			echo "               <td>Conduct:</td>\n";
 	
-			/* Check for type of conduct mark and put in appropriate information */
-			if($conduct_type != $CLASS_CONDUCT_TYPE_NONE) {
-				if($conduct_type == $CLASS_CONDUCT_TYPE_PERCENT) {
-					if(isset($_POST["conduct"])) {
-						$scorestr = $_POST["conduct"];
-						if(strval(intval($scorestr)) != $scorestr) {
-							$score = "N/A";
-						} elseif(intval($scorestr) > 100) {
-							$score = "100%";
-						} elseif(intval($scorestr) < 0) {
-							$score = "0%";
-						} else {
-							$score = "$scorestr%";
-						}
-					} else {
-						if($student_info['Conduct'] == -1) {
-							$scorestr = "";
-							$score = "N/A";
-						} else {
-							$scorestr = round($student_info['Conduct']);
-							$score = "$scorestr%";
-						}
-					}
-				} elseif($conduct_type == $CLASS_CONDUCT_TYPE_INDEX) {
-					if(isset($_POST["conduct"])) {
-						$scorestr = safe($_POST["conduct"]);
-						$query =	"SELECT Display FROM nonmark_index " .
-									"WHERE Input='$scorestr' " .
-									"AND   NonmarkTypeIndex=$conduct_type_index";
-						$nres =& $db->query($query);
-						if(DB::isError($nres)) die($nres->getDebugInfo());
-		
-						if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-							$score = $nrow['Display'];
-						} else {
-							$score = "N/A";
-						}
-					} else {
-						$scoreindex = $student_info['Conduct'];
-						$query =	"SELECT Input, Display FROM nonmark_index " .
-									"WHERE NonmarkIndex=$scoreindex";
-						$nres =& $db->query($query);
-						if(DB::isError($nres)) die($nres->getDebugInfo());
-		
-						if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-							$scorestr = $nrow['Input'];
-							$score    = $nrow['Display'];
-						} else {
-							$scorestr = "";
-							$score    = "N/A";
-						}
-					}
-				} elseif($conduct_type == $CLASS_CONDUCT_TYPE_CALC or $conduct_type = $CLASS_CONDUCT_TYPE_PUN) {
-					if($student_info['Conduct'] == -1) {
-						$score = "N/A";
-					} else {
-						$scorestr = round($student_info['Conduct']);
-						if($scorestr < 60) {
-							$color = "#CC0000";
-						} elseif($scorestr < 75) {
-							$color = "#666600";
-						} elseif($scorestr < 90) {
-							$color = "#000000";
-						} else {
-							$color = "#339900";
-						}
-						$score = "<span style='color: $color'>$scorestr%</span>";
-					}
-					if($student_info['ClassConduct'] == -1) {
-						$score = "<b>$score</b> (N/A)";
-					} else {
-						$scorestr = round($student_info['ClassConduct']);
-						$score = "<b>$score</b> ($scorestr%)";
-					}
-				} else {
-					$score = "N/A";
-				}
-				if(($conduct_type == $CLASS_CONDUCT_TYPE_INDEX or $conduct_type == $CLASS_CONDUCT_TYPE_PERCENT) and !$student_info['ReportDone']) {
-					echo "               <td><input type='text' name='conduct' " .
-										"id='conduct' value='$scorestr' size='4' onChange='recalc_conduct();'> = <label name='cavg' id='cavg' for='conduct'>$score</label</td>\n";
-				} else {
-					echo "               <td>$score</td>\n";
-				}
+			if($cls_ovl_effort_max > 0) {
+				$scorestr = round($cls_ovl_effort * 100 / $cls_ovl_effort_max);
+				$cls_ovl_effort = " ($scorestr)";
+			} else {
+				$cls_ovl_effort = "";
 			}
+	
+			if($ovl_effort_max > 0) {
+				$scorestr = round($ovl_effort * 100 / $ovl_effort_max);
+				$ovl_effort = "$scorestr";
+				
+				if($scorestr < 60) {
+					$color = "#CC0000";
+				} elseif($scorestr < 75) {
+					$color = "#666600";
+				} elseif($scorestr < 90) {
+					$color = "#000000";
+				} else {
+					$color = "#339900";
+				}
+				$ovl_effort = "<i><span style='color: $color'>$scorestr%</span></i>";
+			} else {
+				$ovl_effort = "-";
+			}
+			echo "               <td>$ovl_effort$cls_ovl_effort</td>";
+			echo "               <td colspan='$colcount'>&nbsp;</td>\n";
 			echo "            </tr>\n";
 		}
+		
 		if($absence_type != $ABSENCE_TYPE_NONE) {
-			echo "            <tr>\n";
-			echo "               <td>Absences:</td>\n";
-	
-			/* Check for type of absences mark and put in appropriate information */
-			if($absence_type != $ABSENCE_TYPE_NONE) {
+			$query =	"SELECT term.TermNumber, term.TermIndex, classlist.Absences FROM " .
+						" (term INNER JOIN term AS depterm " .
+						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+						"       AND depterm.TermIndex = $termindex" .
+						"       AND term.TermIndex <= $termindex) " .
+						" INNER JOIN " .
+						" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
+						"       ON  classlist.Username = '$student_username' " .
+						"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+						"       AND class.YearIndex = $yearindex) " .
+						" ON term.TermIndex = classterm.TermIndex ";
+			$cRes =&   $db->query($query);
+			if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
+					
+			$alt_count   += 1;
+			
+			if($alt_count % 2 == 0) {
+				$alt = " class='alt'";
+			} else {
+				$alt = " class='std'";
+			}
+		
+			echo "            <tr$alt id='row_absences']}'>\n";
+			echo "               <td nowrap colspan='2'>Absences</td>\n";
+			
+			while($cRow =& $cRes->fetchrow(DB_FETCHMODE_ASSOC)) {
 				if($absence_type == $ABSENCE_TYPE_NUM) {
-					if(isset($_POST["absences"])) {
-						$scorestr = $_POST["absences"];
+					if(isset($_POST["absences"]) and $termindex == $cRow['TermIndex']) {
+						$scorestr = $_POST["absences"];									
 						if(strval(intval($scorestr)) != $scorestr) {
-							$score = "N/A";
+							$score = "-";
 						} elseif(intval($scorestr) < 0) {
 							$score = "0";
 						} else {
 							$score = "$scorestr";
 						}
 					} else {
-						if($student_info['Absences'] == -1) {
+						if($cRow['Absences'] == -1) {
 							$scorestr = "";
-							$score = "N/A";
+							$score = "-";
 						} else {
-							$scorestr = $student_info['Absences'];
+							$scorestr = round($cRow['Absences']);
 							$score = "$scorestr";
 						}
 					}
+					if($score != "-") {
+						$term_absence     = round(intval($score));
+					}
 				} elseif($absence_type == $ABSENCE_TYPE_CALC) {
+					$absent = 0; 
+					$late = 0;
+					$suspended = 0;
+					
 					$nquery =	"SELECT AttendanceTypeIndex, COUNT(AttendanceIndex) AS Count " .
 								"       FROM attendance INNER JOIN subject USING (SubjectIndex) " .
 								"       INNER JOIN period USING (PeriodIndex) " .
 								"WHERE  attendance.Username = '$student_username' " .
 								"AND    subject.YearIndex = $yearindex " .
-								"AND    subject.TermIndex = $termindex " .
+								"AND    subject.TermIndex = ${cRow['TermIndex']} " .
 								"AND    period.Period = 1 " .
 								"AND    attendance.AttendanceTypeIndex > 0 " .
 								"GROUP BY AttendanceTypeIndex ";
-					$cRes =&   $db->query($nquery);
-					if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
-					while($cRow =& $cRes->fetchrow(DB_FETCHMODE_ASSOC)) {
-						if($cRow['AttendanceTypeIndex'] == $ATT_ABSENT)    $absent    = $cRow['Count'];
-						if($cRow['AttendanceTypeIndex'] == $ATT_LATE)      $late      = $cRow['Count'];
-						if($cRow['AttendanceTypeIndex'] == $ATT_SUSPENDED) $suspended = $cRow['Count'];
+					$dRes =&   $db->query($nquery);
+					if(DB::isError($dRes)) die($dRes->getDebugInfo());          // Check for errors in query
+					while($dRow =& $dRes->fetchrow(DB_FETCHMODE_ASSOC)) {
+						if($dRow['AttendanceTypeIndex'] == $ATT_ABSENT)    $absent    = $dRow['Count'];
+						if($dRow['AttendanceTypeIndex'] == $ATT_LATE)      $late      = $dRow['Count'];
+						if($dRow['AttendanceTypeIndex'] == $ATT_SUSPENDED) $suspended = $dRow['Count'];
 					}
 					$score = $absent + $suspended;
 					$score = "<b>$score</b>";
 				} else {
-					$score = "N/A";
+					$score = "-";
 				}
-				if(($absence_type == $ABSENCE_TYPE_NUM) and !$student_info['ReportDone']) {
+				if ($cRow['TermIndex'] != $termindex) {
+					$score = str_replace("<b>", "", $score);
+					$score = str_replace("</b>", "", $score);
+				}
+				
+				if(($absence_type == $ABSENCE_TYPE_NUM) and !$student_info['ReportDone'] and $termindex == $cRow['TermIndex']) {
 					echo "               <td><input type='text' name='absences' " .
-										"id='absences' value='$scorestr' size='4' onChange='recalc_absences();'> = <label name='abavg' id='abavg' for='absences'>$score</label</td>\n";
+										"id='absences' value='$scorestr' size='4' onChange='recalc_absences();'> = <label name='ab' id='abavg' for='absences'>$score</label></td>\n";
 				} else {
 					echo "               <td>$score</td>\n";
 				}
 			}
+
+			$abs_colcount = $colcount + 1;
+			echo "               <td colspan='$abs_colcount'>&nbsp;</td>\n";
+			echo "            </tr>\n";
+		}
+	}	
+	echo "         </table>\n";               // End of table
+
+	echo "         <table class='transparent' align='center' width=600px>\n";
+
+	if($ct_comment_type != $COMMENT_TYPE_NONE) {
+		$query =	"SELECT term.TermName, term.TermIndex, classlist.CTComment FROM " .
+					" (term INNER JOIN term AS depterm " .
+					"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+					"       AND depterm.TermIndex = $termindex" .
+					"       AND term.TermIndex <= $termindex) " .
+					" INNER JOIN " .
+					" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
+					"       ON  classlist.Username = '$student_username' " .
+					"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+					"       AND class.YearIndex = $yearindex) " .
+					" ON term.TermIndex = classterm.TermIndex ";
+		$cRes =&   $db->query($query);
+		if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
+						
+		while($cRow =& $cRes->fetchrow(DB_FETCHMODE_ASSOC)) {
+			/* No point in showing a row if there's no comment for old terms*/
+			if((is_null($cRow['CTComment']) or $cRow['CTComment'] == "") and $cRow['TermIndex'] != $termindex)
+				continue;
+				
+			echo "            <tr>\n";
+			echo "               <td colspan='2'><b>${cRow['TermName']} - Class Teacher's comment:</b><br>\n";
+			if(isset($_POST["ct_comment"]) and $cRow['TermIndex'] == $termindex) {
+				$commentstr = htmlspecialchars($_POST["ct_comment"], ENT_QUOTES);
+			} else {
+				$commentstr = htmlspecialchars($cRow['CTComment'], ENT_QUOTES);
+			}
+			if(($ct_comment_type == $COMMENT_TYPE_MANDATORY or
+			    $ct_comment_type == $COMMENT_TYPE_OPTIONAL) and
+			   !$student_info['ReportDone'] and
+			   !$student_info['CTCommentDone'] and
+			    $cRow['TermIndex'] == $termindex) {
+				echo "               <textarea name='ct_comment' " .
+										"id='ct_comment' rows='5' cols='80' " .
+										"onChange='recalc_comment(&quot;ct&quot;);'>$commentstr</textarea>\n";
+			} else {
+				echo "               $commentstr\n";
+			}
+			echo "               </td>\n";
 			echo "            </tr>\n";
 		}
 	}
-
-	if($ct_comment_type != $COMMENT_TYPE_NONE) {
-		echo "            <tr>\n";
-		echo "               <td colspan='2'><b>Class Teacher's comment:</b><br>\n";
-		if(isset($_POST["ct_comment"])) {
-			$commentstr = htmlspecialchars($_POST["ct_comment"], ENT_QUOTES);
-		} else {
-			$commentstr = htmlspecialchars($student_info['CTComment'], ENT_QUOTES);
-		}
-		if(($ct_comment_type == $COMMENT_TYPE_MANDATORY or
-		    $ct_comment_type == $COMMENT_TYPE_OPTIONAL) and
-		   !$student_info['ReportDone'] and
-		   !$student_info['CTCommentDone']) {
-			echo "               <textarea name='ct_comment' " .
-									"id='ct_comment' rows='5' cols='80' " .
-									"onChange='recalc_comment(&quot;ct&quot;);'>$commentstr</textarea>\n";
-		} else {
-			echo "               $commentstr\n";
-		}
-		echo "               </td>\n";
-		echo "            </tr>\n";
-	}
 	if($hod_comment_type != $COMMENT_TYPE_NONE) {
-		echo "            <tr>\n";
-		echo "               <td colspan='2'><b>Head of Department's comment:</b><br>\n";
-		if(isset($_POST["hod_comment"])) {
-			$commentstr = htmlspecialchars($_POST["hod_comment"], ENT_QUOTES);
-		} else {
-			$commentstr = htmlspecialchars($student_info['HODComment'], ENT_QUOTES);
+		$query =	"SELECT term.TermName, term.TermIndex, classlist.HODComment FROM " .
+					" (term INNER JOIN term AS depterm " .
+					"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+					"       AND depterm.TermIndex = $termindex" .
+					"       AND term.TermIndex <= $termindex) " .
+					" INNER JOIN " .
+					" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
+					"       ON  classlist.Username = '$student_username' " .
+					"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+					"       AND class.YearIndex = $yearindex) " .
+					" ON term.TermIndex = classterm.TermIndex ";
+		$cRes =&   $db->query($query);
+		if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
+						
+		while($cRow =& $cRes->fetchrow(DB_FETCHMODE_ASSOC)) {
+			/* No point in showing a row if there's no comment for old terms*/
+			if((is_null($cRow['HODComment']) or $cRow['HODComment'] == "") and $cRow['TermIndex'] != $termindex)
+				continue;
+				
+			echo "            <tr>\n";
+			echo "               <td colspan='2'><b>${cRow['TermName']} - Head of Department's comment:</b><br>\n";
+			if(isset($_POST["hod_comment"]) and $cRow['TermIndex'] == $termindex) {
+				$commentstr = htmlspecialchars($_POST["hod_comment"], ENT_QUOTES);
+			} else {
+				$commentstr = htmlspecialchars($cRow['HODComment'], ENT_QUOTES);
+			}
+			if(($hod_comment_type == $COMMENT_TYPE_MANDATORY or
+			    $hod_comment_type == $COMMENT_TYPE_OPTIONAL) and
+			   !$student_info['ReportDone'] and
+			   !$student_info['HODCommentDone'] and
+			    $cRow['TermIndex'] == $termindex) {
+				echo "               <textarea name='hod_comment' " .
+										"id='hod_comment' rows='5' cols='80' " .
+										"onChange='recalc_comment(&quot;hod&quot;);'>$commentstr</textarea>\n";
+			} else {
+				echo "               $commentstr\n";
+			}
+			echo "               </td>\n";
+			echo "            </tr>\n";
 		}
-		if(($hod_comment_type == $COMMENT_TYPE_MANDATORY or
-		    $hod_comment_type == $COMMENT_TYPE_OPTIONAL) and
-		   ($is_admin or $is_hod or $is_principal or $is_proofreader) and
-		   !$student_info['ReportDone'] and
-		   !$student_info['HODCommentDone']) {
-			echo "               <textarea name='hod_comment' " .
-									"id='hod_comment' rows='5' cols='80' " .
-									"onChange='recalc_comment(&quot;hod&quot;);'>$commentstr</textarea>\n";
-		} else {
-			echo "               $commentstr\n";
-		}
-		echo "               </td>\n";
-		echo "            </tr>\n";
 	}
 	if($pr_comment_type != $COMMENT_TYPE_NONE) {
-		echo "            <tr>\n";
-		echo "               <td colspan='2'><b>Principal's comment:</b><br>\n";
-		if(isset($_POST["pr_comment"])) {
-			$commentstr = htmlspecialchars($_POST["pr_comment"], ENT_QUOTES);
-		} else {
-			$commentstr = htmlspecialchars($student_info['PrincipalComment'], ENT_QUOTES);
+		$query =	"SELECT term.TermName, term.TermIndex, classlist.PrincipalComment FROM " .
+					" (term INNER JOIN term AS depterm " .
+					"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+					"       AND depterm.TermIndex = $termindex" .
+					"       AND term.TermIndex <= $termindex) " .
+					" INNER JOIN " .
+					" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
+					"       ON  classlist.Username = '$student_username' " .
+					"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+					"       AND class.YearIndex = $yearindex) " .
+					" ON term.TermIndex = classterm.TermIndex ";
+		$cRes =&   $db->query($query);
+		if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
+						
+		while($cRow =& $cRes->fetchrow(DB_FETCHMODE_ASSOC)) {
+			/* No point in showing a row if there's no comment for old terms*/
+			if((is_null($cRow['PrincipalComment']) or $cRow['PrincipalComment'] == "") and $cRow['TermIndex'] != $termindex)
+				continue;
+				
+			echo "            <tr>\n";
+			echo "               <td colspan='2'><b>${cRow['TermName']} - Principal's comment:</b><br>\n";
+			if(isset($_POST["pr_comment"]) and $cRow['TermIndex'] == $termindex) {
+				$commentstr = htmlspecialchars($_POST["pr_comment"], ENT_QUOTES);
+			} else {
+				$commentstr = htmlspecialchars($cRow['PrincipalComment'], ENT_QUOTES);
+			}
+			if(($pr_comment_type == $COMMENT_TYPE_MANDATORY or
+			    $pr_comment_type == $COMMENT_TYPE_OPTIONAL) and
+			   !$student_info['ReportDone'] and
+			   !$student_info['PrincipalCommentDone'] and
+			    $cRow['TermIndex'] == $termindex) {
+				echo "               <textarea name='pr_comment' " .
+										"id='pr_comment' rows='5' cols='80' " .
+										"onChange='recalc_comment(&quot;pr&quot;);'>$commentstr</textarea>\n";
+			} else {
+				echo "               $commentstr\n";
+			}
+			echo "               </td>\n";
+			echo "            </tr>\n";
 		}
-		if(($pr_comment_type == $COMMENT_TYPE_MANDATORY or
-		    $pr_comment_type == $COMMENT_TYPE_OPTIONAL) and
-		   ($is_admin or $is_principal or $is_proofreader) and
-		   !$student_info['ReportDone'] and
-		   !$student_info['PrincipalCommentDone']) {
-			echo "               <textarea name='pr_comment' " .
-									"id='pr_comment' rows='5' cols='80' " .
-									"onChange='recalc_comment(&quot;pr&quot;);'>$commentstr</textarea>\n";
-		} else {
-			echo "               $commentstr\n";
-		}
-		echo "               </td>\n";
-		echo "            </tr>\n";
 	}
-	echo "            </tr>\n";
 	echo "         </table>\n";
 	if($can_do_report) {
 		echo "         <p></p>\n";
