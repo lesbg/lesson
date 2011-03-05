@@ -475,7 +475,7 @@
 		}
 		
 		$query =	"SELECT classlist.Username, term.TermNumber, term.TermIndex, " .
-					"       ROUND(AVG(classlist.Average)) AS Average FROM " .
+					"       ROUND(AVG(ROUND(classlist.Average))) AS Average FROM " .
 					" (term INNER JOIN term AS depterm " .
 					"  ON  term.DepartmentIndex = depterm.DepartmentIndex " .
 					"  AND depterm.TermIndex = $termindex " .
