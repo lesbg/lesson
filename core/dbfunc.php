@@ -1284,4 +1284,40 @@
 		$comment = str_replace("<br>", "\r\n", $comment);
 		return $comment;
 	}
-?>
+
+	function format_mark($mark, $type, $mark_type = 0) {
+		global $AVG_TYPE_NONE;
+		global $AVG_TYPE_INDEX;
+		global $AVG_TYPE_PERCENT;
+		global $AVG_TYPE_GRADE;
+
+		global $CLASS_AVG_TYPE_NONE;
+		global $CLASS_AVG_TYPE_INDEX;
+		global $CLASS_AVG_TYPE_PERCENT;
+		global $CLASS_AVG_TYPE_CALC;
+		global $CLASS_AVG_TYPE_GRADE;
+		
+		if(($mark_type == 1 and ($type == $CLASS_AVG_TYPE_PERCENT or $type == $CLASS_AVG_TYPE_CALC)) or
+		   ($mark_type == 0 and ($type == $AVG_TYPE_PERCENT))) {
+			if($mark == "-") {
+				$score = "-";
+			} else {
+				$scorestr     = round($mark);
+				
+				if($scorestr < 60) {
+					$color = "#CC0000";
+				} elseif($scorestr < 75) {
+					$color = "#666600";
+				} elseif($scorestr < 90) {
+					$color = "#000000";
+				} else {
+					$color = "#339900";
+				}
+				$score = "<span style='color: $color'>$scorestr</span>";
+			}
+		} else {
+			$score = $mark;
+		}
+		
+		return $score;		
+	}

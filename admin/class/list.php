@@ -104,6 +104,7 @@
 							"&amp;key=" .            dbfuncString2Int($row['ClassIndex']) .
 							"&amp;keyname=" .        dbfuncString2Int($row['ClassName']);
 				$rptbutton = "";
+				$statbutton = "";
 				if($is_admin or $is_hod or $is_principal) {
 					/* Check whether subject is open for report editing */
 					if($row['CanDoReport'] or $row['ReportDone']) {
@@ -116,6 +117,10 @@
 							$rptbutton = dbfuncGetButton($rptlink,  "R", "small", "report", "Edit reports for class");
 						}
 					}
+					$statlink =	"index.php?location=" .  dbfuncString2Int("admin/statistics/class.php") .
+								"&amp;key=" .            dbfuncString2Int($row['ClassTermIndex']) .
+								"&amp;keyname=" .        dbfuncString2Int($row['ClassName']);
+					$statbutton = dbfuncGetButton($statlink, "S", "small", "report", "View statistics for class");
 				}
 				if($is_admin) {
 					$editlink = "index.php?location=" .  dbfuncString2Int("admin/class/modify.php") .
@@ -134,7 +139,7 @@
 							"&amp;keyname=" .        dbfuncString2Int($row['ClassName']) .
 							"&amp;key2=" .           dbfuncString2Int("c"); // Get link to report
 				$ttbutton = dbfuncGetButton($ttlink, "T", "small", "edit", "Class timetable");
-				echo "            <td>$viewbutton$editbutton$rptbutton$ttbutton</td>\n"; 
+				echo "            <td>$viewbutton$editbutton$rptbutton$ttbutton$statbutton</td>\n"; 
 				echo "            <td>{$row['ClassName']}</td>\n"; // Print class name
 				if($is_admin) echo "            <td>{$row['Grade']}</td>\n";
 				if($row['Surname'] != "") {
