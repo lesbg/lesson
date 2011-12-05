@@ -332,6 +332,8 @@
 		$conduct = "-";
 	}
 
+	$late = 0;
+	$suspended = 0;
 	if($absence_type == $ABSENCE_TYPE_NONE) {
 		$absences = "-";
 	} elseif($absence_type == $ABSENCE_TYPE_NUM) {
@@ -613,6 +615,7 @@
 	$data = str_replace("&lt;&lt;effort&gt;&gt;", htmlspecialchars($effort, ENT_QUOTES), $data);
 	$data = str_replace("&lt;&lt;class_effort&gt;&gt;", htmlspecialchars($class_effort, ENT_QUOTES), $data);
 	$data = str_replace("&lt;&lt;absences&gt;&gt;", htmlspecialchars($absences, ENT_QUOTES), $data);
+	$data = str_replace("&lt;&lt;late&gt;&gt;", htmlspecialchars($late, ENT_QUOTES), $data);
 	$data = str_replace("&lt;&lt;class_teacher&gt;&gt;", htmlspecialchars($ct_name, ENT_QUOTES), $data);
 	$data = str_replace("&lt;&lt;head_of_department&gt;&gt;", htmlspecialchars($hod_name, ENT_QUOTES), $data);
 	$data = str_replace("&lt;&lt;principal&gt;&gt;", htmlspecialchars($pr_name, ENT_QUOTES), $data);

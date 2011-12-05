@@ -33,6 +33,8 @@
 		}
 		if($link != "") {
 			$button .= "href=\"$link\">";
+		} else {
+			$button .= ">";
 		}
 		if($type != "") {
 			$button .= "<span class=\"$type\">";
@@ -768,8 +770,8 @@
 		while($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 			$query =	"SELECT SUM(DistWeight * Average) / SUM(DistWeight) AS Avg " .
 						"     FROM " .
-						"    ((SELECT subject_weight.Username, subject_weight.Average, " .
-						"             subject_weight.Weight / COUNT(subject_weight.SubjectIndex) AS DistWeight " .
+						"    ((SELECT subject_weight.Username, AVG(subject_weight.Average) AS Average, " .
+						"             subject_weight.Weight AS DistWeight " .
 						"        FROM subjecttype, " .
 						"          (SELECT get_weight(subject.SubjectIndex, CURDATE()) AS Weight, " .
 						"                  subject.SubjectIndex, subject.SubjectTypeIndex, subjectstudent.Average, " .

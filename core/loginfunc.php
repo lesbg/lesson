@@ -85,6 +85,7 @@
 			$is_local = FALSE;
 		}
 		
+		/*
 		$res =&  $db->query("SELECT RemoteHost FROM blacklist " .
 							"WHERE RemoteHost='$remote_host'");
 		if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
@@ -100,7 +101,7 @@
 			include "footer.php";
 			
 			exit();
-		}
+		}*/
 
 		$authSession = new Auth("DB", $params, "doNothing");  // Create instance of Auth class
 		$authSession->setSessionName("LESSONSESSION");                     // Set session name
@@ -137,12 +138,13 @@
 							}
 							log_event($LOG_LEVEL_ACCESS, "core/loginfunc.php", $LOG_ERROR,
 									"Failed login (Incorrect password or username).", 0);
+							/*
 							if($_SESSION['failcount'] >= $MAX_TRIES and !$is_local) {
 								$res =&  $db->query("INSERT INTO blacklist (RemoteHost) VALUES ('$remote_host')");
 								if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 								log_event($LOG_LEVEL_ACCESS, "core/loginfunc.php", $LOG_ERROR,
 										"Blacklisted $remote_host because failed login attempts > $MAX_TRIES.", 0);
-							}
+							}*/
 							showLogin(True);
 						} else {
 							showLogin(False);

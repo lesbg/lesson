@@ -10,7 +10,14 @@
 	if(!isset($_GET['next'])) $_GET['next'] = dbfuncString2Int($backLink);
 	$class            = dbfuncInt2String($_GET['keyname']);
 	$student_name     = dbfuncInt2String($_GET['keyname2']);
-	$title            = "Report for " . $student_name;
+	if(isset($_GET['showonly']) and dbfuncInt2String($_GET['showonly']) == "1") {
+		$show_only    = true;
+	}
+	if(!$show_only) {
+		$title        = "Report for " . $student_name;
+	} else {
+		$title        = $student_name;
+	}
 	$classtermindex   = safe(dbfuncInt2String($_GET['key']));
 	$student_username = safe(dbfuncInt2String($_GET['key2']));
 
@@ -460,7 +467,7 @@
 
 	$gender = strtolower($student_info['Gender']);
 
-	if($can_do_report) {
+	if($can_do_report and !$show_only) {
 		echo "      <script language='JavaScript' type='text/javascript'>\n";
 		echo "         var CONDUCT_TYPE_NONE      = $CONDUCT_TYPE_NONE;\n";
 		echo "         var CONDUCT_TYPE_PERCENT   = $CONDUCT_TYPE_PERCENT;\n";
@@ -579,25 +586,29 @@
 			}
 			echo "               <th><a title='Average'>A</a></th>\n";
 		}
-		if($subject_effort_type != $EFFORT_TYPE_NONE) {
-			echo "               <th>Effort</th>\n";
-			$colcount += 1;
-		}
-		if($subject_conduct_type != $CONDUCT_TYPE_NONE) {
-			echo "               <th>Conduct</th>\n";
-			$colcount += 1;
+		if(!$show_only) {
+			if($subject_effort_type != $EFFORT_TYPE_NONE) {
+				echo "               <th>Effort</th>\n";
+				$colcount += 1;
+			}
+			if($subject_conduct_type != $CONDUCT_TYPE_NONE) {
+				echo "               <th>Conduct</th>\n";
+				$colcount += 1;
+			}
 		}
 	}
-	if($subject_comment_type != $COMMENT_TYPE_NONE) {
-		echo "               <th>Comment</th>\n";
-		echo "               <th>Tone</th>\n";
-		$colcount += 2;
-	}
-	echo "               <th>Finished</th>\n";
-	$colcount += 1;
-	if(!$student_info['ReportDone']) {
-		echo "               <th>&nbsp;</th>\n";
+	if(!$show_only) {
+		if($subject_comment_type != $COMMENT_TYPE_NONE) {
+			echo "               <th>Comment</th>\n";
+			echo "               <th>Tone</th>\n";
+			$colcount += 2;
+		}
+		echo "               <th>Finished</th>\n";
 		$colcount += 1;
+		if(!$student_info['ReportDone']) {
+			echo "               <th>&nbsp;</th>\n";
+			$colcount += 1;
+		}
 	}
 
 	echo "            </tr>\n";
@@ -637,7 +648,8 @@
 							" (term INNER JOIN term AS depterm " .
 							"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
 							"       AND depterm.TermIndex = $termindex" .
-							"       AND term.TermIndex <= $termindex) " .
+							"       AND term.TermIndex <= $termindex " .
+							"       AND term.TermIndex >= $lowtermindex) " .
 							" LEFT OUTER JOIN " .
 							" (subjectstudent INNER JOIN subject " .
 							"       ON  subjectstudent.Username = '$student_username' " .
@@ -729,83 +741,86 @@
 				}
 				echo "               <td nowrap>$score</td>\n";
 			}
-	
-			if($subject_effort_type != $EFFORT_TYPE_NONE) {
-				if($row['EffortType'] == $EFFORT_TYPE_NONE) {
-					$score = "N/A";
-				} elseif($row['EffortType'] == $EFFORT_TYPE_PERCENT) {
-					if($row['Effort'] == -1) {
-						$score = "-";
+			if(!$show_only) {
+				if($subject_effort_type != $EFFORT_TYPE_NONE) {
+					if($row['EffortType'] == $EFFORT_TYPE_NONE) {
+						$score = "N/A";
+					} elseif($row['EffortType'] == $EFFORT_TYPE_PERCENT) {
+						if($row['Effort'] == -1) {
+							$score = "-";
+						} else {
+							$score = round($row['Effort']);
+							$score = "$score%";
+						}
+					} elseif($row['EffortType'] == $EFFORT_TYPE_INDEX) {
+						if(is_null($row['EffortDisplay'])) {
+							$score = "-";
+						} else {
+							$score = $row['EffortDisplay'];
+						}
 					} else {
-						$score = round($row['Effort']);
-						$score = "$score%";
+						$score = "N/A";
 					}
-				} elseif($row['EffortType'] == $EFFORT_TYPE_INDEX) {
-					if(is_null($row['EffortDisplay'])) {
-						$score = "-";
-					} else {
-						$score = $row['EffortDisplay'];
-					}
-				} else {
-					$score = "N/A";
+					echo "               <td nowrap>$score</td>\n";
 				}
-				echo "               <td nowrap>$score</td>\n";
-			}
-	
-			if($subject_conduct_type != $CONDUCT_TYPE_NONE) {
-				if($row['ConductType'] == $CONDUCT_TYPE_NONE) {
-					$score = "N/A";
-				} elseif($row['ConductType'] == $CONDUCT_TYPE_PERCENT) {
-					if($row['Conduct'] == -1) {
-						$score = "-";
+		
+				if($subject_conduct_type != $CONDUCT_TYPE_NONE) {
+					if($row['ConductType'] == $CONDUCT_TYPE_NONE) {
+						$score = "N/A";
+					} elseif($row['ConductType'] == $CONDUCT_TYPE_PERCENT) {
+						if($row['Conduct'] == -1) {
+							$score = "-";
+						} else {
+							$score = round($row['Conduct']);
+							$score = "$score%";
+						}
+					} elseif($row['ConductType'] == $CONDUCT_TYPE_INDEX) {
+						if(is_null($row['ConductDisplay'])) {
+							$score = "-";
+						} else {
+							$score = $row['ConductDisplay'];
+						}
 					} else {
-						$score = round($row['Conduct']);
-						$score = "$score%";
+						$score = "N/A";
 					}
-				} elseif($row['ConductType'] == $CONDUCT_TYPE_INDEX) {
-					if(is_null($row['ConductDisplay'])) {
-						$score = "-";
-					} else {
-						$score = $row['ConductDisplay'];
-					}
-				} else {
-					$score = "N/A";
+					echo "               <td nowrap>$score</td>\n";
 				}
-				echo "               <td nowrap>$score</td>\n";
 			}
 		}
 
-		if($subject_comment_type != $COMMENT_TYPE_NONE) {
-			if($row['CommentType'] == $COMMENT_TYPE_MANDATORY or $row['CommentType'] == $COMMENT_TYPE_OPTIONAL) {
-				if(!is_null($row['Comment'])) {
-					$commentstr = htmlspecialchars($row['Comment'], ENT_QUOTES);
-				} else {
-					$commentstr = "";
-				}
-				$cshow = "&nbsp;";
-				if(!is_null($row['CommentValue'])) {
-					$cval = round($row['CommentValue']);
-					if($cval == 1) {
-						$cshow = "-";
-					} elseif($cval == 2) {
-						$cshow = "=";
-					} elseif($cval == 3) {
-						$cshow = "+";
+		if(!$show_only) {
+			if($subject_comment_type != $COMMENT_TYPE_NONE) {
+				if($row['CommentType'] == $COMMENT_TYPE_MANDATORY or $row['CommentType'] == $COMMENT_TYPE_OPTIONAL) {
+					if(!is_null($row['Comment'])) {
+						$commentstr = htmlspecialchars($row['Comment'], ENT_QUOTES);
+					} else {
+						$commentstr = "";
 					}
+					$cshow = "&nbsp;";
+					if(!is_null($row['CommentValue'])) {
+						$cval = round($row['CommentValue']);
+						if($cval == 1) {
+							$cshow = "-";
+						} elseif($cval == 2) {
+							$cshow = "=";
+						} elseif($cval == 3) {
+							$cshow = "+";
+						}
+					}
+					echo "               <td>$commentstr</td>\n";
+					echo "               <td>$cshow</td>\n";
+				} else {
+					echo "               <td colspan='2'>N/A</td>\n";
 				}
-				echo "               <td>$commentstr</td>\n";
-				echo "               <td>$cshow</td>\n";
-			} else {
-				echo "               <td colspan='2'>N/A</td>\n";
 			}
-		}
-		if($row['ReportDone'] == 0) {
-			echo "               <td nowrap><b>No</b></td>\n";
-		} else {
-			echo "               <td nowrap><i>Yes</i></td>\n";
-		}
-		if(!$student_info['ReportDone']) {
-			echo "               <td nowrap><input type='submit' name='edit_{$row['SubjectIndex']}' value='Change'></td>\n";
+			if($row['ReportDone'] == 0) {
+				echo "               <td nowrap><b>No</b></td>\n";
+			} else {
+				echo "               <td nowrap><i>Yes</i></td>\n";
+			}
+			if(!$student_info['ReportDone']) {
+				echo "               <td nowrap><input type='submit' name='edit_{$row['SubjectIndex']}' value='Change'></td>\n";
+			}
 		}
 		echo "            </tr>\n";
 	}
@@ -988,8 +1003,10 @@
 			} else {
 				$ovl_conduct = "-";
 			}
-			echo "               <td>$ovl_conduct$cls_ovl_conduct</td>";
-			echo "               <td colspan='$colcount'>&nbsp;</td>\n";
+			echo "               <td>$ovl_conduct$cls_ovl_conduct</td>\n";
+			if($colcount > 0) {
+				echo "               <td colspan='$colcount'>&nbsp;</td>\n";
+			}
 			echo "            </tr>\n";
 		}
 	
@@ -1164,7 +1181,9 @@
 				$ovl_average = "-";
 			}
 			echo "               <td>$ovl_average$cls_ovl_average</td>";
-			echo "               <td colspan='$colcount'>&nbsp;</td>\n";
+			if($colcount > 0) {
+				echo "               <td colspan='$colcount'>&nbsp;</td>\n";
+			}
 			echo "            </tr>\n";
 		}
 		
@@ -1256,7 +1275,9 @@
 				$ovl_rank = "<i>$rank</i>";
 			}
 			echo "               <td>$ovl_rank</td>";
-			echo "               <td colspan='$colcount'>&nbsp;</td>\n";
+			if($colcount > 0) {
+				echo "               <td colspan='$colcount'>&nbsp;</td>\n";
+			}
 			echo "            </tr>\n";
 		}
 	
@@ -1436,7 +1457,9 @@
 				$ovl_effort = "-";
 			}
 			echo "               <td>$ovl_effort$cls_ovl_effort</td>";
-			echo "               <td colspan='$colcount'>&nbsp;</td>\n";
+			if($colcount > 0) {
+				echo "               <td colspan='$colcount'>&nbsp;</td>\n";
+			}
 			echo "            </tr>\n";
 		}
 		
@@ -1529,142 +1552,146 @@
 			}
 
 			$abs_colcount = $colcount + 1;
-			echo "               <td colspan='$abs_colcount'>&nbsp;</td>\n";
+			if($abs_colcount > 0) {
+				echo "               <td colspan='$abs_colcount'>&nbsp;</td>\n";
+			}
 			echo "            </tr>\n";
 		}
 	}	
 	echo "         </table>\n";               // End of table
 
-	echo "         <table class='transparent' align='center' width=600px>\n";
-
-	if($ct_comment_type != $COMMENT_TYPE_NONE) {
-		$query =	"SELECT term.TermName, term.TermIndex, classlist.CTComment FROM " .
-					" (term INNER JOIN term AS depterm " .
-					"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
-					"       AND depterm.TermIndex = $termindex" .
-					"       AND term.TermIndex <= $termindex) " .
-					" INNER JOIN " .
-					" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
-					"       ON  classlist.Username = '$student_username' " .
-					"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
-					"       AND class.YearIndex = $yearindex) " .
-					" ON term.TermIndex = classterm.TermIndex ";
-		$cRes =&   $db->query($query);
-		if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
-						
-		while($cRow =& $cRes->fetchrow(DB_FETCHMODE_ASSOC)) {
-			/* No point in showing a row if there's no comment for old terms*/
-			if((is_null($cRow['CTComment']) or $cRow['CTComment'] == "") and $cRow['TermIndex'] != $termindex)
-				continue;
-				
-			echo "            <tr>\n";
-			echo "               <td colspan='2'><b>${cRow['TermName']} - Class Teacher's comment:</b><br>\n";
-			if(isset($_POST["ct_comment"]) and $cRow['TermIndex'] == $termindex) {
-				$commentstr = htmlspecialchars($_POST["ct_comment"], ENT_QUOTES);
-			} else {
-				$commentstr = htmlspecialchars($cRow['CTComment'], ENT_QUOTES);
+	if(!$show_only) {
+		echo "         <table class='transparent' align='center' width=600px>\n";
+	
+		if($ct_comment_type != $COMMENT_TYPE_NONE) {
+			$query =	"SELECT term.TermName, term.TermIndex, classlist.CTComment FROM " .
+						" (term INNER JOIN term AS depterm " .
+						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+						"       AND depterm.TermIndex = $termindex" .
+						"       AND term.TermIndex <= $termindex) " .
+						" INNER JOIN " .
+						" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
+						"       ON  classlist.Username = '$student_username' " .
+						"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+						"       AND class.YearIndex = $yearindex) " .
+						" ON term.TermIndex = classterm.TermIndex ";
+			$cRes =&   $db->query($query);
+			if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
+							
+			while($cRow =& $cRes->fetchrow(DB_FETCHMODE_ASSOC)) {
+				/* No point in showing a row if there's no comment for old terms*/
+				if((is_null($cRow['CTComment']) or $cRow['CTComment'] == "") and $cRow['TermIndex'] != $termindex)
+					continue;
+					
+				echo "            <tr>\n";
+				echo "               <td colspan='2'><b>${cRow['TermName']} - Class Teacher's comment:</b><br>\n";
+				if(isset($_POST["ct_comment"]) and $cRow['TermIndex'] == $termindex) {
+					$commentstr = htmlspecialchars($_POST["ct_comment"], ENT_QUOTES);
+				} else {
+					$commentstr = htmlspecialchars($cRow['CTComment'], ENT_QUOTES);
+				}
+				if(($ct_comment_type == $COMMENT_TYPE_MANDATORY or
+				    $ct_comment_type == $COMMENT_TYPE_OPTIONAL) and
+				   !$student_info['ReportDone'] and
+				   !$student_info['CTCommentDone'] and
+				    $cRow['TermIndex'] == $termindex) {
+					echo "               <textarea name='ct_comment' " .
+											"id='ct_comment' rows='5' cols='80' " .
+											"onChange='recalc_comment(&quot;ct&quot;);'>$commentstr</textarea>\n";
+				} else {
+					echo "               $commentstr\n";
+				}
+				echo "               </td>\n";
+				echo "            </tr>\n";
 			}
-			if(($ct_comment_type == $COMMENT_TYPE_MANDATORY or
-			    $ct_comment_type == $COMMENT_TYPE_OPTIONAL) and
-			   !$student_info['ReportDone'] and
-			   !$student_info['CTCommentDone'] and
-			    $cRow['TermIndex'] == $termindex) {
-				echo "               <textarea name='ct_comment' " .
-										"id='ct_comment' rows='5' cols='80' " .
-										"onChange='recalc_comment(&quot;ct&quot;);'>$commentstr</textarea>\n";
-			} else {
-				echo "               $commentstr\n";
-			}
-			echo "               </td>\n";
-			echo "            </tr>\n";
 		}
-	}
-	if($hod_comment_type != $COMMENT_TYPE_NONE) {
-		$query =	"SELECT term.TermName, term.TermIndex, classlist.HODComment FROM " .
-					" (term INNER JOIN term AS depterm " .
-					"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
-					"       AND depterm.TermIndex = $termindex" .
-					"       AND term.TermIndex <= $termindex) " .
-					" INNER JOIN " .
-					" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
-					"       ON  classlist.Username = '$student_username' " .
-					"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
-					"       AND class.YearIndex = $yearindex) " .
-					" ON term.TermIndex = classterm.TermIndex ";
-		$cRes =&   $db->query($query);
-		if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
-						
-		while($cRow =& $cRes->fetchrow(DB_FETCHMODE_ASSOC)) {
-			/* No point in showing a row if there's no comment for old terms*/
-			if((is_null($cRow['HODComment']) or $cRow['HODComment'] == "") and $cRow['TermIndex'] != $termindex)
-				continue;
-				
-			echo "            <tr>\n";
-			echo "               <td colspan='2'><b>${cRow['TermName']} - Head of Department's comment:</b><br>\n";
-			if(isset($_POST["hod_comment"]) and $cRow['TermIndex'] == $termindex) {
-				$commentstr = htmlspecialchars($_POST["hod_comment"], ENT_QUOTES);
-			} else {
-				$commentstr = htmlspecialchars($cRow['HODComment'], ENT_QUOTES);
+		if($hod_comment_type != $COMMENT_TYPE_NONE) {
+			$query =	"SELECT term.TermName, term.TermIndex, classlist.HODComment FROM " .
+						" (term INNER JOIN term AS depterm " .
+						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+						"       AND depterm.TermIndex = $termindex" .
+						"       AND term.TermIndex <= $termindex) " .
+						" INNER JOIN " .
+						" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
+						"       ON  classlist.Username = '$student_username' " .
+						"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+						"       AND class.YearIndex = $yearindex) " .
+						" ON term.TermIndex = classterm.TermIndex ";
+			$cRes =&   $db->query($query);
+			if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
+							
+			while($cRow =& $cRes->fetchrow(DB_FETCHMODE_ASSOC)) {
+				/* No point in showing a row if there's no comment for old terms*/
+				if((is_null($cRow['HODComment']) or $cRow['HODComment'] == "") and $cRow['TermIndex'] != $termindex)
+					continue;
+					
+				echo "            <tr>\n";
+				echo "               <td colspan='2'><b>${cRow['TermName']} - Head of Department's comment:</b><br>\n";
+				if(isset($_POST["hod_comment"]) and $cRow['TermIndex'] == $termindex) {
+					$commentstr = htmlspecialchars($_POST["hod_comment"], ENT_QUOTES);
+				} else {
+					$commentstr = htmlspecialchars($cRow['HODComment'], ENT_QUOTES);
+				}
+				if(($hod_comment_type == $COMMENT_TYPE_MANDATORY or
+				    $hod_comment_type == $COMMENT_TYPE_OPTIONAL) and
+				   !$student_info['ReportDone'] and
+				   !$student_info['HODCommentDone'] and
+				    $cRow['TermIndex'] == $termindex) {
+					echo "               <textarea name='hod_comment' " .
+											"id='hod_comment' rows='5' cols='80' " .
+											"onChange='recalc_comment(&quot;hod&quot;);'>$commentstr</textarea>\n";
+				} else {
+					echo "               $commentstr\n";
+				}
+				echo "               </td>\n";
+				echo "            </tr>\n";
 			}
-			if(($hod_comment_type == $COMMENT_TYPE_MANDATORY or
-			    $hod_comment_type == $COMMENT_TYPE_OPTIONAL) and
-			   !$student_info['ReportDone'] and
-			   !$student_info['HODCommentDone'] and
-			    $cRow['TermIndex'] == $termindex) {
-				echo "               <textarea name='hod_comment' " .
-										"id='hod_comment' rows='5' cols='80' " .
-										"onChange='recalc_comment(&quot;hod&quot;);'>$commentstr</textarea>\n";
-			} else {
-				echo "               $commentstr\n";
-			}
-			echo "               </td>\n";
-			echo "            </tr>\n";
 		}
-	}
-	if($pr_comment_type != $COMMENT_TYPE_NONE) {
-		$query =	"SELECT term.TermName, term.TermIndex, classlist.PrincipalComment FROM " .
-					" (term INNER JOIN term AS depterm " .
-					"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
-					"       AND depterm.TermIndex = $termindex" .
-					"       AND term.TermIndex <= $termindex) " .
-					" INNER JOIN " .
-					" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
-					"       ON  classlist.Username = '$student_username' " .
-					"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
-					"       AND class.YearIndex = $yearindex) " .
-					" ON term.TermIndex = classterm.TermIndex ";
-		$cRes =&   $db->query($query);
-		if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
-						
-		while($cRow =& $cRes->fetchrow(DB_FETCHMODE_ASSOC)) {
-			/* No point in showing a row if there's no comment for old terms*/
-			if((is_null($cRow['PrincipalComment']) or $cRow['PrincipalComment'] == "") and $cRow['TermIndex'] != $termindex)
-				continue;
-				
-			echo "            <tr>\n";
-			echo "               <td colspan='2'><b>${cRow['TermName']} - Principal's comment:</b><br>\n";
-			if(isset($_POST["pr_comment"]) and $cRow['TermIndex'] == $termindex) {
-				$commentstr = htmlspecialchars($_POST["pr_comment"], ENT_QUOTES);
-			} else {
-				$commentstr = htmlspecialchars($cRow['PrincipalComment'], ENT_QUOTES);
+		if($pr_comment_type != $COMMENT_TYPE_NONE) {
+			$query =	"SELECT term.TermName, term.TermIndex, classlist.PrincipalComment FROM " .
+						" (term INNER JOIN term AS depterm " .
+						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+						"       AND depterm.TermIndex = $termindex" .
+						"       AND term.TermIndex <= $termindex) " .
+						" INNER JOIN " .
+						" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
+						"       ON  classlist.Username = '$student_username' " .
+						"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+						"       AND class.YearIndex = $yearindex) " .
+						" ON term.TermIndex = classterm.TermIndex ";
+			$cRes =&   $db->query($query);
+			if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
+							
+			while($cRow =& $cRes->fetchrow(DB_FETCHMODE_ASSOC)) {
+				/* No point in showing a row if there's no comment for old terms*/
+				if((is_null($cRow['PrincipalComment']) or $cRow['PrincipalComment'] == "") and $cRow['TermIndex'] != $termindex)
+					continue;
+					
+				echo "            <tr>\n";
+				echo "               <td colspan='2'><b>${cRow['TermName']} - Principal's comment:</b><br>\n";
+				if(isset($_POST["pr_comment"]) and $cRow['TermIndex'] == $termindex) {
+					$commentstr = htmlspecialchars($_POST["pr_comment"], ENT_QUOTES);
+				} else {
+					$commentstr = htmlspecialchars($cRow['PrincipalComment'], ENT_QUOTES);
+				}
+				if(($pr_comment_type == $COMMENT_TYPE_MANDATORY or
+				    $pr_comment_type == $COMMENT_TYPE_OPTIONAL) and
+				   !$student_info['ReportDone'] and
+				   !$student_info['PrincipalCommentDone'] and
+				    $cRow['TermIndex'] == $termindex) {
+					echo "               <textarea name='pr_comment' " .
+											"id='pr_comment' rows='5' cols='80' " .
+											"onChange='recalc_comment(&quot;pr&quot;);'>$commentstr</textarea>\n";
+				} else {
+					echo "               $commentstr\n";
+				}
+				echo "               </td>\n";
+				echo "            </tr>\n";
 			}
-			if(($pr_comment_type == $COMMENT_TYPE_MANDATORY or
-			    $pr_comment_type == $COMMENT_TYPE_OPTIONAL) and
-			   !$student_info['ReportDone'] and
-			   !$student_info['PrincipalCommentDone'] and
-			    $cRow['TermIndex'] == $termindex) {
-				echo "               <textarea name='pr_comment' " .
-										"id='pr_comment' rows='5' cols='80' " .
-										"onChange='recalc_comment(&quot;pr&quot;);'>$commentstr</textarea>\n";
-			} else {
-				echo "               $commentstr\n";
-			}
-			echo "               </td>\n";
-			echo "            </tr>\n";
 		}
+		echo "         </table>\n";
 	}
-	echo "         </table>\n";
-	if($can_do_report) {
+	if($can_do_report and !$show_only) {
 		echo "         <p></p>\n";
 		echo "         <p align='center'>\n";
 		if($prev_uname != "") {
