@@ -26,11 +26,10 @@
 				"       VALUES (\"$username\", \"$subject\", NOW(), \"$message\")";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());
-	$query =	"SELECT MessageIndex FROM message " .
-				"WHERE  MessageIndex IS NULL";
+	$query =	"SELECT LAST_INSERT_ID() AS MessageIndex";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());
-	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC) and $row['MessageIndex'] != 0) {
 		$message_index = $row['MessageIndex'];
 	} else {
 		echo "Error creating message";

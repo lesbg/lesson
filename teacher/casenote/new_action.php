@@ -133,10 +133,10 @@
 					$res =& $db->query($query);
 					if(DB::isError($res)) die($res->getDebugInfo()); // Check for errors in query
 					$cn_index = -1;
-					$query =	"SELECT CaseNoteIndex FROM casenote WHERE CaseNoteIndex IS NULL";
+					$query =	"SELECT LAST_INSERT_ID() AS CaseNoteIndex";
 					$res =& $db->query($query);
 					if(DB::isError($res)) die($res->getDebugInfo()); // Check for errors in query
-					if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+					if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC) and $row['CaseNoteIndex'] != 0) {
 						$cn_index = $row['CaseNoteIndex'];
 					}
 					if($level == 3) {

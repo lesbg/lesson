@@ -84,9 +84,9 @@
 								"        {$_POST['categories']})");
 			if(DB::isError($aRes)) die($aRes->getDebugInfo());           // Check for errors in query
 			$aRes =& $db->query("SELECT SubjectIndex, Name FROM subject " .
-								"WHERE  SubjectIndex IS NULL");
+								"WHERE  SubjectIndex = LAST_INSERT_ID()");
 			if(DB::isError($aRes)) die($aRes->getDebugInfo());           // Check for errors in query
-			if($aRow =& $aRes->fetchRow(DB_FETCHMODE_ASSOC)) {
+			if($aRow =& $aRes->fetchRow(DB_FETCHMODE_ASSOC) and $aRow['SubjectIndex'] != 0) {
 				$_GET['key']     = dbfuncString2Int($aRow['SubjectIndex']);
 				$_GET['keyname'] = dbfuncString2Int($aRow['Name']);
 			} else {

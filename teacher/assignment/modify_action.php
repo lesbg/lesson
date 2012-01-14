@@ -153,8 +153,8 @@
 				} elseif($average_type == $AVG_TYPE_INDEX) {
 					$inval = safe($_POST["score_{$row['Username']}"]);
 					$inval = strtoupper($inval);
-					$query = "SELECT NonmarkIndex FROM nonmark_index WHERE NonmarkTypeIndex=$average_type_index AND Input = '$inval'";
-					$sRes =& $db->query($query);
+					$nquery = "SELECT NonmarkIndex FROM nonmark_index WHERE NonmarkTypeIndex=$average_type_index AND Input = '$inval'";
+					$sRes =& $db->query($nquery);
 					if(DB::isError($sRes)) die($sRes->getDebugInfo());      // Check for errors in query
 		
 					if($sRow =& $sRes->fetchRow(DB_FETCHMODE_ASSOC)) {

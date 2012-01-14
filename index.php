@@ -98,7 +98,7 @@
 	
 	//update_conduct_year_term(1, 1);
 	//update_conduct_year_term(7, 1);
-    //update_year_term(7, 1);
+    //update_year_term(8, 1);
         
 	//$query = "SELECT SubjectIndex FROM subject";
 	//$res =&  $db->query($query);

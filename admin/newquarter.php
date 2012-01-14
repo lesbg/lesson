@@ -93,11 +93,11 @@
 			echo "..";
 			
 			/* Get key of newly created subject */
-			$newRes =& $db->query("SELECT SubjectIndex FROM subject WHERE SubjectIndex IS NULL");
+			$newRes =& $db->query("SELECT LAST_INSERT_ID() AS SubjectIndex");
 			if(DB::isError($newRes)) die($newRes->getDebugInfo());           // Check for errors in query
 			echo "..";
 			
-			if(!$newRow =& $newRes->fetchRow(DB_FETCHMODE_ASSOC)) {
+			if(!$newRow =& $newRes->fetchRow(DB_FETCHMODE_ASSOC) or $newRow['SubjectIndex'] == 0) {
 				echo "<b>failed!</b></p>\n";
 				continue;
 			}

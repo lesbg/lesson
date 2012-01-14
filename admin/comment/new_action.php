@@ -19,9 +19,9 @@
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 
-		$res =& $db->query("SELECT CommentIndex FROM comment WHERE CommentIndex IS NULL");
+		$res =& $db->query("SELECT LAST_INSERT_ID() AS CommentIndex");
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
-		if ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		if ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC) and $row['CommentIndex'] != 0) {
 			$commentindex = $row['CommentIndex'];
 
 			$res =&  $db->query("DELETE FROM commenttype " .

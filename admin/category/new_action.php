@@ -13,9 +13,9 @@
 							"VALUES ('{$_POST['name']}')");
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 
-		$res =& $db->query("SELECT CategoryIndex FROM category WHERE CategoryIndex IS NULL");
+		$res =& $db->query("SELECT LAST_INSERT_ID() AS CategoryIndex");
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
-		if ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		if ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC) and $row['CategoryIndex'] != 0) {
 			$categoryindex = $row['CategoryIndex'];
 
 			$res =&  $db->query("DELETE FROM categorytype " .

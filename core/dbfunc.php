@@ -406,9 +406,9 @@
 								"VALUES (\"$username\", $LOG_LOGIN, $LOG_LEVEL_ACCESS, \"$today\", " .
 										"\"$page\", \"$remote_host\", \"Password $password_number\")");
 			if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
-			$res =& $db->query("SELECT LogIndex FROM log WHERE LogIndex IS NULL");
+			$res =& $db->query("SELECT LAST_INSERT_ID() AS LogIndex");
 			if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
-			if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {         // Get new log index
+			if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC) and $row['LogIndex'] != 0) {         // Get new log index
 				$_SESSION['LogIndex'] = $row['LogIndex'];
 			} else {
 				include "header.php";
@@ -461,9 +461,9 @@
 										"VALUES (\"$username\", $code, $log_level, $comment, \"$today\", " .
 												"\"$page\", \"$remote_host\")");
 					if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
-					$res =& $db->query("SELECT LogIndex FROM log WHERE LogIndex IS NULL");
+					$res =& $db->query("SELECT LAST_INSERT_ID() AS LogIndex");
 					if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
-					if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {         // Get new log index
+					if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC) and $row['LogIndex'] != 0) {         // Get new log index
 						$_SESSION['LogIndex'] = $row['LogIndex'];
 					} else {
 						echo "     <p>Error appending to log!</p>\n";        // Somehow we were unable to add to log
