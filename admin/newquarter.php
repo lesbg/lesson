@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * admin/newquarter.php  (c) 2005-2008 Jonathan Dieter
+	 * admin/newquarter.php  (c) 2005-2012 Jonathan Dieter
 	 *
 	 * Move to the next quarter and generate appropriate classes.
 	 *****************************************************************/
@@ -81,12 +81,12 @@
 						"                     CanModify, ShowInList, AverageType, " .
 						"                     AverageTypeIndex, ConductType, ConductTypeIndex, " .
 						"                     EffortType, EffortTypeIndex, " .
-						"                     TeacherCanChangeCategories, CommentType) " .
+						"                     TeacherCanChangeCategories, CommentType, Weight) " .
 						"SELECT Name, ShortName, SubjectTypeIndex, YearIndex, $newterm AS TermIndex, " .
 						"       ShowAverage, DepartmentIndex, ClassIndex, Grade, " .
 						"       RenameUploads, CanModify, ShowInList, AverageType, AverageTypeIndex, " .
 						"       ConductType, ConductTypeIndex, EffortType, EffortTypeIndex, " .
-						"       TeacherCanChangeCategories, CommentType FROM subject " .
+						"       TeacherCanChangeCategories, CommentType, Weight FROM subject " .
 						"WHERE  SubjectIndex = {$row['SubjectIndex']} ";
 			$newRes =& $db->query($query);
 			if(DB::isError($newRes)) die($newRes->getDebugInfo());           // Check for errors in query
