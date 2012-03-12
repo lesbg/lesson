@@ -178,7 +178,8 @@
 	/* Get classes */
 	$studentusername = $username;
 	$query =	"SELECT subject.Name, subject.SubjectIndex, subject.Period, " .
-				"       subject.ShowAverage, subjectstudent.Average FROM subject, subjectstudent " .
+				"       subject.ShowAverage, subjectstudent.Average, subject.AverageType, " .
+				"       subject.AverageTypeIndex FROM subject, subjectstudent " .
 				"WHERE subjectstudent.SubjectIndex = subject.SubjectIndex " .
 				"AND   subject.AverageType        != $AVG_TYPE_NONE " .
 				"AND   subject.YearIndex           = $yearindex " .
@@ -253,15 +254,36 @@
 				}
 			}
 			echo "            </td>\n";    // Table footers
-			if($row['ShowAverage'] == "1") {
-				if($row['Average'] == "-1") {
-					echo "            <td><i>N/A</i></td>\n";
+			$average_type       = $row['AverageType'];
+			$average_type_index = $row['AverageTypeIndex'];
+			
+			if($average_type != $AVG_TYPE_NONE) {
+				if($row['ShowAverage'] == "1") {
+					if($row['Average'] == "-1") {
+						echo "            <td><i>N/A</i></td>\n";
+					} else {
+						if($average_type == $AVG_TYPE_PERCENT) {
+							$average = round($row['Average']);
+							echo "            <td>$average%</td>\n";
+						} elseif($average_type == $AVG_TYPE_INDEX or $average_type == $AVG_TYPE_GRADE) {
+							$query =	"SELECT Input, Display FROM nonmark_index " .
+										"WHERE NonmarkTypeIndex = $average_type_index " .
+										"AND   NonmarkIndex     = {$row['Average']}";
+							$sres =& $db->query($query);
+							if(DB::isError($sres)) die($sres->getDebugInfo());           // Check for errors in query
+							if($srow =& $sres->fetchRow(DB_FETCHMODE_ASSOC)) {
+								$average = $srow['Display'];
+							} else {
+								$average = "?";
+							}
+							echo "            <td>$average</td>\n";
+						}
+					}
 				} else {
-					$average = round($row['Average']);
-					echo "            <td>$average%</td>\n";
+					echo "            <td>&nbsp;</td>\n";
 				}
 			} else {
-				echo "            <td>&nbsp;</td>\n";
+				echo "            <td><i>N/A</i></td>\n";
 			}
 
 			echo "         </tr>\n";
