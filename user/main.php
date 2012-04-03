@@ -74,11 +74,11 @@
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
-	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC) and ($row['CanDoReport'] or $row['ReportDone'])) {
+	while($row =& $res->fetchRow(DB_FETCHMODE_ASSOC) and ($row['CanDoReport'] or $row['ReportDone'])) {
 		$clLink =	"index.php?location=" . dbfuncString2Int("teacher/report/class_list.php") .
 					"&amp;key=" .           dbfuncString2Int($row['ClassTermIndex']) .
 					"&amp;keyname=" .       dbfuncString2Int($row['ClassName']);
-		echo "      <p><a href='$clLink'>Class reports</a></p>\n";
+		echo "      <p><a href='$clLink'>Class reports for {$row['ClassName']}</a></p>\n";
 	}
 
 	/* If user is responsible for any books, show book link */
