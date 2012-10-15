@@ -309,24 +309,31 @@
 	}
 	
 	/* Get subject information for current teacher */
-	$query =	"SELECT subject.Name, subject.SubjectIndex, subject.Average, " .
-				"       subject_count.StudentCount, subject_count.ReportDone, " .
-				"       subject.ClassIndex, " .
-				"       subject.CanDoReport FROM subject LEFT OUTER JOIN " .
-				"         (SELECT subject.SubjectIndex, COUNT(subjectstudent.Username) AS StudentCount, " .
-				"                 MIN(subjectstudent.ReportDone) AS ReportDone " .
-				"                 FROM subject INNER JOIN subjectstudent USING (SubjectIndex) " .
-				"          WHERE subject.YearIndex = $yearindex " .
-				"          AND   subject.TermIndex = $termindex " .
-				"          GROUP BY subject.SubjectIndex) AS subject_count " .
-				"       USING (SubjectIndex), " .
-				"       subjectteacher " .
-				"WHERE subjectteacher.SubjectIndex = subject.SubjectIndex " .
-				"AND   subject.YearIndex           = $yearindex " .
-				"AND   subject.TermIndex           = $termindex " .
-				"AND   subjectteacher.Username     = '$username' " .
-				"AND   subject.ShowInList          = 1 " .
-				"ORDER BY subject.Name, subject.SubjectIndex";
+	$query =	"SELECT Name, SubjectIndex, Average, MAX(StudentCount) AS StudentCount, MIN(ReportDone) AS ReportDone, ClassIndex, CanDoReport, MAX(SubjectTeacher) AS SubjectTeacher FROM " .
+				"       ((SELECT subject.Name, subject.SubjectIndex, subject.Average, COUNT(subjectstudent.Username) AS StudentCount, MIN(subjectstudent.ReportDone) AS ReportDone, subject.ClassIndex, subject.CanDoReport, 1 AS SubjectTeacher " .
+				"         FROM subject " .
+				"         LEFT OUTER JOIN subjectstudent USING (SubjectIndex), subjectteacher " .
+				"         WHERE subjectteacher.SubjectIndex = subject.SubjectIndex " .
+				"         AND subject.YearIndex = $yearindex " .
+				"         AND subject.TermIndex = $termindex " .
+				"         AND subjectteacher.Username = '$username' " .
+				"         AND subject.ShowInList = 1 " .
+				"         GROUP BY subject.SubjectIndex) " .
+				"        UNION " .
+				"        (SELECT subject.Name, subject.SubjectIndex, subject.Average, COUNT(subjectstudent.Username) AS StudentCount, MIN(subjectstudent.ReportDone) AS ReportDone, subject.ClassIndex, subject.CanDoReport, 0 AS SubjectTeacher " .
+				"         FROM subject " .
+				"         INNER JOIN subjectstudent USING (SubjectIndex) " .
+				"         INNER JOIN classlist USING (Username) " .
+				"         INNER JOIN classterm ON (classterm.ClassTermIndex=classlist.ClassTermIndex AND classterm.TermIndex=subject.TermIndex) " .
+				"         INNER JOIN class ON (class.ClassIndex=classterm.ClassIndex AND class.YearIndex=subject.YearIndex) " .
+				"         INNER JOIN support_class ON (classterm.ClassTermIndex=support_class.ClassTermIndex) " .
+				"         WHERE support_class.Username = '$username' " .
+				"         AND subject.YearIndex = $yearindex " .
+				"         AND subject.TermIndex = $termindex " .
+				"         AND subject.ShowInList = 1 " .
+				"         GROUP BY subject.SubjectIndex)) AS subject_list " .
+				"GROUP BY SubjectIndex " .
+				"ORDER BY Name, SubjectIndex ";
 	$nrs =&  $db->query($query);
 	if(DB::isError($nrs)) die($nrs->getDebugInfo());          // Check for errors in query
 

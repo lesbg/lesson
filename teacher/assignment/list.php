@@ -17,8 +17,24 @@
 					   "WHERE subjectteacher.SubjectIndex = $subjectindex " .
 					   "AND   subjectteacher.Username     = '$username'");
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
+	if($res->numRows() > 0)
+		$is_teacher = true;
 	
-	if($res->numRows() > 0 or $is_admin) {
+	$query =	"SELECT support_class.Username " .
+				"         FROM subject " .
+				"         INNER JOIN subjectstudent USING (SubjectIndex) " .
+				"         INNER JOIN classlist USING (Username) " .
+				"         INNER JOIN classterm ON (classterm.ClassTermIndex=classlist.ClassTermIndex AND classterm.TermIndex=subject.TermIndex) " .
+				"         INNER JOIN class ON (class.ClassIndex=classterm.ClassIndex AND class.YearIndex=subject.YearIndex) " .
+				"         INNER JOIN support_class ON (classterm.ClassTermIndex=support_class.ClassTermIndex) " .
+				"         WHERE support_class.Username = '$username' " .
+				"         AND subject.SubjectIndex = $subjectindex";
+	$res =& $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
+	if($res->numRows() > 0)
+		$is_support_class_teacher = true;
+				
+	if($is_teacher or $is_support_class_teacher or $is_admin) {
 		$query =    "SELECT Permissions FROM disciplineperms WHERE Username='$username'";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
@@ -34,12 +50,15 @@
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 			
 		$row       =& $res->fetchRow(DB_FETCHMODE_ASSOC);
-		if(dbfuncGetPermission($permissions, $PERM_ADMIN)) {
+		if($is_admin) {
 			$can_modify = 1;
 		} else {
 			$can_modify = $row['CanModify'];
 		}
 
+		if(!$is_teacher and !$is_admin)
+			$can_modify = 0;
+			
 		$average_type       = $row['AverageType'];
 		$average_type_index = $row['AverageTypeIndex'];
 
@@ -65,13 +84,12 @@
 						"&amp;keyname=" .       $_GET['keyname'];
 						
 		$agendabutton = dbfuncGetButton($agendalink, "Agenda items", "medium", "", "List agenda items for this subject");
-		if(($can_modify==1 or $is_admin) and $average_type != $AVG_TYPE_NONE){
+		if(($can_modify == 1) and $average_type != $AVG_TYPE_NONE){
 			$newbutton    = dbfuncGetButton($newlink, "New assignment", "medium", "", "Create new assignment for this subject");
 			$optbutton    = dbfuncGetButton($optlink, "Subject options", "medium", "", "Edit options for this subject");
 		} else {
 			$newbutton = "";
 			$optbutton = "";
-
 		}
 
 		if($average_type == $AVG_TYPE_PERCENT) {
@@ -120,7 +138,7 @@
 				} else {
 					$catinfo = "<br><span class='small'>{$row['CategoryName']}</span>";
 				}
-				if($can_modify == 1 or dbfuncGetPermission($permissions, $PERM_ADMIN)) {
+				if($can_modify == 1) {
 					echo "            <th$headtype width=10px><a$headtype href='$link'>{$row['Title']}<br> ({$dateinfo}){$catinfo}</a></th>\n";
 				} else {
 					echo "            <th$headtype width=10px>{$row['Title']}<br>($dateinfo){$catinfo}</th>\n";
@@ -133,20 +151,35 @@
 		echo "         </tr>\n";
 
 		/* For each student, print a row with the student's name and score on each assignment*/
-		$query =	"SELECT user.FirstName, user.Surname, user.Username, query.ClassOrder, " .
-					"       subjectstudent.Average FROM user, " .
-					"       subjectstudent LEFT OUTER JOIN " .
-					"       (SELECT classlist.ClassOrder, classlist.Username FROM class, " .
-					"               classterm, classlist, subject " .
-					"        WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
-					"        AND   classterm.TermIndex = subject.TermIndex " .
-					"        AND   class.ClassIndex = classterm.ClassIndex " .
-					"        AND   class.YearIndex = subject.YearIndex " .
-					"        AND subject.SubjectIndex=$subjectindex) AS query " .
-					"       ON subjectstudent.Username = query.Username " .
-					"WHERE user.Username=subjectstudent.Username " .
-					"AND subjectstudent.SubjectIndex=$subjectindex " .
-					"ORDER BY user.FirstName, user.Surname, user.Username";
+		if($is_support_class_teacher and !$is_teacher and !$is_admin) {
+			$query =	"SELECT user.FirstName, user.Surname, user.Username, classlist.ClassOrder, " .
+						"       subjectstudent.Average FROM user, " .
+						"       subject " .
+						"       INNER JOIN subjectstudent USING (SubjectIndex)" .
+						"       INNER JOIN classlist USING (Username) " .
+						"       INNER JOIN classterm ON (classterm.ClassTermIndex=classlist.ClassTermIndex AND classterm.TermIndex=subject.TermIndex) " .
+						"       INNER JOIN class ON (class.ClassIndex=classterm.ClassIndex AND class.YearIndex=subject.YearIndex) " .
+						"       INNER JOIN support_class ON (classterm.ClassTermIndex=support_class.ClassTermIndex) " .
+						"WHERE support_class.Username = '$username' " .
+						"AND user.Username=subjectstudent.Username " .
+						"AND subject.SubjectIndex=$subjectindex " .
+						"ORDER BY user.FirstName, user.Surname, user.Username";
+		} else {
+			$query =	"SELECT user.FirstName, user.Surname, user.Username, query.ClassOrder, " .
+						"       subjectstudent.Average FROM user, " .
+						"       subjectstudent LEFT OUTER JOIN " .
+						"       (SELECT classlist.ClassOrder, classlist.Username FROM class, " .
+						"               classterm, classlist, subject " .
+						"        WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
+						"        AND   classterm.TermIndex = subject.TermIndex " .
+						"        AND   class.ClassIndex = classterm.ClassIndex " .
+						"        AND   class.YearIndex = subject.YearIndex " .
+						"        AND subject.SubjectIndex=$subjectindex) AS query " .
+						"       ON subjectstudent.Username = query.Username " .
+						"WHERE user.Username=subjectstudent.Username " .
+						"AND subjectstudent.SubjectIndex=$subjectindex " .
+						"ORDER BY user.FirstName, user.Surname, user.Username";			
+		}
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 			

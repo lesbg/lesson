@@ -15,8 +15,24 @@
 					   "WHERE subjectteacher.SubjectIndex = $subjectindex " .
 					   "AND   subjectteacher.Username     = '$username'");
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
+	if($res->numRows() > 0)
+		$is_teacher = true;
 	
-	if($res->numRows() > 0 or $is_admin) {
+	$query =	"SELECT support_class.Username " .
+				"         FROM subject " .
+				"         INNER JOIN subjectstudent USING (SubjectIndex) " .
+				"         INNER JOIN classlist USING (Username) " .
+				"         INNER JOIN classterm ON (classterm.ClassTermIndex=classlist.ClassTermIndex AND classterm.TermIndex=subject.TermIndex) " .
+				"         INNER JOIN class ON (class.ClassIndex=classterm.ClassIndex AND class.YearIndex=subject.YearIndex) " .
+				"         INNER JOIN support_class ON (classterm.ClassTermIndex=support_class.ClassTermIndex) " .
+				"         WHERE support_class.Username = '$username' " .
+				"         AND subject.SubjectIndex = $subjectindex";
+	$res =& $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
+	if($res->numRows() > 0)
+		$is_support_class_teacher = true;
+					
+	if($is_teacher or $is_support_class_teacher or $is_admin) {
 		include "core/settermandyear.php";
 		$nochangeyt = true;
 		include "core/titletermyear.php";
@@ -27,12 +43,15 @@
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 			
 		$row       =& $res->fetchRow(DB_FETCHMODE_ASSOC);
-		if(dbfuncGetPermission($permissions, $PERM_ADMIN)) {
+		if($is_admin) {
 			$can_modify = 1;
 		} else {
 			$can_modify = $row['CanModify'];
 		}
 
+		if(!$is_teacher and !$is_admin)
+			$can_modify = 0;
+		
 		$average_type       = $row['AverageType'];
 		$average_type_index = $row['AverageTypeIndex'];
 
@@ -44,7 +63,7 @@
 						"&amp;keyname=" .       $_GET['keyname'];
 						
 		$asmntbutton = dbfuncGetButton($asmntlink, "Assignments", "medium", "", "List assignments for this subject");
-		if($can_modify==1 or $is_admin) {
+		if($can_modify == 1) {
 			$newbutton = dbfuncGetButton($newlink, "New agenda item", "medium", "", "Create new agenda item for this subject");			
 		} else {
 			$newbutton = "";
@@ -55,7 +74,7 @@
 		$query =		"SELECT Title, Date, DueDate, assignment.AssignmentIndex, Description, DescriptionData, " .
 						"       DescriptionFileType, AverageType, ShowAverage, Agenda, subject.Name AS SubjectName, " .
 						"       Uploadable, assignment.Weight, Hidden, " .
-						"       CanModify, subject.SubjectIndex " .
+						"       subject.SubjectIndex " .
 						"       FROM subject INNER JOIN assignment USING (SubjectIndex) " .
 						"WHERE subject.SubjectIndex = $subjectindex " .
 						"AND   Agenda       = 1 " .
@@ -77,8 +96,6 @@
 			/* For each assignment, print subject, teacher, assignment title, date, score, and any comments */
 			$alt_count = 0;
 			while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-				$can_modify = $row['CanModify'];
-				
 				$alt_count += 1;
 				if($alt_count % 2 == 0) {
 					$alt_step = "alt";
