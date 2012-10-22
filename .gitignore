@@ -6,3 +6,4 @@
 *.pyo
 *.pyc
 local-push.sh
+scripts/deploy-test.sh
