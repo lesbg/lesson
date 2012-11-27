@@ -90,9 +90,10 @@
 				"       classterm.AverageTypeIndex, classterm.EffortTypeIndex, " .
 				"       classterm.ConductTypeIndex, classterm.Average, " .
 				"       classterm.AbsenceType " .
-				"       FROM classterm, classlist " .
+				"       FROM class, classterm, classlist " .
 				"WHERE classterm.ClassTermIndex    = $classtermindex " .
 				"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+				"AND   class.ClassIndex = classterm.ClassIndex " .
 				"GROUP BY classterm.ClassTermIndex";
 	$res =& $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
@@ -111,6 +112,7 @@
 	$average_type_index = $row['AverageTypeIndex'];
 	$effort_type_index  = $row['EffortTypeIndex'];
 	$conduct_type_index = $row['ConductTypeIndex'];
+	$class_index        = $row['ClassIndex'];
 
 	/* Get cumulative class information */
 	if($cumulative and ($average_type == $CLASS_AVG_TYPE_PERCENT or $average_type == $CLASS_AVG_TYPE_CALC)) {
@@ -159,7 +161,7 @@
 					"AND   subjectstudent.Average != -1 " .
 					"GROUP BY subject.Name " .
 					"ORDER BY subject.YearIndex, subjecttype.HighPriority DESC, " .
-					"         get_weight(subject.SubjectIndex, CURDATE()) DESC, " .
+					"         get_weight(subject.SubjectIndex, CURDATE(), $class_index) DESC, " .
 					"         subjecttype.Title, subject.Name, subject.TermIndex, subject.SubjectIndex";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
@@ -259,7 +261,7 @@
 					"AND   user.Username               = subjectstudent.Username " .
 					"GROUP BY user.Username, subject.Name " .
 					"ORDER BY user.FirstName, user.Surname, user.Username, subject.YearIndex, " .
-					"         subjecttype.HighPriority DESC, get_weight(subject.SubjectIndex, CURDATE()) DESC, " .
+					"         subjecttype.HighPriority DESC, get_weight(subject.SubjectIndex, CURDATE(), $class_index) DESC, " .
 					"         subjecttype.Title, subject.Name, subject.TermIndex, subject.SubjectIndex";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query

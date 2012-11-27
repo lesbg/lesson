@@ -41,10 +41,12 @@
 				"       classterm.ConductTypeIndex, classterm.CTCommentType, " .
 				"       classterm.HODCommentType, classterm.PrincipalCommentType, " .
 				"       classterm.CanDoReport, classterm.AbsenceType, " .
-				"       MIN(classlist.ReportDone) AS ReportDone " .
-				"       FROM classterm, classlist " .
+				"       MIN(classlist.ReportDone) AS ReportDone," .
+				"       class.ClassIndex " .
+				"       FROM classterm, classlist, class " .
 				"WHERE classterm.ClassTermIndex = $classtermindex " .
 				"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+				"AND   class.ClassIndex = classterm.ClassIndex " .
 				"GROUP BY classterm.ClassIndex";
 	$res =& $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
@@ -76,6 +78,7 @@
 	$effort_type_index  = $row['EffortTypeIndex'];
 	$conduct_type_index = $row['ConductTypeIndex'];
 	$proof_username     = $row['ProofreaderUsername'];
+	$class_index        = $row['ClassIndex'];
 
 	/* Check whether current user is principal */
 	$res =&  $db->query("SELECT Username FROM principal " .
@@ -445,7 +448,7 @@
 				"       subject.ConductTypeIndex, subject.CommentType, " .
 				"       subjectstudent.Comment, subjectstudent.CommentValue, " .
 				"       subjectstudent.ReportDone, " .
-				"       get_weight(subject.SubjectIndex, CURDATE()) AS SubjectWeight " .
+				"       get_weight(subject.SubjectIndex, CURDATE(), $class_index) AS SubjectWeight " .
 				"       FROM subject, subjecttype, subjectstudent " .
 				"       LEFT OUTER JOIN nonmark_index AS average_index ON " .
 				"            subjectstudent.Average = average_index.NonmarkIndex " .
@@ -460,7 +463,7 @@
 				"AND   subject.ShowInList           = 1 " .
 				"AND   (subject.AverageType != $AVG_TYPE_NONE OR subject.EffortType != $EFFORT_TYPE_NONE OR subject.ConductType != $CONDUCT_TYPE_NONE OR subject.CommentType != $COMMENT_TYPE_NONE) " .
 				"AND   subjecttype.SubjectTypeIndex = subject.SubjectTypeIndex " .
-				"ORDER BY subjecttype.HighPriority DESC, get_weight(subject.SubjectIndex, CURDATE()) DESC, " .
+				"ORDER BY subjecttype.HighPriority DESC, get_weight(subject.SubjectIndex, CURDATE(), $class_index) DESC, " .
 				"         subjecttype.Title, subject.Name, subject.TermIndex DESC, subject.SubjectIndex ";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query

@@ -49,7 +49,7 @@
 				"       classterm.HODCommentType, classterm.PrincipalCommentType, " .
 				"       classterm.CanDoReport, classterm.AbsenceType, " .
 				"       classterm.ReportTemplate, classterm.ReportTemplateType, " .
-				"       class.ClassName, class.Grade, " .
+				"       class.ClassName, class.Grade, class.ClassIndex, " .
 				"       MIN(classlist.ReportDone) AS ReportDone " .
 				"       FROM classterm, class, classlist " .
 				"WHERE classterm.ClassTermIndex    = $classtermindex " .
@@ -116,6 +116,7 @@
 	$class_grade          = $row['Grade'];
 	$report_template     =& $row['ReportTemplate'];
 	$report_template_type = $row['ReportTemplateType'];
+	$class_index          = $row['ClassIndex'];
 
 	/* Check whether current user is principal */
 	$res =&  $db->query("SELECT Username FROM principal " .
@@ -650,7 +651,7 @@
 						"       subjectstudent.ReportDone, classterm.TermIndex, " .
 						"       class.ClassIndex, subjecttype.SubjectTypeIndex, " .
 						"       subjecttype.Title AS SubjectType, " .
-						"       get_weight(subject.SubjectIndex, CURDATE()) " .
+						"       get_weight(subject.SubjectIndex, CURDATE(), $class_index) " .
 						"       FROM subject, subjecttype, class, classterm, subjectstudent " .
 						"       LEFT OUTER JOIN nonmark_index AS average_index ON " .
 						"            subjectstudent.Average = average_index.NonmarkIndex " .
@@ -667,7 +668,7 @@
 						"AND   class.ClassIndex             = classterm.ClassIndex " .
 						"AND   classterm.ClassTermIndex     = $classtermindex " .
 						"AND   subjecttype.SubjectTypeIndex = subject.SubjectTypeIndex " .
-						"ORDER BY subjecttype.HighPriority DESC, get_weight(subject.SubjectIndex, CURDATE()) DESC, " .
+						"ORDER BY subjecttype.HighPriority DESC, get_weight(subject.SubjectIndex, CURDATE(), $class_index) DESC, " .
 						"         subjecttype.Title, subject.Name, subject.SubjectIndex";
 			$res =&  $db->query($query);
 			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
