@@ -181,7 +181,7 @@
 				"       subject.ShowAverage, subjectstudent.Average, subject.AverageType, " .
 				"       subject.AverageTypeIndex FROM subject, subjectstudent " .
 				"WHERE subjectstudent.SubjectIndex = subject.SubjectIndex " .
-				"AND   subject.AverageType        != $AVG_TYPE_NONE " .
+				"AND   subject.ShowInList          = 1 " .
 				"AND   subject.YearIndex           = $yearindex " .
 				"AND   subject.TermIndex           = $termindex " .
 				"AND   subjectstudent.Username     = '$studentusername' " .

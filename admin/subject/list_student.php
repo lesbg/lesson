@@ -61,7 +61,7 @@
 				    "       subject.SubjectIndex, subject.Period, " .
 					"       subject.ShowAverage, subjectstudent.Average FROM subject, subjectstudent " .
 					"WHERE subjectstudent.SubjectIndex = subject.SubjectIndex " .
-					"AND   subject.AverageType         > 0 " .
+					"AND   subject.ShowInList          = 1 " .
 					"AND   subject.YearIndex           = $yearindex " .
 					"AND   subject.TermIndex           = $termindex " .
 					"AND   subjectstudent.Username     = \"$studentusername\" " .

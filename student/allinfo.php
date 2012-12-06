@@ -105,7 +105,7 @@
 						"AND   TermIndex = $termindex ";
 		if($showtype == "u") {
 			$query .=	"AND   mark.Score IS NULL " .
-						"AND   subject.AverageType != $AVG_TYPE_NONE " .
+						"AND   subject.ShowInList = 1 " .
 						"AND   DATE(NOW()) >= assignment.Date " .
 						"AND   DATE(ADDTIME(NOW(), '09:00:00')) <= assignment.DueDate " . // Clever hack to not show homework due today after 3:00PM
 						"ORDER BY DueDate ASC, Date ASC, AssignmentIndex DESC";          // (15:00 + 9 hours = next day)
@@ -117,7 +117,7 @@
 						"ORDER BY DueDate ASC, Date ASC, AssignmentIndex DESC";
 		} elseif($showtype == "t") {
 			$query .=	"AND   mark.Score IS NULL " .
-						"AND   subject.AverageType != $AVG_TYPE_NONE " .
+						"AND   subject.ShowInList = 1 " .
 						"AND   DATE(NOW()) >= assignment.Date " .
 						"AND   DATE(NOW()) =  assignment.DueDate " .
 						"ORDER BY DueDate ASC, Date ASC, AssignmentIndex DESC";
