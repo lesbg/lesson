@@ -89,7 +89,7 @@
 	$query =	"SELECT classterm.AverageType, classterm.EffortType, classterm.ConductType, " .
 				"       classterm.AverageTypeIndex, classterm.EffortTypeIndex, " .
 				"       classterm.ConductTypeIndex, classterm.Average, " .
-				"       classterm.AbsenceType " .
+				"       classterm.AbsenceType, class.ClassIndex " .
 				"       FROM class, classterm, classlist " .
 				"WHERE classterm.ClassTermIndex    = $classtermindex " .
 				"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
