@@ -394,7 +394,8 @@
 	/* Get overall averages */
 	$query =	"SELECT term.TermNumber, classlist.Rank, " .
 				"       classlist.Average, classterm.Average AS ClassAverage, classterm.AverageType, " .
-				"       classlist.Conduct, classterm.Conduct AS ClassConduct, classterm.ConductType FROM " .
+				"       classlist.Conduct, classterm.Conduct AS ClassConduct, classterm.ConductType," .
+				"       weight.Weight FROM " .
 				" (term INNER JOIN term AS depterm " .
 				"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
 				"       AND depterm.TermIndex = $termindex" .
@@ -404,10 +405,14 @@
 				"       ON  classlist.Username = '$student_username' " .
 				"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
 				"       AND class.YearIndex = $yearindex) " .
-				" ON term.TermIndex = classterm.TermIndex ";
+				" ON term.TermIndex = classterm.TermIndex " .
+				" LEFT OUTER JOIN weight" .
+				"       ON  term.TermNumber   = weight.SubjectTypeIndex " .
+				"       AND class.Grade       = weight.WeightTypeIndex " .
+				"       AND weight.WeightType = 4 ";
 	$cRes =&   $db->query($query);
 	if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
-	
+		
 	$ovl_average = 0;
 	$ovl_average_max = 0;
 	$cls_ovl_average = 0;
@@ -419,26 +424,31 @@
 	$cls_ovl_conduct_max = 0;
 	
 	while($cRow =& $cRes->fetchrow(DB_FETCHMODE_ASSOC)) {
+		$term_weight = 1;
+		
 		$term_average = "";
 		$term_rank = "";
 		$class_term_average = "";
 		
 		$term_conduct = "";
 		$class_term_conduct = "";
-		
+	
+		if(!is_null($cRow['Weight'])) {
+			$term_weight = $cRow['Weight'];
+		}	
 		if($cRow['AverageType'] == $CLASS_AVG_TYPE_PERCENT or $cRow['AverageType'] == $CLASS_AVG_TYPE_CALC) {
 			if($cRow['Average'] != -1 and !is_null($cRow['Average'])) {
 				$term_average     = round($cRow['Average']);
-				$ovl_average     += $term_average;
-				$ovl_average_max += 100;
+				$ovl_average     += ($term_average * $term_weight);
+				$ovl_average_max += 100 * $term_weight;
 				
 				$term_average     = "$term_average%";
 				$term_rank        = $cRow['Rank'];
 			}
 			if($cRow['ClassAverage'] != -1 and !is_null($cRow['ClassAverage'])) {
 				$class_term_average   = round($cRow['ClassAverage']);
-				$cls_ovl_average     += $class_term_average;
-				$cls_ovl_average_max += 100;
+				$cls_ovl_average     += ($class_term_average * $term_weight);
+				$cls_ovl_average_max += 100 * $term_weight;
 				
 				$class_term_average   = "$class_term_average%";
 			}
@@ -455,15 +465,15 @@
 		                                                       or $cRow['ConductType'] == $CLASS_CONDUCT_TYPE_PUN) {
 			if($cRow['Conduct'] != -1 and !is_null($cRow['Conduct'])) {
 				$term_conduct     = round($cRow['Conduct']);
-				$ovl_conduct     += $term_conduct;
-				$ovl_conduct_max += 100;
+				$ovl_conduct     += ($term_conduct * $term_weight);
+				$ovl_conduct_max += 100 * $term_weight;
 				
 				$term_conduct     = "$term_conduct%";
 			}
 			if($cRow['ClassConduct'] != -1 and !is_null($cRow['ClassConduct'])) {
 				$class_term_conduct   = round($cRow['ClassConduct']);
-				$cls_ovl_conduct     += $class_term_conduct;
-				$cls_ovl_conduct_max += 100;
+				$cls_ovl_conduct     += ($class_term_conduct * $term_weight);
+				$cls_ovl_conduct_max += 100 * $term_weight;
 				
 				$class_term_conduct   = "$class_term_conduct%";
 			}
@@ -679,6 +689,7 @@
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 	
 		while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+
 			if($row['AverageType'] == $AVG_TYPE_NONE) {
 				$average = "-";
 				$subject_average = "-";
@@ -786,12 +797,13 @@
 						"       average_index.Display AS AverageDisplay, " .
 						"       effort_index.Display AS EffortDisplay, " .
 						"       conduct_index.Display AS ConductDisplay, " .
-						"		subject.TermIndex, term.TermNumber " .
+						"		subject.TermIndex, term.TermNumber, term_weight.Weight " .
 						" FROM " .
 						" (term INNER JOIN term AS depterm " .
 						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
 						"       AND depterm.TermIndex = $termindex" .
 						"       AND term.TermIndex <= $termindex) " .
+						" INNER JOIN class ON (class.ClassIndex = $class_index) " .
 						" LEFT OUTER JOIN " .
 						" (subjectstudent INNER JOIN subject " .
 						"       ON  subjectstudent.Username = '$student_username' " .
@@ -807,7 +819,11 @@
 						"       subjectstudent.Effort = effort_index.NonmarkIndex " .
 						" LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
 						"       subjectstudent.Conduct = conduct_index.NonmarkIndex " .
-						"ORDER BY term.TermNumber ASC";						 
+						" LEFT OUTER JOIN weight AS term_weight ON " .
+						"       (term.TermNumber = term_weight.SubjectTypeIndex " .
+						"        AND class.Grade = term_weight.WeightTypeIndex " .
+						"        AND term_weight.WeightType = 4) " .			
+						"ORDER BY term.TermNumber ASC";
 			$nres =&  $db->query($query);
 			if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
 			
@@ -818,7 +834,11 @@
 			
 			while ($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
 				$termnum = $nrow['TermNumber'];
+				$term_weight = 1;
 				
+				if(!is_null($nrow['Weight'])) {
+					$term_weight = $nrow['Weight'];
+				}		
 				if($nrow['AverageType'] == $AVG_TYPE_NONE) {
 					$average = "-";
 					$subject_average = "-";
@@ -826,18 +846,18 @@
 					if($nrow['Average'] == -1) {
 						$average = "-";
 					} else {
-						$average          = round($nrow['Average']);
-						$std_average     += $average;
-						$std_average_max += 100;
+						$average = round($nrow['Average']);
+						$std_average     += $average * $term_weight;
+						$std_average_max += 100 * $term_weight;
 						
 						$average = "$average%";
 					}
 					if($nrow['SubjectAverage'] == -1) {
 						$subject_average = "-";
 					} else {
-						$subject_average   = round($nrow['SubjectAverage']);
-						$subj_average     += $subject_average;
-						$subj_average_max += 100;
+						$subject_average = round($nrow['SubjectAverage']);
+						$subj_average     += $subject_average * $term_weight;
+						$subj_average_max += 100 * $term_weight;
 						
 						$subject_average = "$subject_average%";
 					}
