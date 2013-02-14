@@ -5,6 +5,8 @@
 	 * View statistics about students in a class
 	 *****************************************************************/
 
+	// TODO: Add support for term weights
+	
 	/* Get variables */
 	$class         = dbfuncInt2String($_GET['keyname']);
 	$title         = "Statistics for " . $class;
