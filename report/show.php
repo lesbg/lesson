@@ -494,7 +494,7 @@
 	}
 	
 	$query =	"SELECT classlist.Username, term.TermNumber, term.TermIndex, " .
-				"       ROUND(AVG(ROUND(classlist.Average))) AS Average FROM " .
+				"       ROUND(SUM(CONVERT(ROUND(classlist.Average * COALESCE(term_weight.Weight, 1)), DECIMAL)) / SUM(COALESCE(term_weight.Weight, 1))) AS Average FROM " .
 				" (term INNER JOIN term AS depterm " .
 				"  ON  term.DepartmentIndex = depterm.DepartmentIndex " .
 				"  AND depterm.TermIndex = $termindex " .
@@ -508,6 +508,10 @@
 				" INNER JOIN classlist " .
 				"  ON classterm.ClassTermIndex = classlist.ClassTermIndex " .
 				"  AND classlist.Average > -1 " .
+				" LEFT OUTER JOIN weight AS term_weight ON " .
+				"       (term.TermNumber = term_weight.SubjectTypeIndex " .
+				"        AND class.Grade = term_weight.WeightTypeIndex " .
+				"        AND term_weight.WeightType = 4) " .
 				" GROUP BY classlist.Username " .
 				" ORDER BY Average DESC";
 	$cRes =&   $db->query($query);
