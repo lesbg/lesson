@@ -399,7 +399,7 @@
 				" (term INNER JOIN term AS depterm " .
 				"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
 				"       AND depterm.TermIndex = $termindex" .
-				"       AND term.TermIndex <= $termindex) " .
+				"       AND term.TermNumber <= depterm.TermNumber) " .
 				" INNER JOIN " .
 				" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
 				"       ON  classlist.Username = '$student_username' " .
@@ -409,7 +409,8 @@
 				" LEFT OUTER JOIN weight" .
 				"       ON  term.TermNumber   = weight.SubjectTypeIndex " .
 				"       AND class.Grade       = weight.WeightTypeIndex " .
-				"       AND weight.WeightType = 4 ";
+				"       AND weight.WeightType = 4 " .
+				"ORDER BY term.TermNumber";
 	$cRes =&   $db->query($query);
 	if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
 		
@@ -498,7 +499,7 @@
 				" (term INNER JOIN term AS depterm " .
 				"  ON  term.DepartmentIndex = depterm.DepartmentIndex " .
 				"  AND depterm.TermIndex = $termindex " .
-				"  AND term.TermIndex <= $termindex) " .
+				"  AND term.TermNumber <= depterm.TermNumber) " .
 				" INNER JOIN " .
 				" (classlist AS tclasslist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
 				"  ON  tclasslist.Username = '$student_username' " .
@@ -804,9 +805,9 @@
 						"		subject.TermIndex, term.TermNumber, term_weight.Weight " .
 						" FROM " .
 						" (term INNER JOIN term AS depterm " .
-						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
-						"       AND depterm.TermIndex = $termindex" .
-						"       AND term.TermIndex <= $termindex) " .
+						"       ON  term.DepartmentIndex = depterm.DepartmentIndex " .
+						"       AND depterm.TermIndex = $termindex " .
+						"       AND term.TermNumber <= depterm.TermNumber) " .
 						" INNER JOIN class ON (class.ClassIndex = $class_index) " .
 						" LEFT OUTER JOIN " .
 						" (subjectstudent INNER JOIN subject " .

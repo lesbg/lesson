@@ -413,8 +413,11 @@
 	$subject_comment_avg  = $row['CommentAverage'];
 	$subject_report_done  = $row['ReportDone'];
 
-	$query =	"SELECT COUNT(TermIndex) AS TermCount, MIN(TermIndex) AS LowTerm FROM (" .
-				" SELECT subject.TermIndex, 1 AS TGroup FROM " .
+	$query =	"SELECT COUNT(TermIndex) AS TermCount, MIN(TermNumber) AS LowTerm, " .
+				"       MAX(TermNumber) AS CurrentTermNumber, " .
+				"       DepartmentIndex AS DepartmentIndex " .
+				"FROM (" .
+				" SELECT subject.TermIndex, 1 AS TGroup, term.TermNumber, term.DepartmentIndex FROM " .
 				"        subject, subjectstudent, term, term AS depterm " .
 				" WHERE  subjectstudent.Username = '$student_username' " .
 				" AND    subject.SubjectIndex    = subjectstudent.SubjectIndex " .
@@ -422,16 +425,18 @@
 				" AND    subject.TermIndex       = term.TermIndex " .
 				" AND    subject.ShowInList      = 1 " .
 				" AND   (subject.AverageType != $AVG_TYPE_NONE OR subject.EffortType != $EFFORT_TYPE_NONE OR subject.ConductType != $CONDUCT_TYPE_NONE OR subject.CommentType != $COMMENT_TYPE_NONE) " .
-				" AND    term.DepartmentIndex    = depterm.DepartmentIndex " .
-				" AND    term.TermIndex         <= $termindex " .
-				" AND    depterm.TermIndex       = $termindex " .
+				" AND    term.DepartmentIndex    =  depterm.DepartmentIndex " .
+				" AND    term.TermNumber         <= depterm.TermNumber " .
+				" AND    depterm.TermIndex       =  $termindex " .
 				" GROUP BY subject.TermIndex) AS SubList " .
 				"GROUP BY TGroup";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 		$termcount = $row['TermCount'];
-		$lowtermindex = $row['LowTerm'];
+		$lowtermnumber = $row['LowTerm'];
+		$termnumber = $row['CurrentTermNumber'];
+		$departmentindex = $row['DepartmentIndex'];
 	} else {
 		$termcount = 0;
 	}
@@ -577,8 +582,9 @@
 		if($subject_average_type != $AVG_TYPE_NONE) {
 			echo "               <th>Weight</th>\n";
 			$query =	"SELECT TermName FROM term " .
-						"WHERE TermIndex >= $lowtermindex " .
-						"AND   TermIndex <= $termindex ".
+						"WHERE TermNumber >= $lowtermnumber " .
+						"AND   TermNumber <= $termnumber " .
+						"AND   DepartmentIndex = $departmentindex ".
 						"ORDER BY term.TermNumber ASC";
 			$nres =&  $db->query($query);
 			if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
@@ -651,8 +657,8 @@
 							" (term INNER JOIN term AS depterm " .
 							"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
 							"       AND depterm.TermIndex = $termindex" .
-							"       AND term.TermIndex <= $termindex " .
-							"       AND term.TermIndex >= $lowtermindex) " .
+							"       AND term.TermNumber <= depterm.TermNumber " .
+							"       AND term.TermNumber >= $lowtermnumber) " .
 							" INNER JOIN class ON (class.ClassIndex = $class_index) " .					
 							" LEFT OUTER JOIN " .
 							" (subjectstudent INNER JOIN subject " .
@@ -846,7 +852,7 @@
 						" (term INNER JOIN term AS depterm " .
 						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
 						"       AND depterm.TermIndex = $termindex" .
-						"       AND term.TermIndex <= $termindex) " .
+						"       AND term.TermNumber <= depterm.TermNumber) " .
 						" INNER JOIN " .
 						" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
 						"       ON  classlist.Username = '$student_username' " .
@@ -856,7 +862,8 @@
 						" LEFT OUTER JOIN weight ON " .
 						"       (term.TermNumber = weight.SubjectTypeIndex " .
 						"        AND class.Grade = weight.WeightTypeIndex " .
-						"        AND weight.WeightType = 4)";
+						"        AND weight.WeightType = 4) " .
+						"ORDER BY term.TermNumber";
 			$cRes =&   $db->query($query);
 			if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
 			
@@ -1040,7 +1047,7 @@
 						" (term INNER JOIN term AS depterm " .
 						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
 						"       AND depterm.TermIndex = $termindex" .
-						"       AND term.TermIndex <= $termindex) " .
+						"       AND term.TermNumber <= depterm.TermNumber) " .
 						" INNER JOIN " .
 						" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
 						"       ON  classlist.Username = '$student_username' " .
@@ -1050,7 +1057,8 @@
 						" LEFT OUTER JOIN weight ON " .
 						"       (term.TermNumber = weight.SubjectTypeIndex " .
 						"        AND class.Grade = weight.WeightTypeIndex " .
-						"        AND weight.WeightType = 4)";
+						"        AND weight.WeightType = 4) " .
+						"ORDER BY term.TermNumber";
 			$cRes =&   $db->query($query);
 			if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
 			
@@ -1225,13 +1233,14 @@
 						" (term INNER JOIN term AS depterm " .
 						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
 						"       AND depterm.TermIndex = $termindex" .
-						"       AND term.TermIndex <= $termindex) " .
+						"       AND term.TermNumber <= depterm.TermNumber) " .
 						" INNER JOIN " .
 						" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
 						"       ON  classlist.Username = '$student_username' " .
 						"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
 						"       AND class.YearIndex = $yearindex) " .
-						" ON term.TermIndex = classterm.TermIndex ";
+						" ON term.TermIndex = classterm.TermIndex " .
+						"ORDER BY term.TermNumber";
 			$cRes =&   $db->query($query);
 			if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
 					
@@ -1266,9 +1275,9 @@
 			$query =	"SELECT classlist.Username, term.TermNumber, term.TermIndex, " .
 						"       ROUND(SUM(CONVERT(ROUND(classlist.Average * COALESCE(term_weight.Weight, 1)), DECIMAL)) / SUM(COALESCE(term_weight.Weight, 1))) AS Average FROM " .
 						" (term INNER JOIN term AS depterm " .
-						"  ON  term.DepartmentIndex = depterm.DepartmentIndex " .
-						"  AND depterm.TermIndex = $termindex " .
-						"  AND term.TermIndex <= $termindex) " .
+						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+						"       AND depterm.TermIndex = $termindex" .
+						"       AND term.TermNumber <= depterm.TermNumber) " .
 						" INNER JOIN " .
 						" (classlist AS tclasslist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
 						"  ON  tclasslist.Username = '$student_username' " .
@@ -1325,7 +1334,7 @@
 						" (term INNER JOIN term AS depterm " .
 						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
 						"       AND depterm.TermIndex = $termindex" .
-						"       AND term.TermIndex <= $termindex) " .
+						"       AND term.TermNumber <= depterm.TermNumber) " .
 						" INNER JOIN " .
 						" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
 						"       ON  classlist.Username = '$student_username' " .
@@ -1335,7 +1344,8 @@
 						" LEFT OUTER JOIN weight ON " .
 						"       (term.TermNumber = weight.SubjectTypeIndex " .
 						"        AND class.Grade = weight.WeightTypeIndex " .
-						"        AND weight.WeightType = 4)";
+						"        AND weight.WeightType = 4) " .
+						"ORDER BY term.TermNumber";
 			$cRes =&   $db->query($query);
 			if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
 			
@@ -1515,13 +1525,14 @@
 						" (term INNER JOIN term AS depterm " .
 						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
 						"       AND depterm.TermIndex = $termindex" .
-						"       AND term.TermIndex <= $termindex) " .
+						"       AND term.TermNumber <= depterm.TermNumber) " .
 						" INNER JOIN " .
 						" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
 						"       ON  classlist.Username = '$student_username' " .
 						"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
 						"       AND class.YearIndex = $yearindex) " .
-						" ON term.TermIndex = classterm.TermIndex ";
+						" ON term.TermIndex = classterm.TermIndex " .
+						"ORDER BY term.TermNumber";
 			$cRes =&   $db->query($query);
 			if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
 					
@@ -1615,13 +1626,14 @@
 						" (term INNER JOIN term AS depterm " .
 						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
 						"       AND depterm.TermIndex = $termindex" .
-						"       AND term.TermIndex <= $termindex) " .
+						"       AND term.TermNumber <= depterm.TermNumber) " .
 						" INNER JOIN " .
 						" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
 						"       ON  classlist.Username = '$student_username' " .
 						"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
 						"       AND class.YearIndex = $yearindex) " .
-						" ON term.TermIndex = classterm.TermIndex ";
+						" ON term.TermIndex = classterm.TermIndex " .
+						"ORDER BY term.TermNumber";
 			$cRes =&   $db->query($query);
 			if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
 							
@@ -1657,13 +1669,14 @@
 						" (term INNER JOIN term AS depterm " .
 						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
 						"       AND depterm.TermIndex = $termindex" .
-						"       AND term.TermIndex <= $termindex) " .
+						"       AND term.TermNumber <= depterm.TermNumber) " .
 						" INNER JOIN " .
 						" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
 						"       ON  classlist.Username = '$student_username' " .
 						"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
 						"       AND class.YearIndex = $yearindex) " .
-						" ON term.TermIndex = classterm.TermIndex ";
+						" ON term.TermIndex = classterm.TermIndex " .
+						"ORDER BY term.TermNumber";
 			$cRes =&   $db->query($query);
 			if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
 							
@@ -1699,13 +1712,14 @@
 						" (term INNER JOIN term AS depterm " .
 						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
 						"       AND depterm.TermIndex = $termindex" .
-						"       AND term.TermIndex <= $termindex) " .
+						"       AND term.TermNumber <= depterm.TermNumber) " .
 						" INNER JOIN " .
 						" (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
 						"       ON  classlist.Username = '$student_username' " .
 						"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
 						"       AND class.YearIndex = $yearindex) " .
-						" ON term.TermIndex = classterm.TermIndex ";
+						" ON term.TermIndex = classterm.TermIndex " .
+						"ORDER BY term.TermNumber";
 			$cRes =&   $db->query($query);
 			if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
 							
