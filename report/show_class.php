@@ -667,7 +667,7 @@
 						"       subjectstudent.ReportDone, classterm.TermIndex, " .
 						"       class.ClassIndex, subjecttype.SubjectTypeIndex, " .
 						"       subjecttype.Title AS SubjectType, " .
-						"       get_weight(subject.SubjectIndex, CURDATE(), $class_index) " .
+						"       get_weight(subject.SubjectIndex, CURDATE(), $class_index) AS Weight " .
 						"       FROM subject, subjecttype, class, classterm, subjectstudent " .
 						"       LEFT OUTER JOIN nonmark_index AS average_index ON " .
 						"            subjectstudent.Average = average_index.NonmarkIndex " .
@@ -690,6 +690,11 @@
 			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		
 			while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+				if($row['AverageType'] == $AVG_TYPE_PERCENT) {
+					$weight = "${row['Weight']}";
+				} else {
+					$weight = "-";
+				}
 				if($row['AverageType'] == $AVG_TYPE_NONE) {
 					$average = "-";
 					$subject_average = "-";
@@ -780,6 +785,7 @@
 				$reprow = str_replace("&lt;&lt;subject_type&gt;&gt;",         htmlspecialchars($row['SubjectType'], ENT_QUOTES), $reprow);
 				$reprow = str_replace("&lt;&lt;subject_strippedname&gt;&gt;", htmlspecialchars($stripped_name, ENT_QUOTES),      $reprow);
 				$reprow = str_replace("&lt;&lt;subject_average&gt;&gt;",      htmlspecialchars($subject_average, ENT_QUOTES),    $reprow);
+				$reprow = str_replace("&lt;&lt;subject_weight&gt;&gt;",       htmlspecialchars($weight, ENT_QUOTES),             $reprow);
 				$reprow = str_replace("&lt;&lt;subject_mark&gt;&gt;",         htmlspecialchars($average, ENT_QUOTES),            $reprow);
 				$reprow = str_replace("&lt;&lt;subject_effort&gt;&gt;",       htmlspecialchars($effort, ENT_QUOTES),             $reprow);
 				$reprow = str_replace("&lt;&lt;subject_conduct&gt;&gt;",      htmlspecialchars($conduct, ENT_QUOTES),            $reprow);
