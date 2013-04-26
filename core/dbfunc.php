@@ -773,7 +773,7 @@
 						"    ((SELECT subject_weight.Username, AVG(subject_weight.Average) AS Average, " .
 						"             subject_weight.Weight AS DistWeight " .
 						"        FROM subjecttype, " .
-						"          (SELECT get_weight(subject.SubjectIndex, CURDATE(), class.ClassIndex) AS Weight, " .
+						"          (SELECT get_weight(subject.SubjectIndex, class.ClassIndex, '{$row['Username']}') AS Weight, " .
 						"                  subject.SubjectIndex, subject.SubjectTypeIndex, subjectstudent.Average, " .
 						"                  subjectstudent.Username FROM subject, subjectstudent, class, classterm, classlist " .
 						"                WHERE subject.TermIndex   = $term_index " .

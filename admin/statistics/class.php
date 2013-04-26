@@ -163,7 +163,7 @@
 					"AND   subjectstudent.Average != -1 " .
 					"GROUP BY subject.Name " .
 					"ORDER BY subject.YearIndex, subjecttype.HighPriority DESC, " .
-					"         get_weight(subject.SubjectIndex, CURDATE(), $class_index) DESC, " .
+					"         get_weight(subject.SubjectIndex, $class_index, NULL) DESC, " .
 					"         subjecttype.Title, subject.Name, subject.TermIndex, subject.SubjectIndex";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
@@ -263,7 +263,7 @@
 					"AND   user.Username               = subjectstudent.Username " .
 					"GROUP BY user.Username, subject.Name " .
 					"ORDER BY user.FirstName, user.Surname, user.Username, subject.YearIndex, " .
-					"         subjecttype.HighPriority DESC, get_weight(subject.SubjectIndex, CURDATE(), $class_index) DESC, " .
+					"         subjecttype.HighPriority DESC, get_weight(subject.SubjectIndex, $class_index, NULL) DESC, " .
 					"         subjecttype.Title, subject.Name, subject.TermIndex, subject.SubjectIndex";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query

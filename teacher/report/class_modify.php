@@ -441,7 +441,6 @@
 		$termcount = 0;
 	}
 	
-				
 	$query =	"SELECT subject.Name AS SubjectName, subject.SubjectIndex, " .
 				"       subjectstudent.Average, subjectstudent.Effort, subjectstudent.Conduct, " .
 				"       average_index.Display AS AverageDisplay, " .
@@ -453,7 +452,7 @@
 				"       subject.ConductTypeIndex, subject.CommentType, " .
 				"       subjectstudent.Comment, subjectstudent.CommentValue, " .
 				"       subjectstudent.ReportDone, " .
-				"       get_weight(subject.SubjectIndex, CURDATE(), $class_index) AS SubjectWeight " .
+				"       get_weight(subject.SubjectIndex, $class_index, '$student_username') AS SubjectWeight " .
 				"       FROM subject, subjecttype, subjectstudent " .
 				"       LEFT OUTER JOIN nonmark_index AS average_index ON " .
 				"            subjectstudent.Average = average_index.NonmarkIndex " .
@@ -468,7 +467,7 @@
 				"AND   subject.ShowInList           = 1 " .
 				"AND   (subject.AverageType != $AVG_TYPE_NONE OR subject.EffortType != $EFFORT_TYPE_NONE OR subject.ConductType != $CONDUCT_TYPE_NONE OR subject.CommentType != $COMMENT_TYPE_NONE) " .
 				"AND   subjecttype.SubjectTypeIndex = subject.SubjectTypeIndex " .
-				"ORDER BY subjecttype.HighPriority DESC, get_weight(subject.SubjectIndex, CURDATE(), $class_index) DESC, " .
+				"ORDER BY subjecttype.HighPriority DESC, get_weight(subject.SubjectIndex, $class_index, '$student_username') DESC, " .
 				"         subjecttype.Title, subject.Name, subject.TermIndex DESC, subject.SubjectIndex ";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
@@ -581,7 +580,7 @@
 	if($is_ct or $is_admin or $is_principal or $is_hod) {
 		if($subject_average_type != $AVG_TYPE_NONE) {
 			echo "               <th>Weight</th>\n";
-			$query =	"SELECT TermName FROM term " .
+			$query =	"SELECT TermName, get_term_weight(TermIndex, $class_index, '$student_username') AS Weight FROM term " .
 						"WHERE TermNumber >= $lowtermnumber " .
 						"AND   TermNumber <= $termnumber " .
 						"AND   DepartmentIndex = $departmentindex ".
@@ -589,7 +588,7 @@
 			$nres =&  $db->query($query);
 			if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
 			while($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-				$name = htmlentities($nrow['TermName']);
+				$name = htmlentities("{$nrow['TermName']} - Weight {$nrow['Weight']}");
 				$pname = htmlentities(substr($nrow['TermName'], 0, 1));
 				echo "               <th><a title='$name'>$pname</a></th>\n";
 			}
@@ -652,7 +651,8 @@
 							"       average_index.Display AS AverageDisplay, " .
 							"       effort_index.Display AS EffortDisplay, " .
 							"       conduct_index.Display AS ConductDisplay, " .
-							"		subject.TermIndex, term_weight.Weight " .
+							"		subject.TermIndex, term.TermNumber, " .
+							"       get_term_weight(term.TermIndex, $class_index, '$student_username') AS Weight " .
 							" FROM " .
 							" (term INNER JOIN term AS depterm " .
 							"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
@@ -675,10 +675,6 @@
 							"       subjectstudent.Effort = effort_index.NonmarkIndex " .
 							" LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
 							"       subjectstudent.Conduct = conduct_index.NonmarkIndex " .
-							" LEFT OUTER JOIN weight AS term_weight ON " .
-							"       (term.TermNumber = term_weight.SubjectTypeIndex " .
-							"        AND class.Grade = term_weight.WeightTypeIndex " .
-							"        AND term_weight.WeightType = 4) " .	
 							"ORDER BY term.TermNumber ASC";
 				$dres =&  $db->query($query);
 				if(DB::isError($dres)) die($dres->getDebugInfo());           // Check for errors in query
@@ -689,11 +685,8 @@
 				$subj_average_max = 0;
 				
 				while($drow =& $dres->fetchRow(DB_FETCHMODE_ASSOC)) {
-					$term_weight = 1;
+					$term_weight = $drow['Weight'];
 					
-					if(!is_null($drow['Weight'])) {
-						$term_weight = $drow['Weight'];
-					}
 					if($drow['AverageType'] == $AVG_TYPE_NONE) {
 						$score = "N/A";
 					} elseif($drow['AverageType'] == $AVG_TYPE_PERCENT) {
@@ -848,7 +841,7 @@
 		if($conduct_type != $CLASS_CONDUCT_TYPE_NONE) {
 			$query =	"SELECT term.TermNumber, term.TermIndex, classlist.Conduct, " .
 						"       classterm.Conduct AS ClassConduct, classterm.ConductType," .
-						"       weight.Weight FROM " .
+						"       get_term_weight(term.TermIndex, classterm.ClassIndex, '$student_username') AS Weight FROM " .
 						" (term INNER JOIN term AS depterm " .
 						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
 						"       AND depterm.TermIndex = $termindex" .
@@ -859,10 +852,6 @@
 						"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
 						"       AND class.YearIndex = $yearindex) " .
 						" ON term.TermIndex = classterm.TermIndex " .
-						" LEFT OUTER JOIN weight ON " .
-						"       (term.TermNumber = weight.SubjectTypeIndex " .
-						"        AND class.Grade = weight.WeightTypeIndex " .
-						"        AND weight.WeightType = 4) " .
 						"ORDER BY term.TermNumber";
 			$cRes =&   $db->query($query);
 			if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
@@ -886,11 +875,8 @@
 			echo "               <td nowrap>1</td>\n";
 			
 			while($cRow =& $cRes->fetchrow(DB_FETCHMODE_ASSOC)) {
-				$term_weight = 1;
-				
-				if(!is_null($cRow['Weight'])) {
-					$term_weight = $cRow['Weight'];
-				}		
+				$term_weight = $cRow['Weight'];
+						
 				if($cRow['Conduct'] != -1 and !is_null($cRow['Conduct'])) {
 					$term_conduct     = round($cRow['Conduct']);
 					$ovl_conduct     += $term_conduct * $term_weight;
@@ -1043,7 +1029,7 @@
 		if($average_type != $CLASS_AVG_TYPE_NONE) {
 			$query =	"SELECT term.TermNumber, term.TermIndex, classlist.Average, " .
 						"       classterm.Average AS ClassAverage, classterm.AverageType," .
-						"       weight.Weight FROM " .
+						"       get_term_weight(term.TermIndex, classterm.ClassIndex, '$student_username') AS Weight FROM " .
 						" (term INNER JOIN term AS depterm " .
 						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
 						"       AND depterm.TermIndex = $termindex" .
@@ -1054,10 +1040,6 @@
 						"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
 						"       AND class.YearIndex = $yearindex) " .
 						" ON term.TermIndex = classterm.TermIndex " .
-						" LEFT OUTER JOIN weight ON " .
-						"       (term.TermNumber = weight.SubjectTypeIndex " .
-						"        AND class.Grade = weight.WeightTypeIndex " .
-						"        AND weight.WeightType = 4) " .
 						"ORDER BY term.TermNumber";
 			$cRes =&   $db->query($query);
 			if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
@@ -1079,11 +1061,8 @@
 			echo "               <td nowrap colspan='2'><b>Average</b></td>\n";
 			
 			while($cRow =& $cRes->fetchrow(DB_FETCHMODE_ASSOC)) {
-				$term_weight = 1;
+				$term_weight = $cRow['Weight'];
 				
-				if(!is_null($cRow['Weight'])) {
-					$term_weight = $cRow['Weight'];
-				}
 				if($cRow['Average'] != -1 and !is_null($cRow['Average'])) {
 					$term_average     = round($cRow['Average']);
 					$ovl_average     += $term_average * $term_weight;
@@ -1177,7 +1156,7 @@
 							$cls_ovl_average     += $class_term_average * $term_weight;
 							$cls_ovl_average_max += 100 * $term_weight;
 							
-							$score = "<b>$score</b> ($class_term_average)";
+							$score = "<b>$score</b> ($class_term_average) [$term_weight]";
 						}
 						if($cRow['Average'] != -1) {
 							$term_average     = round($cRow['Average']);
@@ -1273,7 +1252,8 @@
 			}
 			
 			$query =	"SELECT classlist.Username, term.TermNumber, term.TermIndex, " .
-						"       ROUND(SUM(CONVERT(ROUND(classlist.Average * COALESCE(term_weight.Weight, 1)), DECIMAL)) / SUM(COALESCE(term_weight.Weight, 1))) AS Average FROM " .
+						"       ROUND(SUM(CONVERT(ROUND(classlist.Average * get_term_weight(term.TermIndex, class.ClassIndex, '$student_username')), DECIMAL)) / " .
+						"                           SUM(get_term_weight(term.TermIndex, class.ClassIndex, '$student_username'))) AS Average FROM " .
 						" (term INNER JOIN term AS depterm " .
 						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
 						"       AND depterm.TermIndex = $termindex" .
@@ -1287,10 +1267,6 @@
 						" INNER JOIN classlist " .
 						"  ON classterm.ClassTermIndex = classlist.ClassTermIndex " .
 						"  AND classlist.Average > -1 " .
-						" LEFT OUTER JOIN weight AS term_weight ON " .
-						"       (term.TermNumber = term_weight.SubjectTypeIndex " .
-						"        AND class.Grade = term_weight.WeightTypeIndex " .
-						"        AND term_weight.WeightType = 4) " .
 						" GROUP BY classlist.Username " .
 						" ORDER BY Average DESC";
 			$cRes =&   $db->query($query);
@@ -1330,7 +1306,7 @@
 		if($effort_type != $CLASS_EFFORT_TYPE_NONE) {
 			$query =	"SELECT term.TermNumber, term.TermIndex, classlist.Effort, " .
 						"       classterm.Effort AS ClassEffort, classterm.EffortType, " .
-						"       weight.Weight FROM " .
+						"       get_term_weight(term.TermIndex, classterm.ClassIndex, '$student_username') AS Weight FROM " .
 						" (term INNER JOIN term AS depterm " .
 						"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
 						"       AND depterm.TermIndex = $termindex" .
@@ -1341,10 +1317,6 @@
 						"       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
 						"       AND class.YearIndex = $yearindex) " .
 						" ON term.TermIndex = classterm.TermIndex " .
-						" LEFT OUTER JOIN weight ON " .
-						"       (term.TermNumber = weight.SubjectTypeIndex " .
-						"        AND class.Grade = weight.WeightTypeIndex " .
-						"        AND weight.WeightType = 4) " .
 						"ORDER BY term.TermNumber";
 			$cRes =&   $db->query($query);
 			if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
