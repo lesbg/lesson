@@ -8,8 +8,24 @@
 	/* Get variables */
 	$class         = dbfuncInt2String($_GET['keyname']);
 	$title         = "Reports for " . $class;
-	$classtermindex    = safe(dbfuncInt2String($_GET['key']));
+	$classindex    = safe(dbfuncInt2String($_GET['key']));
 
+	include "core/settermandyear.php";
+	
+	/* Get classterm index */
+	$query =	"SELECT classterm.classtermindex FROM classterm " .
+				"WHERE classterm.ClassIndex = $classindex " .
+				"AND   classterm.TermIndex  = $termindex";
+	$res =& $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
+	if(!$row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		/* Print error message */
+		echo "      <p align='center'>No reports for this term.</p>\n";
+		include "footer.php";
+		exit(0);
+	}
+	$classtermindex = $row['classtermindex'];
+	
 	/* Check whether current user is principal */
 	$res =&  $db->query("SELECT Username FROM principal " .
 						"WHERE Username=\"$username\" AND Level=1");
@@ -26,7 +42,7 @@
 						"WHERE hod.Username        = '$username' " .
 						"AND   hod.DepartmentIndex = class.DepartmentIndex " .
 						"AND   class.ClassIndex    = classterm.ClassIndex " .
-						"AND   classterm.ClassTermIndex = $classtermindex");
+						"AND   classterm.classtermindex = $classtermindex");
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
 	if($res->numRows() > 0) {
@@ -37,7 +53,7 @@
 
 	/* Check whether user is authorized to change scores */
 	$res =& $db->query("SELECT class.ClassIndex FROM class, classterm " .
-					   "WHERE classterm.ClassTermIndex  = $classtermindex " .
+					   "WHERE classterm.classtermindex  = $classtermindex " .
 					   "AND   classterm.ClassIndex = class.ClassIndex " .
 					   "AND   class.ClassTeacherUsername = '$username'");
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
@@ -50,7 +66,6 @@
 	$showyear = false;
 	$showdeps = false;
 
-	include "core/settermandyear.php";
 	include "header.php";                                      // Show header
 	include "core/titletermyear.php";
 
@@ -72,9 +87,9 @@
 				"       classterm.CanDoReport, classterm.AbsenceType, " .
 				"       MIN(classlist.ReportDone) AS ReportDone " .
 				"       FROM classterm, classlist " .
-				"WHERE classterm.ClassTermIndex    = $classtermindex " .
-				"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
-				"GROUP BY classterm.ClassTermIndex";
+				"WHERE classterm.classtermindex    = $classtermindex " .
+				"AND   classlist.classtermindex = classterm.classtermindex " .
+				"GROUP BY classterm.classtermindex";
 	$res =& $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
@@ -117,7 +132,7 @@
 				"       LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
 				"            classlist.Conduct = conduct_index.NonmarkIndex " .
 				"WHERE user.Username            = classlist.Username " .
-				"AND   classlist.ClassTermIndex = $classtermindex " .
+				"AND   classlist.classtermindex = $classtermindex " .
 				"ORDER BY user.FirstName, user.Surname, user.Username";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
@@ -131,7 +146,7 @@
 
 	if($is_admin or $is_principal) {
 		$link =	"index.php?location=" . dbfuncString2Int("report/show_class.php") .
-				"&amp;key=" .               $_GET['key'] .
+				"&amp;key=" .               dbfuncString2Int($classtermindex) .
 				"&amp;key3=" .              dbfuncString2Int($termindex);
 		echo "          <p align='center'><a href='$link'>Print all reports</a></p>\n";
 	}
@@ -182,7 +197,7 @@
 		$order += 1;
 		$name = "{$row['FirstName']} {$row['Surname']} ({$row['Username']})";
 		$link =	"index.php?location=" . dbfuncString2Int("teacher/report/class_modify.php") .
-				"&amp;key=" .               $_GET['key'] .
+				"&amp;key=" .               dbfuncString2Int($classtermindex) .
 				"&amp;key2=" .              dbfuncString2Int($row['Username']) .
 				"&amp;keyname=" .           $_GET['keyname'] .
 				"&amp;keyname2=" .          dbfuncString2Int($name);
@@ -363,7 +378,7 @@
 		}
 		if($is_admin or $is_principal) {
 			$link =	"index.php?location=" . dbfuncString2Int("report/show.php") .
-					"&amp;key=" .               $_GET['key'] .
+					"&amp;key=" .               dbfuncString2Int($classtermindex) .
 					"&amp;key2=" .              dbfuncString2Int($row['Username']) .
 					"&amp;key3=" .              dbfuncString2Int($termindex);
 			echo " <a href=$link>Print</a></td>\n";
@@ -378,10 +393,10 @@
 	$show_finish = false;
 	$query =	"SELECT MIN(CTCommentDone) AS CTCommentDone " .
 				"       FROM classterm, classlist " .
-				"WHERE classlist.ClassTermIndex     =  $classtermindex " .
-				"AND   classterm.ClassTermIndex     =  $classtermindex " .
+				"WHERE classlist.classtermindex     =  $classtermindex " .
+				"AND   classterm.classtermindex     =  $classtermindex " .
 				"AND   classterm.CTCommentType     != $COMMENT_TYPE_NONE " .
-				"GROUP BY classlist.ClassTermIndex";
+				"GROUP BY classlist.classtermindex";
 	$res =& $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
@@ -391,10 +406,10 @@
 
 	$query =	"SELECT MIN(HODCommentDone) AS HODCommentDone " .
 				"       FROM classterm, classlist " .
-				"WHERE classlist.ClassTermIndex     =  $classtermindex " .
-				"AND   classterm.ClassTermIndex     =  $classtermindex " .
+				"WHERE classlist.classtermindex     =  $classtermindex " .
+				"AND   classterm.classtermindex     =  $classtermindex " .
 				"AND   classterm.HODCommentType    != $COMMENT_TYPE_NONE " .
-				"GROUP BY classlist.ClassTermIndex";
+				"GROUP BY classlist.classtermindex";
 	$res =& $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
@@ -404,10 +419,10 @@
 
 	$query =	"SELECT MIN(PrincipalCommentDone) AS PrincipalCommentDone " .
 				"       FROM classterm, classlist " .
-				"WHERE classlist.ClassTermIndex        =  $classtermindex " .
-				"AND   classterm.ClassTermIndex        =  $classtermindex " .
+				"WHERE classlist.classtermindex        =  $classtermindex " .
+				"AND   classterm.classtermindex        =  $classtermindex " .
 				"AND   classterm.PrincipalCommentType != $COMMENT_TYPE_NONE " .
-				"GROUP BY classlist.ClassTermIndex";
+				"GROUP BY classlist.classtermindex";
 	$res =& $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
@@ -417,8 +432,8 @@
 
 	$show_rpt_close = false;
 	$query =	"SELECT MIN(classlist.ReportDone) AS ReportDone FROM classlist " .
-				"WHERE classlist.ClassTermIndex     = $classtermindex " .
-				"GROUP BY classlist.ClassTermIndex";
+				"WHERE classlist.classtermindex     = $classtermindex " .
+				"GROUP BY classlist.classtermindex";
 	$res =& $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
@@ -428,7 +443,7 @@
 
 	if($show_finish or $is_hod or $is_admin or $is_principal) {
 		$link =	"index.php?location=" . dbfuncString2Int("teacher/report/class_confirm.php") .
-				"&amp;key=" .               $_GET['key'] .
+				"&amp;key=" .               dbfuncString2Int($classtermindex) .
 				"&amp;keyname=" .           $_GET['keyname'];
 	
 		echo "         <form action='$link' method='post'>\n";

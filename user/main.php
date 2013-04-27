@@ -62,7 +62,7 @@
 	}*/
 
 	/* If user is a class teacher and there are class reports ready, show link */
-	$query =	"SELECT classterm.ClassTermIndex, class.ClassName, " .
+	$query =	"SELECT class.ClassIndex, class.ClassName, " .
 				"       classterm.CanDoReport, MIN(classlist.ReportDone) AS ReportDone " .
 				"       FROM class, classterm, classlist " .
 				"WHERE class.ClassTeacherUsername = '$username' " .
@@ -76,7 +76,7 @@
 
 	while($row =& $res->fetchRow(DB_FETCHMODE_ASSOC) and ($row['CanDoReport'] or $row['ReportDone'])) {
 		$clLink =	"index.php?location=" . dbfuncString2Int("teacher/report/class_list.php") .
-					"&amp;key=" .           dbfuncString2Int($row['ClassTermIndex']) .
+					"&amp;key=" .           dbfuncString2Int($row['ClassIndex']) .
 					"&amp;keyname=" .       dbfuncString2Int($row['ClassName']);
 		echo "      <p><a href='$clLink'>Class reports for {$row['ClassName']}</a></p>\n";
 	}

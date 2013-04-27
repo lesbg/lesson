@@ -1156,7 +1156,7 @@
 							$cls_ovl_average     += $class_term_average * $term_weight;
 							$cls_ovl_average_max += 100 * $term_weight;
 							
-							$score = "<b>$score</b> ($class_term_average) [$term_weight]";
+							$score = "<b>$score</b> ($class_term_average)";
 						}
 						if($cRow['Average'] != -1) {
 							$term_average     = round($cRow['Average']);
