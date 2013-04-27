@@ -770,7 +770,7 @@
 		while($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 			$query =	"SELECT SUM(DistWeight * Average) / SUM(DistWeight) AS Avg " .
 						"     FROM " .
-						"    ((SELECT subject_weight.Username, AVG(subject_weight.Average) AS Average, " .
+						"    ((SELECT subject_weight.Username, subject_weight.SubjectTypeIndex, AVG(subject_weight.Average) AS Average, " .
 						"             subject_weight.Weight AS DistWeight " .
 						"        FROM subjecttype, " .
 						"          (SELECT get_weight(subject.SubjectIndex, class.ClassIndex, '{$row['Username']}') AS Weight, " .
@@ -792,7 +792,7 @@
 						"        AND   subject_weight.Weight > 0 " .
 						"        GROUP BY subjecttype.SubjectTypeIndex " .
 						"     ) UNION (" .
-						"      SELECT classlist.Username, classlist.Conduct AS Average, 1.0 AS DistWeight " .
+						"      SELECT classlist.Username, -1 AS SubjectTypeIndex, classlist.Conduct AS Average, 1.0 AS DistWeight " .
 						"        FROM classlist, classterm, class " .
 						"      WHERE classlist.Username           = '{$row['Username']}' " .
 						"      AND   classlist.ClassTermIndex     = classterm.ClassTermIndex " .
