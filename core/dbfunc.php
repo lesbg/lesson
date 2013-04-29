@@ -709,7 +709,7 @@
 	function update_classterm_from_subject($subject_index) {
 		global $db;
 
-		$query =	"SELECT classterm.ClassIndex, subject.TermIndex FROM " .
+		$query =	"SELECT classterm.ClassTermIndex FROM " .
 					"       classlist, classterm, class, subject, subjectstudent " .
 					"WHERE subject.SubjectIndex = $subject_index " .
 					"AND   subjectstudent.SubjectIndex = subject.SubjectIndex " .
@@ -723,7 +723,7 @@
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 
 		while($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-			update_classterm($row['ClassIndex'], $row['TermIndex']);
+			update_classterm($row['ClassTermIndex']);
 		}
 	}
 
@@ -732,16 +732,18 @@
 		global $db;
 		global $AVG_TYPE_PERCENT;
 		
-		$query =	"SELECT ClassIndex FROM class " .
-					"WHERE YearIndex = $year_index";
+		$query =	"SELECT ClassTermIndex FROM class, classterm " .
+					"WHERE classterm.ClassIndex = class.ClassIndex " .
+					"AND   class.YearIndex      = $year_index " .
+					"AND   classterm.TermIndex  = $term_index";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		
 		while($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-			update_classterm($row['ClassIndex'], $term_index);
+			update_classterm($row['ClassTermIndex']);
 		}
 	}
-	function update_classterm($class_index, $term_index) {
+	function update_classterm($classtermindex) {
 		global $db;
 		global $AVG_TYPE_PERCENT;
 		global $CLASS_CONDUCT_TYPE_CALC;
@@ -756,74 +758,49 @@
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		*/
-		
-		$query =	"SELECT classlist.Username, classlist.ClassListIndex, " .
-					"       classterm.ClassTermIndex, class.YearIndex " .
-					"       FROM classlist, classterm, class " .
-					"WHERE class.ClassIndex = $class_index " .
-					"AND   classterm.ClassIndex = class.ClassIndex " .
-					"ANd   classterm.TermIndex = $term_index " .
-					"AND   classlist.ClassTermIndex = classterm.ClassTermIndex";
+		$query =	"SELECT Username, ROUND(SUM(DistWeight * Average) / SUM(DistWeight)) AS Avg " .
+					"     FROM " .
+					"    ((SELECT subjectstudent.Username, subject.SubjectTypeIndex, AVG(ROUND(subjectstudent.Average)) AS Average, " .
+					"             get_weight(subject.SubjectIndex, class.ClassIndex, subjectstudent.Username) AS DistWeight " .
+					"        FROM subject, subjectstudent, class, classterm, classlist " .
+					"        WHERE classterm.ClassTermIndex  = $classtermindex " .
+					"        AND class.ClassIndex            = classterm.ClassIndex " .
+					"        AND classlist.ClassTermIndex    = classterm.ClassTermIndex " .
+					"        AND subject.TermIndex           = classterm.TermIndex " .
+					"        AND subject.YearIndex           = class.YearIndex " .
+					"        AND subject.AverageType         = $AVG_TYPE_PERCENT " .
+					"        AND subjectstudent.SubjectIndex = subject.SubjectIndex " .
+					"        AND subjectstudent.Username     = classlist.Username " .
+					"        AND subjectstudent.Average     >= 0 " .
+					"        GROUP BY subject.SubjectTypeIndex, subjectstudent.Username " .
+					"     ) " .
+					"     UNION " .
+					"     (SELECT classlist.Username, 0 AS SubjectTypeIndex, classlist.Conduct AS Average, 1.0 AS DistWeight " .
+					"        FROM classlist, classterm " .
+					"        WHERE classterm.ClassTermIndex = $classtermindex " .
+					"        AND classlist.ClassTermIndex   = classterm.ClassTermIndex " .
+					"        AND (classterm.ConductType     = $CLASS_CONDUCT_TYPE_CALC" .
+					"          OR classterm.ConductType     = $CLASS_CONDUCT_TYPE_PUN)" .
+					"        AND classlist.Conduct         >= 0" .
+					"     )" .
+					"    ) AS ctgrade GROUP BY Username";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 
 		while($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-			$query =	"SELECT SUM(DistWeight * Average) / SUM(DistWeight) AS Avg " .
-						"     FROM " .
-						"    ((SELECT subject_weight.Username, subject_weight.SubjectTypeIndex, AVG(subject_weight.Average) AS Average, " .
-						"             subject_weight.Weight AS DistWeight " .
-						"        FROM subjecttype, " .
-						"          (SELECT get_weight(subject.SubjectIndex, class.ClassIndex, '{$row['Username']}') AS Weight, " .
-						"                  subject.SubjectIndex, subject.SubjectTypeIndex, subjectstudent.Average, " .
-						"                  subjectstudent.Username FROM subject, subjectstudent, class, classterm, classlist " .
-						"                WHERE subject.TermIndex   = $term_index " .
-						"                AND   subject.YearIndex   = {$row['YearIndex']} " .
-						"                AND   subject.AverageType = $AVG_TYPE_PERCENT " .
-						"                AND   subjectstudent.SubjectIndex  =  subject.SubjectIndex " .
-						"                AND   subjectstudent.Average       >= 0 " .
-						"                AND   subjectstudent.Username      =  '{$row['Username']}' " .
-						"                AND   classlist.Username           = subjectstudent.Username " .
-						"                AND   classlist.ClassTermIndex     = classterm.ClassTermIndex " .
-						"                AND   classterm.TermIndex          = subject.TermIndex " .
-						"                AND   classterm.ClassIndex         = class.ClassIndex " .
-						"                AND   class.YearIndex              = subject.YearIndex " .
-						"          ) AS subject_weight " .
-						"        WHERE subjecttype.SubjectTypeIndex = subject_weight.SubjectTypeIndex " .
-						"        AND   subject_weight.Weight > 0 " .
-						"        GROUP BY subjecttype.SubjectTypeIndex " .
-						"     ) UNION (" .
-						"      SELECT classlist.Username, -1 AS SubjectTypeIndex, classlist.Conduct AS Average, 1.0 AS DistWeight " .
-						"        FROM classlist, classterm, class " .
-						"      WHERE classlist.Username           = '{$row['Username']}' " .
-						"      AND   classlist.ClassTermIndex     = classterm.ClassTermIndex " .
-						"      AND   classterm.TermIndex          = $term_index " .
-						"      AND   classterm.ClassIndex         = class.ClassIndex " .
-						"      AND   (classterm.ConductType       = $CLASS_CONDUCT_TYPE_CALC OR " .
-						"             classterm.ConductType       = $CLASS_CONDUCT_TYPE_PUN) " .
-						"      AND   class.YearIndex              = {$row['YearIndex']} " .
-						"      AND classlist.Conduct >= 0" .
-						"     )) AS ctgrade ";
+			if(is_null($row['Avg']))
+				$row['Avg'] = "-1";
+			$query =	"UPDATE classlist " .
+						"SET classlist.Average = {$row['Avg']} " .
+						"WHERE classlist.Username  = '{$row['Username']}' " .
+						"AND   classlist.ClassTermIndex = $classtermindex ";
 			$nres =&  $db->query($query);
 			if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
-			
-			if($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-				if(is_null($nrow['Avg']))
-					$nrow['Avg'] = "-1";
-				$query =	"UPDATE classlist, classterm " .
-							"SET classlist.Average = {$nrow['Avg']} " .
-							"WHERE classlist.Username  = '{$row['Username']}' " .
-							"AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
-							"AND   classterm.TermIndex = $term_index " .
-							"AND   classterm.ClassIndex = $class_index";
-				$nres =&  $db->query($query);
-				if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
-			}
 		}
 
 		// Update class average
 		$query =	"UPDATE classterm SET classterm.Average=-1 " .
-					"WHERE classterm.TermIndex = $term_index " .
-					"AND   classterm.ClassIndex = $class_index";
+					"WHERE classterm.ClassTermIndex = $classtermindex ";
 		$nres =&  $db->query($query);
 		if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
 					
@@ -831,19 +808,17 @@
 		$query =	"UPDATE classterm, " .
 					" (SELECT ClassTermIndex, AVG(Average) AS ClassAverage " .
 					"  FROM classlist " .
-					"  WHERE Average >= 0 " .
+					"  WHERE Average >= 0" .
+					"  AND   ClassTermIndex = $classtermindex " .
 					"  GROUP BY ClassTermIndex) AS ctaverage " .
 					"SET    classterm.Average = ctaverage.ClassAverage " .
 					"WHERE  ctaverage.ClassTermIndex = classterm.ClassTermIndex " .
-					"AND    classterm.TermIndex = $term_index " .
-					"AND    classterm.ClassIndex = $class_index ";
+					"AND    classterm.ClassTermIndex = $classtermindex";
 		$nres =&  $db->query($query);
 		if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
 					
-		$query =	"SELECT classlist.ClassListIndex, classlist.Username, classlist.Rank, classlist.Average FROM classterm, classlist " .
-					"WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
-					"AND   classterm.TermIndex      = $term_index " .
-					"AND   classterm.ClassIndex     = $class_index " .
+		$query =	"SELECT classlist.ClassListIndex, classlist.Username, classlist.Rank, classlist.Average FROM classlist " .
+					"WHERE classlist.ClassTermIndex = $classtermindex " .
 					"AND   classlist.Average        >= 0 " .
 					"ORDER BY Average DESC";
 		$res =&  $db->query($query);
