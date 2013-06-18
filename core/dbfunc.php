@@ -872,42 +872,27 @@
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 
 		/* Calculate student's current average in subject */
+		
 		$query =	"UPDATE subjectstudent, " .
-					"  (SELECT " .
-					"   SUM(Average) AS Average, Username FROM " .
-					"    (SELECT " .
-					"       (SUM(mark.Percentage * assignment.Weight) / " .
-					"        SUM(100 * assignment.Weight) * 100) * " .
-					"       IF(categorylist.Weight IS NULL, " .
-					"          1, " .
-					"          (categorylist.Weight / total.TotalWeight)) AS Average, " .
-					"       SUM(assignment.Weight) AS TotalWeight, " .
-					"       mark.Username FROM " .
-					"         assignment INNER JOIN subjectstudent USING (SubjectIndex) " .
-					"         LEFT OUTER JOIN categorylist USING (CategoryListIndex) " .
-					"         LEFT OUTER JOIN mark ON (subjectstudent.Username = mark.Username AND " .
-					"                                 assignment.AssignmentIndex = mark.AssignmentIndex) " .
-					"         LEFT OUTER JOIN " .
-					"         (SELECT Username, SUM(TotalWeight) AS TotalWeight FROM " .
-					"           (SELECT DISTINCT mark.Username, categorylist.CategoryListIndex, " .
-					"                   categorylist.Weight AS TotalWeight FROM assignment " .
-					"                   LEFT OUTER JOIN categorylist USING (CategoryListIndex), mark " .
-					"            WHERE assignment.SubjectIndex=$subject_index " .
-					"            AND   assignment.Agenda = 0 " .
-					"            AND   mark.AssignmentIndex = assignment.AssignmentIndex " .
-					"            AND   (mark.Score >= 0 OR mark.Score = $MARK_LATE) " .
-					"            AND   assignment.Weight > 0 " .
-					"            AND   mark.Score IS NOT NULL " .
-					"           ) AS do_weight GROUP BY Username) AS total " .
-					"         ON (subjectstudent.Username = total.username)" .
-					"       WHERE assignment.SubjectIndex = $subject_index " .
-					"       AND   assignment.Agenda = 0 " .
-					"       AND   assignment.Hidden = 0 " .
-					"       AND   (mark.Score >= 0 OR mark.Score = $MARK_LATE) " .
-					"       AND   mark.Score IS NOT NULL " .
-					"       GROUP BY assignment.CategoryListIndex, mark.Username) AS seg_score " .
-					"   WHERE TotalWeight > 0 " .
-					"   GROUP BY Username) AS score " .
+					"  (SELECT" .
+					"   ROUND((SUM(Mark * CategoryWeight) / SUM(Weight * CategoryWeight))*100) AS Average, Username FROM" .
+					"    (SELECT" .
+					"      SUM(mark.Percentage * assignment.Weight) AS Mark, " .
+					"      SUM(100 * assignment.Weight) AS Weight, " .
+					"      IF(categorylist.Weight IS NULL, 1, categorylist.Weight) AS CategoryWeight, " .
+					"      mark.Username FROM " .
+					"        assignment INNER JOIN subjectstudent USING (SubjectIndex) " .
+					"        LEFT OUTER JOIN (categorylist INNER JOIN category USING (CategoryIndex)) USING (CategoryListIndex) " .
+					"        LEFT OUTER JOIN mark ON (subjectstudent.Username = mark.Username AND assignment.AssignmentIndex = mark.AssignmentIndex) " .
+					"     WHERE assignment.SubjectIndex = $subject_index" .
+					"     AND   assignment.Agenda       = 0 " .
+					"     AND   assignment.Hidden       = 0 " .
+					"     AND   mark.AssignmentIndex    = assignment.AssignmentIndex " .
+					"     AND   (mark.Score >= 0 OR mark.Score = $MARK_LATE) " .
+					"     AND   assignment.Weight       > 0 " .
+					"     AND   mark.Score              IS NOT NULL" .
+					"     GROUP BY subjectstudent.Username, category.CategoryIndex)" .
+					"   AS category_total GROUP BY Username) AS score " .
 					"SET subjectstudent.Average = score.Average " .
 					"WHERE subjectstudent.SubjectIndex = $subject_index " .
 					"AND   subjectstudent.Average != score.Average " .
