@@ -897,7 +897,6 @@
 					"WHERE subjectstudent.SubjectIndex = $subject_index " .
 					"AND   subjectstudent.Average != score.Average " .
 					"AND   subjectstudent.Username = score.Username";
-		echo $query;
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 

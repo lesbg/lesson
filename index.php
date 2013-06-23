@@ -98,9 +98,9 @@
 	
 	//update_conduct_year_term(1, 1);
 	//update_conduct_year_term(7, 1);
-    //update_year_term(9, 5);
+    //update_year_term(9, 6);
         
-	//$query = "SELECT SubjectIndex FROM subject";
+	//$query = "SELECT SubjectIndex FROM subject WHERE YearIndex=9 AND TermIndex=6 AND AverageType=1 ";
 	//$res =&  $db->query($query);
 	//if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 	//while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
