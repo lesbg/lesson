@@ -758,9 +758,9 @@
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		*/
-		$query =	"SELECT Username, ROUND(SUM(DistWeight * Average) / SUM(DistWeight)) AS Avg " .
+		$query =	"SELECT Username, TRUNCATE((SUM(DistWeight * Average) / SUM(DistWeight)) + 0.5, 0) AS Avg " .
 					"     FROM " .
-					"    ((SELECT subjectstudent.Username, subject.SubjectTypeIndex, AVG(ROUND(subjectstudent.Average)) AS Average, " .
+					"    ((SELECT subjectstudent.Username, subject.SubjectTypeIndex, AVG(TRUNCATE(subjectstudent.Average + 0.5, 0)) AS Average, " .
 					"             get_weight(subject.SubjectIndex, class.ClassIndex, subjectstudent.Username) AS DistWeight " .
 					"        FROM subject, subjectstudent, class, classterm, classlist " .
 					"        WHERE classterm.ClassTermIndex  = $classtermindex " .
@@ -875,9 +875,9 @@
 		
 		$query =	"UPDATE subjectstudent, " .
 					"  (SELECT" .
-					"   ROUND((SUM(Mark * CategoryWeight) / SUM(Weight * CategoryWeight))*100) AS Average, Username FROM" .
+					"   TRUNCATE(((SUM(Mark * CategoryWeight) / SUM(Weight * CategoryWeight))*100) + 0.5, 0) AS Average, Username FROM" .
 					"    (SELECT" .
-					"      SUM(mark.Percentage * assignment.Weight) AS Mark, " .
+					"      SUM(TRUNCATE(mark.Percentage + 0.5, 0) * assignment.Weight) AS Mark, " .
 					"      SUM(100 * assignment.Weight) AS Weight, " .
 					"      IF(categorylist.Weight IS NULL, 1, categorylist.Weight) AS CategoryWeight, " .
 					"      mark.Username FROM " .
@@ -897,6 +897,7 @@
 					"WHERE subjectstudent.SubjectIndex = $subject_index " .
 					"AND   subjectstudent.Average != score.Average " .
 					"AND   subjectstudent.Username = score.Username";
+		echo $query;
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 
