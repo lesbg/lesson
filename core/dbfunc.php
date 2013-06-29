@@ -760,19 +760,19 @@
 		*/
 		$query =	"SELECT Username, TRUNCATE((SUM(DistWeight * Average) / SUM(DistWeight)) + 0.5, 0) AS Avg " .
 					"     FROM " .
-					"    ((SELECT subjectstudent.Username, subject.SubjectTypeIndex, AVG(TRUNCATE(subjectstudent.Average + 0.5, 0)) AS Average, " .
-					"             get_weight(subject.SubjectIndex, class.ClassIndex, subjectstudent.Username) AS DistWeight " .
-					"        FROM subject, subjectstudent, class, classterm, classlist " .
+					"    ((SELECT classlist.Username, subject.SubjectTypeIndex, AVG(TRUNCATE(subjectstudent.Average + 0.5, 0)) AS Average, " .
+					"             get_weight(subject.SubjectIndex, class.ClassIndex, classlist.Username) AS DistWeight " .
+					"        FROM class INNER JOIN classterm USING (ClassIndex) " .
+					"                   INNER JOIN classlist USING (ClassTermIndex) " .
+					"                   LEFT OUTER JOIN " .
+					"                    (subject INNER JOIN subjectstudent USING (SubjectIndex))" .
+					"                   ON (subject.TermIndex = classterm.TermIndex " .
+					"                       AND subject.YearIndex = class.YearIndex " .
+					"                       AND subject.AverageType = $AVG_TYPE_PERCENT " .
+					"                       AND subjectstudent.Username = classlist.Username " .
+					"                       AND subjectstudent.Average >= 0) " .
 					"        WHERE classterm.ClassTermIndex  = $classtermindex " .
-					"        AND class.ClassIndex            = classterm.ClassIndex " .
-					"        AND classlist.ClassTermIndex    = classterm.ClassTermIndex " .
-					"        AND subject.TermIndex           = classterm.TermIndex " .
-					"        AND subject.YearIndex           = class.YearIndex " .
-					"        AND subject.AverageType         = $AVG_TYPE_PERCENT " .
-					"        AND subjectstudent.SubjectIndex = subject.SubjectIndex " .
-					"        AND subjectstudent.Username     = classlist.Username " .
-					"        AND subjectstudent.Average     >= 0 " .
-					"        GROUP BY subject.SubjectTypeIndex, subjectstudent.Username " .
+					"        GROUP BY subject.SubjectTypeIndex, classlist.Username " .
 					"     ) " .
 					"     UNION " .
 					"     (SELECT classlist.Username, 0 AS SubjectTypeIndex, classlist.Conduct AS Average, 1.0 AS DistWeight " .
@@ -790,6 +790,7 @@
 		while($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 			if(is_null($row['Avg']))
 				$row['Avg'] = "-1";
+
 			$query =	"UPDATE classlist " .
 						"SET classlist.Average = {$row['Avg']} " .
 						"WHERE classlist.Username  = '{$row['Username']}' " .
@@ -864,42 +865,44 @@
 		$avg_type = $row["AverageType"];
 		$avg_type_index = $row["AverageTypeIndex"];
 		
-		/* Clear student averages for subject */
-		$query =	"UPDATE subjectstudent " .
-					"SET Average = -1 " .
-					"WHERE SubjectIndex = $subject_index ";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 
 		/* Calculate student's current average in subject */
-		
-		$query =	"UPDATE subjectstudent, " .
-					"  (SELECT" .
-					"   TRUNCATE(((SUM(Mark * CategoryWeight) / SUM(Weight * CategoryWeight))*100) + 0.5, 0) AS Average, Username FROM" .
-					"    (SELECT" .
-					"      SUM(TRUNCATE(mark.Percentage + 0.5, 0) * assignment.Weight) AS Mark, " .
-					"      SUM(100 * assignment.Weight) AS Weight, " .
-					"      IF(categorylist.Weight IS NULL, 1, categorylist.Weight) AS CategoryWeight, " .
-					"      mark.Username FROM " .
-					"        assignment INNER JOIN subjectstudent USING (SubjectIndex) " .
-					"        LEFT OUTER JOIN (categorylist INNER JOIN category USING (CategoryIndex)) USING (CategoryListIndex) " .
-					"        LEFT OUTER JOIN mark ON (subjectstudent.Username = mark.Username AND assignment.AssignmentIndex = mark.AssignmentIndex) " .
-					"     WHERE assignment.SubjectIndex = $subject_index" .
-					"     AND   assignment.Agenda       = 0 " .
-					"     AND   assignment.Hidden       = 0 " .
-					"     AND   mark.AssignmentIndex    = assignment.AssignmentIndex " .
-					"     AND   (mark.Score >= 0 OR mark.Score = $MARK_LATE) " .
-					"     AND   assignment.Weight       > 0 " .
-					"     AND   mark.Score              IS NOT NULL" .
-					"     GROUP BY subjectstudent.Username, category.CategoryIndex)" .
-					"   AS category_total GROUP BY Username) AS score " .
-					"SET subjectstudent.Average = score.Average " .
-					"WHERE subjectstudent.SubjectIndex = $subject_index " .
-					"AND   subjectstudent.Average != score.Average " .
-					"AND   subjectstudent.Username = score.Username";
+		$query =	"SELECT MAX(Average) AS Average, Username FROM " .
+					"   ((SELECT" .
+					"     TRUNCATE(((SUM(Mark * CategoryWeight) / SUM(Weight * CategoryWeight))*100) + 0.5, 0) AS Average, Username FROM" .
+					"      (SELECT" .
+					"        SUM(TRUNCATE(mark.Percentage + 0.5, 0) * assignment.Weight) AS Mark, " .
+					"        SUM(100 * assignment.Weight) AS Weight, " .
+					"        IF(categorylist.Weight IS NULL, 1, categorylist.Weight) AS CategoryWeight, " .
+					"        mark.Username FROM " .
+					"          assignment INNER JOIN subjectstudent USING (SubjectIndex) " .
+					"          LEFT OUTER JOIN (categorylist INNER JOIN category USING (CategoryIndex)) USING (CategoryListIndex) " .
+					"          LEFT OUTER JOIN mark ON (subjectstudent.Username = mark.Username AND assignment.AssignmentIndex = mark.AssignmentIndex) " .
+					"       WHERE assignment.SubjectIndex = $subject_index" .
+					"       AND   assignment.Agenda       = 0 " .
+					"       AND   assignment.Hidden       = 0 " .
+					"       AND   mark.AssignmentIndex    = assignment.AssignmentIndex " .
+					"       AND   (mark.Score >= 0 OR mark.Score = $MARK_LATE) " .
+					"       AND   assignment.Weight       > 0 " .
+					"       AND   mark.Score              IS NOT NULL" .
+					"       GROUP BY subjectstudent.Username, category.CategoryIndex)" .
+					"     AS category_total GROUP BY Username) " .
+					"     UNION " .
+					"    (SELECT -1 AS Average, Username FROM subjectstudent" .
+					"     WHERE subjectstudent.SubjectIndex = $subject_index)) AS pscore" .
+					"    GROUP BY Username " .
+					"    ORDER BY Username ";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
-
+		while($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+			$query =	"UPDATE subjectstudent SET Average={$row['Average']} " .
+						"WHERE SubjectIndex = $subject_index " .
+						"AND Username = '{$row['Username']}'";
+			$nres =&  $db->query($query);
+			if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query			
+		}
 		$query =	"SELECT Username, Average, Rank FROM subjectstudent " .
 					"WHERE SubjectIndex = $subject_index " .
 					"AND   Average >= 0 " .
