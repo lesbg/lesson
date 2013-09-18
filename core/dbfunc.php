@@ -290,25 +290,7 @@
 	
 	/* Hash function to convert *any* string to a safe combination of numbers and multi-case letters */
 	function &dbfuncString2Int($strValue) {
-		$value     = "";
-		$num_value = "0";
-		for($loc = 0; $loc < strlen($strValue); $loc++) {          // Convert string to extremely large number
-			$num_value = bcmul($num_value, "256");
-			$num_value = bcadd($num_value, ord($strValue{$loc}));
-		}
-		while(bccomp($num_value, "0") == 1) {                      // Convert extremely large number to series of
-			$val       = intval(bcmod($num_value, "62"));          //  numbers and upper- and lower-case letters.
-			$num_value = bcdiv($num_value, "62");
-			if($val < 10) {
-				$sval = strval($val);
-			} elseif($val < 36) {
-				$sval = chr($val + 65 - 10);
-			} else {
-				$sval = chr($val + 97 - 36);
-			}
-			$value = $sval . $value;
-		}
-		return $value;
+		return base64_encode($strValue);
 	}
 
 	function dbfuncArray2String($Array) {
@@ -360,23 +342,7 @@
 		
 	/* Hash function to a safe combination of numbers and multi-case letters into a string */
 	function &dbfuncInt2String($strValue) {
-		$value     = "";
-		$num_value = "0";
-		for($loc = 0; $loc < strlen($strValue); $loc ++) {         // Convert series of numbers and upper- and lower-case
-			$val = ord($strValue{$loc});                           //  letters to extremely large number.
-			if($val < 58) {
-				$num_value = bcadd(bcmul($num_value, "62"), chr($val));
-			} elseif($val < 91) {
-				$num_value = bcadd(bcmul($num_value, "62"), strval($val - 65 + 10));
-			} else {
-				$num_value = bcadd(bcmul($num_value, "62"), strval($val - 97 + 36));
-			}
-		}
-		while(bccomp($num_value, "0") == 1) {                      // Convert extremely large number to string
-			$value = chr(bcmod($num_value, "256")) . $value;
-			$num_value = bcdiv($num_value, "256");
-		}
-		return $value;
+		return base64_decode($strValue);
 	}
 	
 	/* Function to setup logging */
