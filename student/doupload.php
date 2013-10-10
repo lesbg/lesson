@@ -65,6 +65,7 @@
 					while($trow =& $tres->fetchRow(DB_FETCHMODE_ASSOC)) {
 						$new_dir =& dbfuncGetDir($assignmentindex, $row['UploadName'], $trow['Username']);
 						copy("$dst_dir/$file", "$new_dir/$file");
+						chmod("$new_dir/$file", 0666);
 					}
 					if($rename == 1) {
 						$part2 = " as &quot;$file&quot;";
