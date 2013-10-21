@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * teacher/assignment/list.php  (c) 2004-2007 Jonathan Dieter
+	 * teacher/assignment/list.php  (c) 2004-2013 Jonathan Dieter
 	 *
 	 * Show assignments and marks for a subject
 	 *****************************************************************/
@@ -41,7 +41,7 @@
 		if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 			$perm = $row['Permissions'];
 		} else {
-			$perm = 0;
+			$perm = $DEFAULT_PUN_PERM;
 		}
 		
 		/* Get whether marks can be modified */

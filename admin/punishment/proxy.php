@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * admin/punishment/proxy.php  (c) 2006-2008 Jonathan Dieter
+	 * admin/punishment/proxy.php  (c) 2006-2013 Jonathan Dieter
 	 *
 	 * Issue a punishment on behalf of another teacher.
 	 *****************************************************************/
@@ -9,14 +9,23 @@
 
 	$link             = "index.php?location=" . dbfuncString2Int("admin/punishment/proxy_action.php") .
 						"&amp;next=" .          $_GET['next'];
-
+	
+	$query =	"SELECT ActiveTeacher FROM user WHERE Username='$username' AND ActiveTeacher=1";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		$is_teacher = true;
+	} else {
+		$is_teacher = false;
+	}
+	
 	$query =    "SELECT Permissions FROM disciplineperms WHERE Username='$username'";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 		$perm = $row['Permissions'];
 	} else {
-		$perm = 0;
+		$perm = $DEFAULT_PUN_PERM;
 	}
 
 	$showalldeps = true;
@@ -26,7 +35,7 @@
 	$showterm = false;
 	include "core/titletermyear.php";
 	
-	if($is_admin or $perm >= $PUN_PERM_PROXY) {
+	if($is_admin or ($perm >= $PUN_PERM_PROXY and $is_teacher)) {
 		if(!isset($punish_list)) {
 			$punish_list = array();
 			$punish_str = "";

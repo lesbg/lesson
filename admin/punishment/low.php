@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * admin/punishment/low.php  (c) 2007 Jonathan Dieter
+	 * admin/punishment/low.php  (c) 2007-2013 Jonathan Dieter
 	 *
 	 * Print students whose conduct mark is below a certain criteria
 	 *****************************************************************/
@@ -58,19 +58,28 @@
 		$fdata = "60";
 		$_GET['fdata'] = $fdata;
 	}
-
+	
+	$query =	"SELECT ActiveTeacher FROM user WHERE Username='$username' AND ActiveTeacher=1";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		$is_teacher = true;
+	} else {
+		$is_teacher = false;
+	}
+	
 	$query =    "SELECT Permissions FROM disciplineperms WHERE Username='$username'";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 		$perm = $row['Permissions'];
 	} else {
-		$perm = 0;
+		$perm = $DEFAULT_PUN_PERM;
 	}
 
 	include "header.php";
 
-	if($is_admin or $perm >= $PUN_PERM_SEE) {  // Make sure user has permission to view
+	if($is_admin or ($perm >= $PUN_PERM_SEE and $is_teacher)) {  // Make sure user has permission to view
 		$showalldeps = true;                              //  low marks
 		include "core/settermandyear.php";
 		include "core/titletermyear.php";

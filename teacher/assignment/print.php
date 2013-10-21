@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * teacher/assignment/print.php  (c) 2005, 2006 Jonathan Dieter
+	 * teacher/assignment/print.php  (c) 2005-2013 Jonathan Dieter
 	 *
 	 * Show grades for class
 	 *****************************************************************/
@@ -40,16 +40,7 @@
 					   "AND   subjectteacher.Username     = \"$username\"");
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 	
-	if($res->numRows() > 0 || dbfuncGetPermission($permissions, $PERM_ADMIN)) {
-		$query =    "SELECT Permissions FROM disciplineperms WHERE Username=\"$username\"";
-		$res =&  $db->query($query);
-		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
-		if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-			$perm = $row['Permissions'];
-		} else {
-			$perm = 0;
-		}
-		
+	if($res->numRows() > 0 || dbfuncGetPermission($permissions, $PERM_ADMIN)) {		
 		/* Get class index */
 		$res =& $db->query("SELECT ClassIndex FROM subject " .
 						   "WHERE subject.SubjectIndex = $subjectindex");

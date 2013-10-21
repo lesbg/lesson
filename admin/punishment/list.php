@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * admin/punishment/list.php  (c) 2006 Jonathan Dieter
+	 * admin/punishment/list.php  (c) 2006-2013 Jonathan Dieter
 	 *
 	 * Print information about all issued punishment history for
 	 *  term
@@ -8,20 +8,29 @@
 
 	/* Get variables */
 	$title           = "Punishments issued this term";
-
+	
+	$query =	"SELECT ActiveTeacher FROM user WHERE Username='$username' AND ActiveTeacher=1";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		$is_teacher = true;
+	} else {
+		$is_teacher = false;
+	}
+	
 	$query =    "SELECT Permissions FROM disciplineperms WHERE Username=\"$username\"";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 		$perm = $row['Permissions'];
 	} else {
-		$perm = 0;
+		$perm = $DEFAULT_PUN_PERM;
 	}
 
 	include "header.php";
 
 	/* Make sure user has permission to view all punishments */
-	if($is_admin or $perm >= $PUN_PERM_SEE) {
+	if($is_admin or ($perm >= $PUN_PERM_SEE and $is_teacher)) {
 		$showalldeps = true;
 		include "core/settermandyear.php";
 		if(isset($_GET['start'])) {

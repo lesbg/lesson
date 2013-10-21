@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * admin/punishment/tools.php  (c) 2006 Jonathan Dieter
+	 * admin/punishment/tools.php  (c) 2006-2013 Jonathan Dieter
 	 *
 	 * Punishment tools
 	 *****************************************************************/
@@ -8,6 +8,15 @@
 	$title = "Punishment Tools";
 	
 	include "header.php";                                          // Show header
+		
+	$query =	"SELECT ActiveTeacher FROM user WHERE Username='$username' AND ActiveTeacher=1";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		$is_teacher = true;
+	} else {
+		$is_teacher = false;
+	}
 	
 	$query =    "SELECT Permissions FROM disciplineperms WHERE Username='$username'";
 	$res =&  $db->query($query);
@@ -15,10 +24,10 @@
 	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 		$perm = $row['Permissions'];
 	} else {
-		$perm = 0;
+		$perm = $DEFAULT_PUN_PERM;
 	}
 
-	if(!$is_admin and $perm < $PUN_PERM_MASS) {
+	if(!$is_admin and ($perm < $PUN_PERM_MASS or !$is_teacher)) {
 		log_event($LOG_LEVEL_ERROR, "admin/punishment/tools.php", $LOG_DENIED_ACCESS, "Tried to access punishment tools.");
 		echo "      <p>You do not have permission to access this page</p>\n";
 		echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";

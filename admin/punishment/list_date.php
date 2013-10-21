@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * admin/punishment/list_date.php  (c) 2006 Jonathan Dieter
+	 * admin/punishment/list_date.php  (c) 2006-2013 Jonathan Dieter
 	 *
 	 * Show printable list of students who are punished on next date
 	 *****************************************************************/
@@ -17,13 +17,23 @@
 		}
 	}
 	$dtype = dbfuncInt2String($_GET['type']);
-	$query = "SELECT Permissions FROM disciplineperms WHERE Username=\"$username\"";
+	
+	$query =	"SELECT ActiveTeacher FROM user WHERE Username='$username' AND ActiveTeacher=1";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		$is_teacher = true;
+	} else {
+		$is_teacher = false;
+	}
+	
+	$query = "SELECT Permissions FROM disciplineperms WHERE Username='$username'";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 		$perm = $row['Permissions'];
 	} else {
-		$perm = 0;
+		$perm = $DEFAULT_PUN_PERM;
 	}
 
 	$query =	"SELECT DisciplineType " .
@@ -56,7 +66,7 @@
 
 	$title           = "{$disc} on $pundate";
 	/* Make sure user has permission to view student's marks for subject */
-	if(dbfuncGetPermission($permissions, $PERM_ADMIN) or $perm > $PUN_PERM_ALL) {
+	if(dbfuncGetPermission($permissions, $PERM_ADMIN) or ($perm > $PUN_PERM_ALL and $is_teacher)) {
 		if($_POST["action"] == "Check all") {
 			$check_all = 1;
 		} elseif($_POST["action"] == "Uncheck all") {

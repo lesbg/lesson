@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * admin/punishment/choose_type.php  (c) 2006 Jonathan Dieter
+	 * admin/punishment/choose_type.php  (c) 2006-2013 Jonathan Dieter
 	 *
 	 * Choose punishment type
 	 *****************************************************************/
@@ -8,6 +8,15 @@
 	/* Get variables */
 
 	$title            = "Choose punishment type";
+	
+	$query =	"SELECT ActiveTeacher FROM user WHERE Username='$username' AND ActiveTeacher=1";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		$is_teacher = true;
+	} else {
+		$is_teacher = false;
+	}
 
 	$query =    "SELECT Permissions FROM disciplineperms WHERE Username=\"$username\"";
 	$res =&  $db->query($query);
@@ -15,12 +24,12 @@
 	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 		$perm = $row['Permissions'];
 	} else {
-		$perm = 0;
+		$perm = $DEFAULT_PUN_PERM;
 	}
 
 	include "header.php";                                    // Show header
 	
-	if(dbfuncGetPermission($permissions, $PERM_ADMIN) or $perm >= $PUN_PERM_ALL) {
+	if(dbfuncGetPermission($permissions, $PERM_ADMIN) or ($perm >= $PUN_PERM_ALL and $is_teacher)) {
 		echo "      <form action=\"$link\" method=\"post\" name=\"pundate\">\n"; // Form method
 		echo "         <table border=\"0\" class=\"transparent\" align=\"center\">\n";
 		echo "            <tr>\n";

@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * admin/punishment/new.php  (c) 2006 Jonathan Dieter
+	 * admin/punishment/new.php  (c) 2006-2013 Jonathan Dieter
 	 *
 	 * Create a punishment
 	 *****************************************************************/
@@ -16,18 +16,27 @@
 						"&amp;keyname=" .       $_GET['keyname'] .
 						"&amp;next=" .          $_GET['next'];
 
+	$query =	"SELECT ActiveTeacher FROM user WHERE Username='$username' AND ActiveTeacher=1";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		$is_teacher = true;
+	} else {
+		$is_teacher = false;
+	}
+	
 	$query =    "SELECT Permissions FROM disciplineperms WHERE Username=\"$username\"";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 		$perm = $row['Permissions'];
 	} else {
-		$perm = 0;
+		$perm = $DEFAULT_PUN_PERM;
 	}
 
 	include "header.php";                                    // Show header
 	
-	if(dbfuncGetPermission($permissions, $PERM_ADMIN) or $perm >= $PUN_PERM_ISSUE) {
+	if(dbfuncGetPermission($permissions, $PERM_ADMIN) or ($perm >= $PUN_PERM_ISSUE and $is_teacher)) {
 		log_event($LOG_LEVEL_EVERYTHING, "admin/punishment/new.php", $LOG_TEACHER,
 					"Starting new punishment for $student.");
 		echo "      <form action=\"$link\" method=\"post\" name=\"punishment\">\n"; // Form method

@@ -1,12 +1,21 @@
 <?php
 	/*****************************************************************
-	 * admin/punishment/approve_all_pending.php  (c) 2006 Jonathan Dieter
+	 * admin/punishment/approve_all_pending.php  (c) 2006-2013 Jonathan Dieter
 	 *
 	 * Approve all pending punishments
 	 *****************************************************************/
 
 	/* Get variables */
 	$nextLink      = dbfuncInt2String($_GET['next']);
+	
+	$query =	"SELECT ActiveTeacher FROM user WHERE Username='$username' AND ActiveTeacher=1";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		$is_teacher = true;
+	} else {
+		$is_teacher = false;
+	}
 
 	/* Get current user's punishment permissions */
 	$query =    "SELECT Permissions FROM disciplineperms WHERE Username=\"$username\"";
@@ -15,10 +24,10 @@
 	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 		$perm = $row['Permissions'];
 	} else {
-		$perm = 0;
+		$perm = $DEFAULT_PUN_PERM;
 	}
 	/* Check whether current user is authorized to delete pending punishment */
-	if(dbfuncGetPermission($permissions, $PERM_ADMIN) or $perm >= $PUN_PERM_APPROVE) {
+	if(dbfuncGetPermission($permissions, $PERM_ADMIN) or ($perm >= $PUN_PERM_APPROVE and $is_teacher)) {
 		if($_POST['action'] == "Yes, approve all punishments") {
 			$showalldeps = true;                                     //  edit subjects
 			include "core/settermandyear.php";

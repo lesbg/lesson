@@ -143,7 +143,7 @@
 		if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 			$perm = $row['Permissions'];
 		} else {
-			$perm = 0;
+			$perm = $DEFAULT_PUN_PERM;
 		}
 		
 		if($perm >= $PUN_PERM_MASS or dbfuncGetPermission($permissions, $PERM_ADMIN)) {

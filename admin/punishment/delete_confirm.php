@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * admin/punishment/delete_confirm.php  (c) 2006 Jonathan Dieter
+	 * admin/punishment/delete_confirm.php  (c) 2006-2013 Jonathan Dieter
 	 *
 	 * Confirm deletion of a punishment from database
 	 *****************************************************************/
@@ -10,7 +10,7 @@
 	$nextLink        = dbfuncInt2String($_GET['next']);
 	
 	include "core/settermandyear.php";
-	
+		
 	/* Get information about punishment */
 	$query =	"SELECT disciplinetype.DisciplineType, user.Username, " .
 				"       user.FirstName, user.Surname, discipline.Date " .
@@ -33,18 +33,36 @@
 	
 		include "header.php";
 
-		$query =	"SELECT discipline.WorkerUsername, discipline.RecordUsername, disciplineperms.Permissions " .
-					"       FROM discipline, disciplineperms " .
+		$query =	"SELECT ActiveTeacher FROM user WHERE Username='$username' AND ActiveTeacher=1";
+		$res =&  $db->query($query);
+		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+		if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+			$is_teacher = true;
+		} else {
+			$is_teacher = false;
+		}
+		
+		$query =    "SELECT Permissions FROM disciplineperms WHERE Username=\"$username\"";
+		$res =&  $db->query($query);
+		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+		if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+			$perm = $row['Permissions'];
+		} else {
+			$perm = $DEFAULT_PUN_PERM;
+		}
+
+		$query =	"SELECT discipline.WorkerUsername, discipline.RecordUsername " .
+					"       FROM discipline " .
 					"WHERE  discipline.DisciplineIndex = $disciplineindex " .
-					"AND    disciplineperms.Username = \"$username\" " .
-					"AND    ((discipline.WorkerUsername = \"$username\" " .
-					"         OR discipline.RecordUsername = \"$username\") " .
-					"        AND disciplineperms.Permissions >= $PUN_PERM_MASS) " .
-					"OR     disciplineperms.Permissions >= $PUN_PERM_ALL ";
+					"AND    disciplineperms.Username = '$username' " .
+					"AND    ((discipline.WorkerUsername = '$username' " .
+					"         OR discipline.RecordUsername = '$username') " .
+					"        AND $perm >= $PUN_PERM_MASS) " .
+					"OR     $perm >= $PUN_PERM_ALL ";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		/* Check whether current user is authorized to delete punishment */
-		if(dbfuncGetPermission($permissions, $PERM_ADMIN) or $res->numRows() > 0) {
+		if(dbfuncGetPermission($permissions, $PERM_ADMIN) or ($res->numRows() > 0 and $is_teacher)) {
 			$link     = "index.php?location=" . dbfuncString2Int("admin/punishment/delete.php") .
 						"&amp;key=" .           $_GET['key'] .
 						"&amp;next=" .          $_GET['next'];

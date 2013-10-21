@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * teacher/punishment/list.php  (c) 2006 Jonathan Dieter
+	 * teacher/punishment/list.php  (c) 2006-2013 Jonathan Dieter
 	 *
 	 * Show list of punishments issued by teacher for this term
 	 *****************************************************************/
@@ -26,14 +26,24 @@
 	if(dbfuncGetPermission($permissions, $PERM_ADMIN) or $teacherusername == $username) {
 		include "core/settermandyear.php";
 
+		$query =	"SELECT ActiveTeacher FROM user WHERE Username='$username' AND ActiveTeacher=1";
+		$res =&  $db->query($query);
+		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+		if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+			$is_teacher = true;
+		} else {
+			$is_teacher = false;
+		}
+	
 		$query =    "SELECT Permissions FROM disciplineperms WHERE Username=\"$teacherusername\"";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 			$perm = $row['Permissions'];
 		} else {
-			$perm = 0;
+			$perm = $DEFAULT_PUN_PERM;
 		}
+		
 		$query =	"SELECT disciplinetype.DisciplineType, disciplineweight.DisciplineWeight, user.Username, " .
 					"       user.FirstName, user.Surname, discipline.Date, discipline.Comment, class.ClassName, " .
 					"       discipline.DisciplineIndex, disciplinetype.PermLevel, " .
@@ -62,7 +72,7 @@
 					"&amp;key=" .           $_GET['key'] .
 					"&amp;keyname=" .       $_GET['keyname'];
 
-		if($perm > 0) {
+		if($perm > 0 and $is_teacher) {
 			$pendbutton = dbfuncGetButton($pendlink, "Pending", "medium", "", "Pending punishments and punishment removals");
 			echo "      <p align=\"center\">$pendbutton</p>\n";
 		}
@@ -78,7 +88,7 @@
 			echo "            <th>Reason</th>\n";
 			echo "            <th>Punishment Date</th>\n";
 			echo "            <th>Showed up?</th>\n";
-			if(dbfuncGetPermission($permissions, $PERM_ADMIN) or $perm >= $PUN_PERM_SEE) {
+			if(dbfuncGetPermission($permissions, $PERM_ADMIN) or ($perm >= $PUN_PERM_SEE and $is_teacher)) {
 				echo "            <th>Recorded By</th>\n";
 			}
 			echo "         </tr>\n";
@@ -108,22 +118,26 @@
 					$punish_date = "&nbsp;";
 				}
 				echo "         <tr$alt>\n";
-				if($perm >= $PUN_PERM_MASS) {
-					$dellink =  "index.php?location=" . dbfuncString2Int("admin/punishment/delete_confirm.php") .
-								"&amp;key=" .           dbfuncString2Int($row['DisciplineIndex']) .
-								"&amp;next=" .          dbfuncString2Int("index.php?location=" .
-															dbfuncString2Int("teacher/punishment/list.php") .
-															"&key={$_GET['key']}&keyname={$_GET['keyname']}");
-					$delbutton = dbfuncGetButton($dellink,   "D", "small", "delete", "Delete punishment");
+				if($is_teacher) {
+					if($perm >= $PUN_PERM_MASS) {
+						$dellink =  "index.php?location=" . dbfuncString2Int("admin/punishment/delete_confirm.php") .
+									"&amp;key=" .           dbfuncString2Int($row['DisciplineIndex']) .
+									"&amp;next=" .          dbfuncString2Int("index.php?location=" .
+																dbfuncString2Int("teacher/punishment/list.php") .
+																"&key={$_GET['key']}&keyname={$_GET['keyname']}");
+						$delbutton = dbfuncGetButton($dellink,   "D", "small", "delete", "Delete punishment");
+					} else {
+						$dellink =  "index.php?location=" . dbfuncString2Int("teacher/punishment/request/new_removal.php") .
+									"&amp;key=" .           dbfuncString2Int($row['DisciplineIndex']) .
+									"&amp;next=" .          dbfuncString2Int("index.php?location=" .
+																dbfuncString2Int("teacher/punishment/list.php") .
+																"&key={$_GET['key']}&keyname={$_GET['keyname']}");
+						$delbutton = dbfuncGetButton($dellink,   "R", "small", "delete", "Request that this punishment be deleted");
+					}
+					echo "            <td nowrap>$delbutton</td>\n";
 				} else {
-					$dellink =  "index.php?location=" . dbfuncString2Int("teacher/punishment/request/new_removal.php") .
-								"&amp;key=" .           dbfuncString2Int($row['DisciplineIndex']) .
-								"&amp;next=" .          dbfuncString2Int("index.php?location=" .
-															dbfuncString2Int("teacher/punishment/list.php") .
-															"&key={$_GET['key']}&keyname={$_GET['keyname']}");
-					$delbutton = dbfuncGetButton($dellink,   "R", "small", "delete", "Request that this punishment be deleted");
+					echo "            <td nowrap>&nbsp;</td>\n";
 				}
-				echo "            <td nowrap>$delbutton</td>\n";
 				echo "            <td nowrap>{$row['DisciplineType']}</td>\n";
 				echo "            <td nowrap>$dateinfo</td>\n";
 				echo "            <td nowrap>{$row['FirstName']} {$row['Surname']} ({$row['Username']})</td>\n";
@@ -137,7 +151,7 @@
 				} else {
 					echo "            <td nowrap>&nbsp;</td>\n";
 				}
-				if(dbfuncGetPermission($permissions, $PERM_ADMIN) or $perm >= $PUN_PERM_SEE) {
+				if(dbfuncGetPermission($permissions, $PERM_ADMIN) or ($perm >= $PUN_PERM_SEE and $is_teacher)) {
 					$query =	"SELECT Title, FirstName, Surname " .
 								"       FROM user, discipline " .
 								"WHERE  discipline.DisciplineIndex = {$row['DisciplineIndex']} " .

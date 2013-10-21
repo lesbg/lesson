@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * admin/punishment/pending_confirm.php  (c) 2006 Jonathan Dieter
+	 * admin/punishment/pending_confirm.php  (c) 2006-2013 Jonathan Dieter
 	 *
 	 * Confirm approval or rejection of pending punishments
 	 *****************************************************************/
@@ -9,13 +9,22 @@
 	$nextLink        = dbfuncInt2String($_GET['next']);
 
 	/* Get current user's punishment permissions */
+	$query =	"SELECT ActiveTeacher FROM user WHERE Username='$username' AND ActiveTeacher=1";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		$is_teacher = true;
+	} else {
+		$is_teacher = false;
+	}
+	
 	$query =    "SELECT Permissions FROM disciplineperms WHERE Username=\"$username\"";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 		$perm = $row['Permissions'];
 	} else {
-		$perm = 0;
+		$perm = $DEFAULT_PUN_PERM;
 	}
 
 	$title           = "LESSON";
@@ -28,7 +37,7 @@
 			"&amp;next=" .          $_GET['next'];
 
 	/* Check whether current user is authorized to approve pending punishment */
-	if(dbfuncGetPermission($permissions, $PERM_ADMIN) or $perm >= $PUN_PERM_APPROVE) {
+	if(dbfuncGetPermission($permissions, $PERM_ADMIN) or ($perm >= $PUN_PERM_APPROVE and $is_teacher)) {
 		if($_POST['action'] == "Approve checked") {
 			$do = "approve";
 		} elseif($_POST['action'] == "Reject checked") {

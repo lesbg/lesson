@@ -9,6 +9,15 @@
 	$studentusername  = safe(dbfuncInt2String($_GET['key']));
 	$student          = dbfuncInt2String($_GET['keyname']);
 	$link             = dbfuncInt2String($_GET['next']);
+	
+	$query =	"SELECT ActiveTeacher FROM user WHERE Username='$username' AND ActiveTeacher=1";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		$is_teacher = true;
+	} else {
+		$is_teacher = false;
+	}
 
 	$query =    "SELECT Permissions FROM disciplineperms WHERE Username=\"$username\"";
 	$res =&  $db->query($query);
@@ -16,12 +25,12 @@
 	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 		$perm = $row['Permissions'];
 	} else {
-		$perm = 0;
+		$perm = $DEFAULT_PUN_PERM;
 	}
 
 	include "core/settermandyear.php";
 	
-	if(dbfuncGetPermission($permissions, $PERM_ADMIN) or $perm >= $PUN_PERM_REQUEST) {
+	if(dbfuncGetPermission($permissions, $PERM_ADMIN) or ($perm >= $PUN_PERM_REQUEST and $is_teacher)) {
 		/* Check which button was pressed */
 		if($_POST["action"] == "Save" || $_POST["action"] == "Update") { // If update or save were pressed, print  
 			$title         = "LESSON - Saving punishment request...";

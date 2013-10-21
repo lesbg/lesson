@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * admin/punishment/review_pending.php  (c) 2006 Jonathan Dieter
+	 * admin/punishment/review_pending.php  (c) 2006-2013 Jonathan Dieter
 	 *
 	 * Review all pending punishments
 	 *****************************************************************/
@@ -13,6 +13,15 @@
 	include "header.php";
 	
 	include "core/titletermyear.php";
+		
+	$query =	"SELECT ActiveTeacher FROM user WHERE Username='$username' AND ActiveTeacher=1";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		$is_teacher = true;
+	} else {
+		$is_teacher = false;
+	}
 	
 	$query =    "SELECT Permissions FROM disciplineperms WHERE Username=\"$username\"";
 	$res =&  $db->query($query);
@@ -20,10 +29,10 @@
 	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 		$perm = $row['Permissions'];
 	} else {
-		$perm = 0;
+		$perm = $DEFAULT_PUN_PERM;
 	}
 
-	if(dbfuncGetPermission($permissions, $PERM_ADMIN) or $perm >= $PUN_PERM_APPROVE) {
+	if(dbfuncGetPermission($permissions, $PERM_ADMIN) or ($perm >= $PUN_PERM_APPROVE and $is_teacher)) {
 		$link =	"index.php?location=" . dbfuncString2Int("admin/punishment/pending_confirm.php") .
 				"&amp;next=" .          dbfuncString2Int("index.php?location=" .
 										dbfuncString2Int("admin/punishment/review_pending.php") .

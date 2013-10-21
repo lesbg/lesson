@@ -15,20 +15,29 @@
 						"&amp;key=" .           $_GET['key'] .
 						"&amp;keyname=" .       $_GET['keyname'] .
 						"&amp;next=" .          $_GET['next'];
-
+	
+	$query =	"SELECT ActiveTeacher FROM user WHERE Username='$username' AND ActiveTeacher=1";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		$is_teacher = true;
+	} else {
+		$is_teacher = false;
+	}
+	
 	$query =    "SELECT Permissions FROM disciplineperms WHERE Username=\"$username\"";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 		$perm = $row['Permissions'];
 	} else {
-		$perm = 0;
+		$perm = $DEFAULT_PUN_PERM;
 	}
 	
 	include "core/settermandyear.php";
 	include "header.php";                                    // Show header
 	
-	if(dbfuncGetPermission($permissions, $PERM_ADMIN) or $perm >= $PUN_PERM_REQUEST) {
+	if(dbfuncGetPermission($permissions, $PERM_ADMIN) or ($perm >= $PUN_PERM_REQUEST and $is_teacher)) {
 		log_event($LOG_LEVEL_EVERYTHING, "teacher/punishment/request/new.php", $LOG_TEACHER,
 					"Starting new punishment request for $student.");
 		echo "      <form action=\"$link\" method=\"post\" name=\"punrequest\">\n"; // Form method

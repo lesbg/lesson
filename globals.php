@@ -24,3 +24,5 @@
 	$SMS_PASSWORD        = "password";
 
 	$SHOW_COMMENT_LENGTH = 30;
+	
+	$DEFAULT_PUN_PERM    = 0;

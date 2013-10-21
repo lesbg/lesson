@@ -1,12 +1,21 @@
 <?php
 	/*****************************************************************
-	 * admin/punishment/proxy_action.php  (c) 2006-2009 Jonathan Dieter
+	 * admin/punishment/proxy_action.php  (c) 2006-2013 Jonathan Dieter
 	 *
 	 * Issue punishment on behalf of another teacher
 	 *****************************************************************/
 
 	/* Get variables */
 	$nextLink     = dbfuncInt2String($_GET['next']);             // Link to next page
+		
+	$query =	"SELECT ActiveTeacher FROM user WHERE Username='$username' AND ActiveTeacher=1";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		$is_teacher = true;
+	} else {
+		$is_teacher = false;
+	}
 	
 	$query =    "SELECT Permissions FROM disciplineperms WHERE Username='$username'";
 	$res =&  $db->query($query);
@@ -14,14 +23,14 @@
 	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 		$perm = $row['Permissions'];
 	} else {
-		$perm = 0;
+		$perm = $DEFAULT_PUN_PERM;
 	}
 	
 	$showalldeps = true;
 	include "core/settermandyear.php";
 	
 	/* Check whether user is authorized to issue mass punishment */
-	if($is_admin or $perm >= $PUN_PERM_PROXY) {
+	if($is_admin or ($perm >= $PUN_PERM_PROXY and $is_teacher)) {
 		if(isset($_POST["punished"])) {
 			$punish_list = dbfuncString2Array($_POST["punished"]);
 		} else {

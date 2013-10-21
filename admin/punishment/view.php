@@ -1,26 +1,35 @@
 <?php
 	/*****************************************************************
-	 * admin/punishment/view.php  (c) 2006 Jonathan Dieter
+	 * admin/punishment/view.php  (c) 2006-2013 Jonathan Dieter
 	 *
 	 * View punishments
 	 *****************************************************************/
 
 	/* Get variables */
 	$title           = "Set date for next punishment";
-
+	
+	$query =	"SELECT ActiveTeacher FROM user WHERE Username='$username' AND ActiveTeacher=1";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		$is_teacher = true;
+	} else {
+		$is_teacher = false;
+	}
+	
 	$query =    "SELECT Permissions FROM disciplineperms WHERE Username=\"$username\"";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 		$perm = $row['Permissions'];
 	} else {
-		$perm = 0;
+		$perm = $DEFAULT_PUN_PERM;
 	}
 
 	include "header.php";
 
 	/* Make sure user has permission to view student's marks for subject */
-	if(dbfuncGetPermission($permissions, $PERM_ADMIN) or $perm > $PUN_PERM_SEE) {
+	if(dbfuncGetPermission($permissions, $PERM_ADMIN) or ($perm > $PUN_PERM_SEE and $is_teacher)) {
 		$query =	"SELECT disciplinetype.DisciplineType, disciplineweight.DisciplineWeight, user.Username, " .
 					"       user.FirstName, user.Surname, discipline.Date, discipline.Comment, class.ClassName, " .
 					"       discipline.DisciplineIndex, tuser.FirstName AS TFirstName, tuser.Title AS TTitle, " .

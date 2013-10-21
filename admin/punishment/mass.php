@@ -2,7 +2,7 @@
 	// FIX CLASS STUFF
 	
 	/*****************************************************************
-	 * admin/punishment/mass.php  (c) 2006 Jonathan Dieter
+	 * admin/punishment/mass.php  (c) 2006-2013 Jonathan Dieter
 	 *
 	 * Create a punishment that applies to many students at once
 	 *****************************************************************/
@@ -11,14 +11,23 @@
 
 	$link             = "index.php?location=" . dbfuncString2Int("admin/punishment/mass_action.php") .
 						"&amp;next=" .          $_GET['next'];
-
+	
+	$query =	"SELECT ActiveTeacher FROM user WHERE Username='$username' AND ActiveTeacher=1";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		$is_teacher = true;
+	} else {
+		$is_teacher = false;
+	}
+	
 	$query =    "SELECT Permissions FROM disciplineperms WHERE Username=\"$username\"";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 	if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 		$perm = $row['Permissions'];
 	} else {
-		$perm = 0;
+		$perm = $DEFAULT_PUN_PERM;
 	}
 	
 	$showalldeps = true;
@@ -27,7 +36,7 @@
 	$showyear = false;
 	$showterm = false;
 	include "core/titletermyear.php";
-	if(dbfuncGetPermission($permissions, $PERM_ADMIN) or $perm >= $PUN_PERM_MASS) {
+	if(dbfuncGetPermission($permissions, $PERM_ADMIN) or ($perm >= $PUN_PERM_MASS and $is_teacher)) {
 		log_event($LOG_LEVEL_EVERYTHING, "admin/punishment/mass.php", $LOG_TEACHER,
 					"Starting new mass punishment.");
 		if(!isset($punish_list)) {
