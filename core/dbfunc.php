@@ -289,7 +289,7 @@
 	}
 	
 	/* Hash function to convert *any* string to a safe combination of numbers and multi-case letters */
-	function &dbfuncString2Int($strValue) {
+	function dbfuncString2Int($strValue) {
 		return base64_encode($strValue);
 	}
 

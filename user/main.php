@@ -82,7 +82,7 @@
 	}
 
 	/* If user is responsible for any books, show book link */
-	$query =	"SELECT book_title.BookTitleIndex FROM book_title, book_title_owner " .
+	/*$query =	"SELECT book_title.BookTitleIndex FROM book_title, book_title_owner " .
 				"WHERE book_title_owner.Username = '$username' " .
 				"AND   book_title_owner.YearIndex = $currentyear " .
 				"AND   book_title_owner.BookTitleIndex = book_title.BookTitleIndex " .
@@ -90,12 +90,12 @@
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());         // Check for errors in query
 
-	if($res->numRows() > 0) {
+	if($res->numRows() > 0) {*/
 		$bookLink =	"index.php?location=" . dbfuncString2Int("teacher/book/book_list.php") .
 					"&amp;key=" .           dbfuncString2Int($username) .
 					"&amp;keyname=" .       dbfuncString2Int($fullname);
 		echo "      <p><a href='$bookLink'>Book list</a></p>\n";
-	}
+	//}
 				
 	/* If user is a hod, show class list hyperlink */
 	$res =&  $db->query("SELECT Username FROM hod " .

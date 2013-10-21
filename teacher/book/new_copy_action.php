@@ -17,8 +17,8 @@
 
 	if($is_admin or $res->numRows() > 0) {
 		/* Add new book type */
-		$res =&  $db->query("INSERT INTO book (BookNumber, BookTitleIndex) " .
-							"VALUES ('$number', '$booktitleindex')");
+		$res =&  $db->query("INSERT INTO book (Bookindex, BookNumber, BookTitleIndex) " .
+							"VALUES ('$booktitleindex-$number', '$number', '$booktitleindex')");
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 
 		log_event($LOG_LEVEL_ADMIN, "teacher/book/new_copy_action.php", $LOG_ADMIN,

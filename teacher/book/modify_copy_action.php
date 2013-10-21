@@ -12,7 +12,7 @@
 	
 	$query =	"SELECT book_title_owner.Username FROM book_title_owner, book " .
 				"WHERE book_title_owner.BookTitleIndex=book.BookTitleIndex " .
-				"AND   book.BookIndex = $bookindex " .
+				"AND   book.BookIndex = '$bookindex' " .
 				"AND   book_title_owner.Username='$username'";
 	$res =& $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());

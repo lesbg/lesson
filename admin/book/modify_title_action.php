@@ -10,31 +10,25 @@
 	$error         = false;                                       // Boolean to store any errors
 	
 	if($is_admin) {
-		$aRes =& $db->query("UPDATE book_title SET BookTitle='$title', " .
-							"       BookTitleIndex='$id', " .
-							"       Cost='$cost' " .
-							"WHERE  BookTitleIndex = '$booktitleindex'");
-		if(DB::isError($aRes)) die($aRes->getDebugInfo());           // Check for errors in query
-		$aRes =& $db->query("UPDATE book_title_owner SET BookTitleIndex='$id' " .
-							"WHERE  BookTitleIndex = '$booktitleindex'");
-		if(DB::isError($aRes)) die($aRes->getDebugInfo());           // Check for errors in query
-		$query =	"SELECT BookTitleIndex FROM book_title_owner " .
-					"WHERE  BookTitleIndex = '$id' " .
-					"AND    YearIndex      = $yearindex";
+		$query =	"UPDATE book_title SET BookTitle='$title', " .
+					"       Cost=$cost " .
+					"WHERE  BookTitleIndex = '$booktitleindex'";
 		$aRes =& $db->query($query);
-		if($aRes->numRows() > 0) {
-			$aRes =& $db->query("UPDATE book_title_owner SET Username='$teacher' " .
-								"WHERE  BookTitleIndex = '$id'" .
-								"AND    YearIndex      = $yearindex");
-			if(DB::isError($aRes)) die($aRes->getDebugInfo());           // Check for errors in query			
-		} else {
-			$aRes =& $db->query("INSERT INTO book_title_owner (Username, BookTitleIndex, YearIndex) " .
-								"VALUES ('$teacher', '$id', $yearindex)");
-			if(DB::isError($aRes)) die($aRes->getDebugInfo());           // Check for errors in query
-		}
-		$aRes =& $db->query("UPDATE book SET BookTitleIndex='$id' " .
-							"WHERE  BookTitleIndex = '$booktitleindex'");
 		if(DB::isError($aRes)) die($aRes->getDebugInfo());           // Check for errors in query
+		/*
+		$query =	"UPDATE book_subject_type SET BookTitleIndex='$id' " .
+					"WHERE  BookTitleIndex = '$booktitleindex'";
+		$aRes =& $db->query($query);
+		if(DB::isError($aRes)) die($aRes->getDebugInfo());           // Check for errors in query
+		$query =	"UPDATE book_class SET BookTitleIndex='$id' " .
+					"WHERE  BookTitleIndex = '$booktitleindex'";
+		$aRes =& $db->query($query);
+		if(DB::isError($aRes)) die($aRes->getDebugInfo());           // Check for errors in query
+		$query =	"UPDATE book SET BookTitleIndex='$id' " .
+					"WHERE  BookTitleIndex = '$booktitleindex'";
+		$aRes =& $db->query($query);
+		if(DB::isError($aRes)) die($aRes->getDebugInfo());*/           // Check for errors in query
+
 		log_event($LOG_LEVEL_ADMIN, "admin/book/modify_title_action.php", $LOG_ADMIN,
 				"Modified information about book title {$_POST['title']}.");
 	} else {

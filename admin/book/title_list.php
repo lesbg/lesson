@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * admin/book/title_list.php  (c) 2010 Jonathan Dieter
+	 * admin/book/title_list.php  (c) 2010-2013 Jonathan Dieter
 	 *
 	 * List all available book titles
 	 *****************************************************************/
@@ -12,12 +12,18 @@
 	if($is_admin) {
 		/* Get category list */
 		$query =	"SELECT book_title.BookTitle, book_title.BookTitleIndex, book_title.Cost, " .
-					"       COUNT(book.BookTitleIndex) AS Count, user.Title, user.FirstName, user.Surname " .
-					"       FROM book_title LEFT OUTER JOIN book USING (BookTitleIndex), " .
-					"       book_title_owner, user " .
-					"WHERE book_title_owner.BookTitleIndex = book_title.BookTitleIndex " .
-					"AND   book_title_owner.YearIndex = $yearindex " .
-					"AND   user.Username = book_title_owner.Username " .
+					"       GROUP_CONCAT(DISTINCT subjecttype.Title ORDER BY subjecttype.Title SEPARATOR ', ') AS SubjectType, " .
+					"       CONCAT_WS(', ', GROUP_CONCAT(DISTINCT grade.GradeName ORDER BY grade.Grade SEPARATOR ', '), " .
+					"                       GROUP_CONCAT(DISTINCT class.ClassName ORDER BY class.Grade, class.ClassName SEPARATOR ', ')) AS Classes, " .
+					"       COUNT(book.BookTitleIndex) AS Count " .
+					"       FROM book_title LEFT OUTER JOIN book USING (BookTitleIndex) " .
+					"            LEFT OUTER JOIN book_subject_type ON (book_subject_type.BookTitleIndex = book_title.BookTitleIndex) " .
+			   		"            LEFT OUTER JOIN subjecttype USING (SubjectTypeIndex) " .
+			   		"            LEFT OUTER JOIN book_class ON (book_class.BookTitleIndex = book_title.BookTitleIndex) " .
+					"            LEFT OUTER JOIN class ON " .
+					"              (class.ClassName = book_class.ClassName " .
+					"               AND class.YearIndex = $yearindex) " .
+					"            LEFT OUTER JOIN grade ON (book_class.Grade = grade.Grade) " .
 					"GROUP BY book_title.BookTitleIndex " .
 					"ORDER BY book_title.BookTitle, book_title.BookTitleIndex";
 		$res =& $db->query($query);
@@ -32,11 +38,12 @@
 			echo "      <table align='center' border='1'>\n"; // Table headers
 			echo "         <tr>\n";
 			echo "            <th>&nbsp;</th>\n";
-			echo "            <th>Title</th>\n";
 			echo "            <th>ID</th>\n";
+			echo "            <th>Title</th>\n";
+			echo "            <th>Subjects</th>\n";
+			echo "            <th>Classes</th>\n";
 			echo "            <th>Cost</th>\n";
 			echo "            <th>Book Count</th>\n";
-			echo "            <th>Teacher</th>\n";
 			echo "            <th>Delete</th>\n";
 			echo "         </tr>\n";
 			
@@ -69,11 +76,16 @@
 				$editbutton = dbfuncGetButton($editlink, "E", "small", "edit", "Edit title");
 				$delbutton  = dbfuncGetButton($dellink,  "X", "small", "delete", "Delete title");
 				echo "            <td>$viewbutton $editbutton</td>\n"; 
-				echo "            <td>{$row['BookTitle']}</td>\n";
 				echo "            <td>{$row['BookTitleIndex']}</td>\n";
-				echo "            <td>\${$row['Cost']}</td>\n";
+				echo "            <td>{$row['BookTitle']}</td>\n";
+				echo "            <td>{$row['SubjectType']}</td>\n";
+				echo "            <td>{$row['Classes']}</td>\n";
+				if(is_null($row['Cost'])) {
+					echo "            <td align='center'>-</td>\n";
+				} else {
+					echo "            <td align='right'>\${$row['Cost']}</td>\n";
+				}
 				echo "            <td>{$row['Count']}</td>\n";
-				echo "            <td>{$row['Title']} {$row['FirstName']} {$row['Surname']}</td>\n";
 				echo "            <td align='center'>$delbutton</td>\n";
 			}
 			echo "      </table>\n";               // End of table
