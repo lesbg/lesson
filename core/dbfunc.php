@@ -837,7 +837,7 @@
 		/* Calculate student's current average in subject */
 		$query =	"SELECT MAX(Average) AS Average, Username FROM " .
 					"   ((SELECT" .
-					"     TRUNCATE(((SUM(Mark * CategoryWeight) / SUM(Weight * CategoryWeight))*100) + 0.5, 0) AS Average, Username FROM" .
+					"     TRUNCATE(((SUM((Mark / Weight) * CategoryWeight) / SUM(CategoryWeight)) * 100) + 0.5, 0) AS Average, Username FROM" .
 					"      (SELECT" .
 					"        SUM(TRUNCATE(mark.Percentage + 0.5, 0) * assignment.Weight) AS Mark, " .
 					"        SUM(100 * assignment.Weight) AS Weight, " .
