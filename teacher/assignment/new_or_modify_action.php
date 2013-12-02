@@ -102,7 +102,7 @@
 					$descr_file  = $_FILES['descr_upload']['tmp_name'];
 		
 					$descr_handle = fopen($descr_file, "r");
-					$descr_data = safe(fread($descr_handle, filesize($descr_file)));
+					$descr_data = safe(addslashes(fread($descr_handle, filesize($descr_file))));
 					$descr_data = "'$descr_data'";
 					$descr_file_type = "'$descr_file_type'";
 				}
