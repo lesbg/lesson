@@ -52,13 +52,13 @@
 		}
 
 		$query =	"SELECT discipline.WorkerUsername, discipline.RecordUsername " .
-					"       FROM discipline " .
+					"       FROM discipline, disciplineperms " .
 					"WHERE  discipline.DisciplineIndex = $disciplineindex " .
 					"AND    disciplineperms.Username = '$username' " .
-					"AND    ((discipline.WorkerUsername = '$username' " .
-					"         OR discipline.RecordUsername = '$username') " .
-					"        AND $perm >= $PUN_PERM_MASS) " .
-					"OR     $perm >= $PUN_PERM_ALL ";
+					"AND    (((discipline.WorkerUsername = '$username' " .
+					"          OR discipline.RecordUsername = '$username') " .
+					"         AND $perm >= $PUN_PERM_MASS) " .
+					"        OR     $perm >= $PUN_PERM_ALL) ";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		/* Check whether current user is authorized to delete punishment */
