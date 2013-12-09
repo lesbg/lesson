@@ -12,7 +12,7 @@
 	$MAX_TRIES           = 3;                              // Maximum number of login attempts with
 	                                                       // non-existent usernames before IP is blacklisted
 
-	$MAX_LOW_MARKS       = 2000;                           // Maximum number of low marks to show without a
+	$MAX_LOW_MARKS       = 3000;                           // Maximum number of low marks to show without a
 	                                                       // warning
 
 	$DSN                 = "mysql://user@example.com/lesson";     // DSN to connect to database
