@@ -61,14 +61,14 @@
 			$extraMeta = "      <meta http-equiv=\"REFRESH\" content=\"0;url=$nextLink\">\n";
 			include "header.php";
 			
-			echo "      <p align=\"center\">Redirecting you to <a href=\"$nextLink\">$nextLink</a>.</p>\n";
+//			echo "      <p align=\"center\">Redirecting you to <a href=\"$nextLink\">$nextLink</a>.</p>\n";
 		}
 	} else {
 		$title     = "LESSON - Redirecting...";
 		$extraMeta = "      <meta http-equiv=\"REFRESH\" content=\"0;url=$nextLink\">\n";
 		include "header.php";
 		
-		echo "      <p align=\"center\">Redirecting you to <a href=\"$nextLink\">$nextLink</a>.</p>\n";
+//		echo "      <p align=\"center\">Redirecting you to <a href=\"$nextLink\">$nextLink</a>.</p>\n";
 	}
 	include "footer.php";
 ?>
