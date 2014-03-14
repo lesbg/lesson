@@ -81,7 +81,8 @@
 		if(($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) and $agenda == "0") {
 			$query .=	"       CurveType = {$_POST['curve_type']}, TopMark = {$_POST['top_mark']}, " .
 						"       BottomMark = {$_POST['bottom_mark']}, Weight = {$_POST['weight']}, " .
-						"       CategoryListIndex = {$_POST['category']}, Max = {$_POST['max']}, ";
+						"       CategoryListIndex = {$_POST['category']}, Max = {$_POST['max']}, " .
+						"       IgnoreZero = {$_POST['ignore_zero']}, ";
 		}
 		$query .=		"       Hidden = {$_POST['hidden']}, Agenda = $agenda " .
 						"WHERE AssignmentIndex = $assignmentindex";

@@ -568,11 +568,13 @@
 
 		/* Update assignment max and min score */
 		$query =	"UPDATE assignment, (SELECT MAX(Score) AS MaxScore, MIN(Score) AS MinScore " .
-					"                    FROM mark " .
-					"                    WHERE AssignmentIndex = $assignment_index " .
-					"                    AND   mark.Score >= 0 " .
+					"                    FROM mark, assignment " .
+					"                    WHERE mark.AssignmentIndex = $assignment_index " .
+					"					 AND   assignment.AssignmentIndex = $assignment_index " .
+					"                    AND   ((mark.Score >= 0 AND assignment.IgnoreZero = 0) " .
+					"                            OR (mark.Score > 0 AND assignment.IgnoreZero = 1)) " .
 					"                    AND   mark.Score IS NOT NULL " .
-					"                    GROUP BY AssignmentIndex) AS score " .
+					"                    GROUP BY mark.AssignmentIndex) AS score " .
 					"SET   assignment.StudentMax = score.MaxScore, " .
 					"      assignment.StudentMin = score.MinScore " .
 					"WHERE assignment.AssignmentIndex = $assignment_index ";
@@ -609,8 +611,16 @@
 					"  UNION " .
 					"  (SELECT (((assignment.TopMark - assignment.BottomMark) / (assignment.StudentMax - assignment.StudentMin)) * mark.Score) + ((assignment.TopMark * assignment.StudentMin - assignment.BottomMark * assignment.StudentMax) / (assignment.StudentMin - assignment.StudentMax)) AS Percentage, mark.Username " .
 					"   FROM mark, assignment " .
-					"   WHERE mark.Score >= 0 " .
-					"   AND   assignment.CurveType = 2 " .
+					"   WHERE assignment.CurveType = 2 " .
+					"   AND   ((mark.Score >= 0 AND assignment.IgnoreZero = 0) " .
+					"           OR (mark.Score > 0 AND assignment.IgnoreZero = 1)) " .
+					"   AND   mark.AssignmentIndex = assignment.AssignmentIndex " .
+					"   AND   assignment.AssignmentIndex = $assignment_index) " .
+					"  UNION " .
+					"  (SELECT 0 AS Percentage, mark.Username " .
+					"   FROM mark, assignment " .
+					"   WHERE assignment.CurveType = 2 " .
+					"   AND   mark.Score = 0 AND IgnoreZero = 1 " .
 					"   AND   mark.AssignmentIndex = assignment.AssignmentIndex " .
 					"   AND   assignment.AssignmentIndex = $assignment_index) " .
 					"  UNION " .

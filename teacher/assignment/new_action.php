@@ -44,7 +44,7 @@
 		if(($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) and $agenda == "0") {
 			$query .=	"                        Max, CategoryListIndex, " .
 						"                        CurveType, TopMark, " .
-						"                        BottomMark, Weight, ";
+						"                        BottomMark, Weight, IgnoreZero, ";
 		}
 		$query .=		"                        Hidden, Agenda, " .
 						"                        SubjectIndex, Uploadable) " .
@@ -53,7 +53,7 @@
 		if(($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) and $agenda == "0") {
 			$query .=	"        {$_POST['max']}, {$_POST['category']}, " .
 						"        {$_POST['curve_type']}, {$_POST['top_mark']}, {$_POST['bottom_mark']}, " .
-						"        {$_POST['weight']}, ";
+						"        {$_POST['weight']}, {$_POST['ignore_zero']}, ";
 		}
 		$query .=		"        {$_POST['hidden']}, $agenda, $subjectindex, " .
 						"        {$_POST['uploadable']})";

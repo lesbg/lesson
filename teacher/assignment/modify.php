@@ -50,7 +50,7 @@
 					"       assignment.DescriptionFileType, assignment.DescriptionData, " .
 					"       assignment.TopMark, assignment.BottomMark, assignment.CurveType, " .
 					"       assignment.Weight, assignment.Date, assignment.CategoryListIndex, " .
-					"       assignment.DueDate, assignment.Hidden, " .
+					"       assignment.DueDate, assignment.Hidden, assignment.IgnoreZero, " .
 					"       assignment.Uploadable, assignment.UploadName, " .
 					"       subject.Name, subject.AverageType, subject.AverageTypeIndex " .
 					"       FROM assignment, subject " .
@@ -124,9 +124,16 @@
 		if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
 			$top_mark      = $aRow['TopMark'];
 			$bottom_mark   = $aRow['BottomMark'];
-			$bsr =&  $db->query("SELECT MAX(Score) AS MaxScore, MIN(Score) AS MinScore FROM mark " .
-								"WHERE AssignmentIndex  = $assignmentindex " .
-								"AND   Score           >= 0");
+			$query =	"SELECT MAX(Score) AS MaxScore, MIN(Score) AS MinScore FROM mark " .
+						"WHERE AssignmentIndex  = $assignmentindex ";
+			if($aRow['IgnoreZero'] == 1) {
+				$query .= "AND   Score           > 0";
+			} else {
+				$query .= "AND   Score           >= 0";
+			}
+								
+			$bsr =&  $db->query($query);
+			
 			if(DB::isError($bsr)) die($bsr->getDebugInfo());           // Check for errors in query
 			if($bRow =& $bsr->fetchRow(DB_FETCHMODE_ASSOC)) {
 				$min_score = $bRow['MinScore'];
@@ -152,14 +159,11 @@
 		$aRow['Title'] = htmlspecialchars($aRow['Title'], ENT_QUOTES);
 		$curve_type    = $aRow['CurveType'];
 
-		if($curve_type == 1) {
-			$curvetype1 = "checked";
-		} elseif ($curve_type == 2) {
-			$curvetype2 = "checked";
-		} else {
-			$curvetype0 = "checked";
+		$ignore_zero    = $aRow['IgnoreZero'];
+		if($ignore_zero == 1) {
+			$ignorezero0 = "checked";
 		}
-
+		
 		if(isset($aRow['DescriptionFileType']) and $aRow['DescriptionFileType'] != "") {
 			$descrtype0 = "";
 			$descrtype1 = "checked";
@@ -325,22 +329,25 @@
 			echo "                  <label id='bottom_mark_label' for='bottom_mark'>Bottom mark: \n";
 			echo "                  <input type='text' name='bottom_mark' id='bottom_mark' onChange='recalc_all();' " .
 											"value='$bottom_mark' size='5' tabindex='17' onChange='recalc_all();'>%</label><br>\n";
+			echo "                  <label id='ignore_zero_label' for='ignore_zero'>";
+			echo "                  <input type='checkbox' name='ignore_zero' id='ignore_zero' onChange='recalc_all();' " .
+											"value='1' tabindex='18' onChange='recalc_all();' $ignorezero0>Don't change zeroes</label><br>\n";
 			echo "               </td>\n";
 			echo "            </tr>\n";
 		}
 		echo "         </table>\n";
 		echo "         <p align='center'>\n";
-		echo "            <input type='submit' name='action' value='Update' tabindex='18' />&nbsp; \n";
-		echo "            <input type='submit' name='action' value='Cancel' tabindex='19' />&nbsp; \n";
-		echo "            <input type='submit' name='action' value='Delete' tabindex='20' />&nbsp; \n";
-		echo "            <input type='submit' name='action' value='Convert to agenda item' tabindex='21' \>&nbsp; \n";
+		echo "            <input type='submit' name='action' value='Update' tabindex='19' />&nbsp; \n";
+		echo "            <input type='submit' name='action' value='Cancel' tabindex='20' />&nbsp; \n";
+		echo "            <input type='submit' name='action' value='Delete' tabindex='21' />&nbsp; \n";
+		echo "            <input type='submit' name='action' value='Convert to agenda item' tabindex='22' \>&nbsp; \n";
 		if(!is_null($next_subjectindex)) {
-			echo "            <input type='hidden' name='next_subject' value='$next_subjectindex' /><input type='submit' name='action' value='Move this assignment to next term' tabindex='22' />&nbsp; \n";
+			echo "            <input type='hidden' name='next_subject' value='$next_subjectindex' /><input type='submit' name='action' value='Move this assignment to next term' tabindex='23' />&nbsp; \n";
 		}
 		echo "         </p>\n";
 		echo "         <p></p>\n";
 		/* Print scores and comments */
-		$tabC = 23;
+		$tabC = 24;
 		$order = 1;
 		if($res->numRows() > 0) {
 			echo "         <table align='center' border='1'>\n"; // Table headers
@@ -388,7 +395,7 @@
 								$avg = round(($row['Score'] / $max_score) * 100) . "%";
 							}
 						} elseif($curve_type == 2) {
-							if($m == 0 && $b == 0) {
+							if(($m == 0 && $b == 0) or ($row['Score'] == 0 and ignore_zero == 1)) {
 								$avg = "0%";
 							} else {
 								$avg = round(($m * $row['Score']) + $b) . "%";

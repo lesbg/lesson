@@ -184,18 +184,21 @@
 			echo "                  <label id='bottom_mark_label' for='bottom_mark'>Bottom mark: \n";
 			echo "                  <input type='text' name='bottom_mark' id='bottom_mark' onChange='recalc_all();' " .
 											"size='5' tabindex='17' onChange='recalc_all();'>%</label><br>\n";
+			echo "                  <label id='ignore_zero_label' for='ignore_zero'>";
+			echo "                  <input type='checkbox' name='ignore_zero' id='ignore_zero' onChange='recalc_all();' " .
+											"value='1' tabindex='18' onChange='recalc_all();'>Don't change zeroes</label><br>\n";											
 			echo "               </td>\n";
 			echo "            </tr>\n";
 		}
 		echo "         </table>\n";
 		echo "         <p align='center'>\n";
-		echo "            <input type='submit' name='action' value='Save' tabindex='18' \>&nbsp; \n";
-		echo "            <input type='submit' name='action' value='Cancel' tabindex='19' \>&nbsp; \n";
+		echo "            <input type='submit' name='action' value='Save' tabindex='19' \>&nbsp; \n";
+		echo "            <input type='submit' name='action' value='Cancel' tabindex='20' \>&nbsp; \n";
 		echo "         </p>\n";
 		echo "         <p></p>\n";
 		
 		/* Print out table in which to enter scores and comments */
-		$tabC = 19;
+		$tabC = 20;
 		if($res->numRows() > 0) {
 			echo "         <table align='center' border='1'>\n"; // Table headers
 			echo "            <tr>\n";

@@ -211,6 +211,11 @@
 					}
 				}
 				
+				/* Validate ignore_zero */
+				if(!isset($_POST['ignore_zero']) or $_POST['ignore_zero'] != "1") {
+					$_POST['ignore_zero'] = "0";
+				}
+				
 				//echo "<p>{$_POST['category']}</p>\n";
 				/* Check category */
 				if(!isset($_POST['category']) or $_POST['category'] == "") {

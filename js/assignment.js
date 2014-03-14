@@ -11,6 +11,8 @@ function recalc_avg(username, max, min, m, b) {
 	var cell_type = "";
 	var new_class = "";
 	var is_hidden = false;
+	var ignore_zero = false;
+	
 	if(document.getElementById('row_' + username).className.indexOf("alt") > -1) {
 		cell_type = "alt";
 	} else if(document.getElementById('row_' + username).className.indexOf("std") > -1) {
@@ -27,17 +29,25 @@ function recalc_avg(username, max, min, m, b) {
 			ct = 1;
 		} else if(document.getElementById('curve_type2').checked == true) {
 			ct = 2;
+			if(document.getElementById('ignore_zero').checked == true) {
+				ignore_zero = true;
+			}
 		} else {
 			ct = 0;
 		}
+		
 	
 		if(score == 'A' || score == 'E') {
 			avg.innerHTML = 'N/A';
+			if(ct == 2 && !max)
+				recalc_all();
 		} else if(score == 'L') {
 			if(!is_hidden) {
 				new_class = "late-" + cell_type;
 			}
 			avg.innerHTML = '0%';
+			if(ct == 2 && !max)
+				recalc_all();
 		} else if(score == '' || isNaN(parseFloat(score))) {
 			if(!is_hidden) {
 				new_class = "unmarked-" + cell_type;
@@ -83,11 +93,18 @@ function recalc_avg(username, max, min, m, b) {
 					min         = -1;
 					m           = 0;
 					b           = 0;
+					
+					if(score == 0 && ignore_zero) {
+						recalc_all();
+						return;
+					}
 					for (var i = 0; i < document.assignment.length; i++) {
 						if(document.assignment.elements[i].id.substring(0, 5) == 'score') {
 							if(!isNaN(parseFloat(document.assignment.elements[i].value)) && document.assignment.elements[i].value != '') {
 								if(Number(document.assignment.elements[i].value) > max)
 									max = Number(document.assignment.elements[i].value);
+								if(Number(document.assignment.elements[i].value) == 0 && ignore_zero)
+									continue;
 								if(Number(document.assignment.elements[i].value) < min || min == -1)
 									min = Number(document.assignment.elements[i].value);
 							}
@@ -95,19 +112,20 @@ function recalc_avg(username, max, min, m, b) {
 					}
 					if(max == score || min == score) {
 						recalc_all();
+						return;
 					} else {
 						top_mark    = Number(document.getElementById('top_mark').value);
 						bottom_mark = Number(document.getElementById('bottom_mark').value);
 						m = (top_mark - bottom_mark) / (max - min);
 						b = (top_mark * min - bottom_mark * max) / (min - max);
-						if(!isNaN(parseFloat((m * score + b) + 0.49))) {
+						if(!isNaN(parseFloat((m * score + b) + 0.5))) {
 							avg.innerHTML = String(parseInt((m * score + b) + 0.5)) + '%';
 						} else {
 							avg.innerHTML = '0%';
 						}
 					}
 				} else {
-					if(!isNaN(parseFloat((m * score + b) + 0.5))) {
+					if(!isNaN(parseFloat((m * score + b) + 0.5)) && (score > 0 || !ignore_zero)) {
 						avg.innerHTML = String(parseInt((m * score + b) + 0.5)) + '%';
 					} else {
 						avg.innerHTML = '0%';
@@ -182,10 +200,15 @@ function recalc_all() {
 		var bottom_mark = 0;
 		var m           = 0;
 		var b           = 0;
+		var ignore_zero = false;
+		
 		if(document.getElementById('curve_type1').checked == true) {
 			ct = 1;
 		} else if(document.getElementById('curve_type2').checked == true) {
 			ct = 2;
+			if(document.getElementById('ignore_zero').checked == true) {
+				ignore_zero = true;
+			}
 		} else {
 			ct = 0;
 		}
@@ -194,6 +217,8 @@ function recalc_all() {
 				if(!isNaN(document.assignment.elements[i].value) && document.assignment.elements[i].value != '') {
 					if(Number(document.assignment.elements[i].value) > max)
 						max = Number(document.assignment.elements[i].value);
+					if(Number(document.assignment.elements[i].value) == 0 && ignore_zero)
+						continue;
 					if(Number(document.assignment.elements[i].value) < min || min == -1)
 						min = Number(document.assignment.elements[i].value);
 				}
@@ -234,6 +259,8 @@ function mark_boxes_visible() {
 	document.getElementById('top_mark_label').style.visibility    = visible;
 	document.getElementById('bottom_mark').style.visibility       = visible;
 	document.getElementById('bottom_mark_label').style.visibility = visible;
+	document.getElementById('ignore_zero').style.visibility       = visible;
+	document.getElementById('ignore_zero_label').style.visibility = visible;
 }
 
 function descr_check() {
