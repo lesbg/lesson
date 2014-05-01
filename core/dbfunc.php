@@ -495,13 +495,16 @@
 		while($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {         // Get username
 			$dir =& dbfuncGetDir($assignment_index, $dirname, $row['Username']);
 			if(is_dir($dir)) {
-				return True;
+				continue;
 			} else {
-				$result = mkdir($dir, 0755, True);
+				$result = mkdir($dir, 0777, True);
 				if($result == False) {
 					log_event($LOG_LEVEL_ERROR, "core/dbfunc.php", $LOG_ERROR, "Unable to create $dir.");
 					print "<p>Unable to create $dir.</p>\n";
 				}
+				chmod("$dir", 0777);
+				chmod("$dir/..", 0777);
+				chmod("$dir/../..", 0777);				
 			}
 		}
 		return $result;

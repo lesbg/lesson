@@ -55,6 +55,7 @@
 					}
 				}
 				
+				dbfuncMkDir($assignmentindex, $row['UploadName']);
 				$dst_dir =& dbfuncGetDir($assignmentindex, $row['UploadName'], $trow['Username']);
 				$link     = "index.php?location=" .  dbfuncString2Int("student/subjectinfo.php") .
 							"&amp;key=" .            dbfuncString2Int($subjectindex) .

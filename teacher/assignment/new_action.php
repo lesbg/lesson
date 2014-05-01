@@ -73,7 +73,6 @@
 
 		if($_POST['uploadable'] == 1) {
 			$upload_name = $upload_name . " ($assignmentindex)";
-			dbfuncMkDir($assignmentindex, $upload_name);
 			$res =& $db->query("UPDATE assignment SET UploadName = '$upload_name' WHERE AssignmentIndex = $assignmentindex");
 			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		}

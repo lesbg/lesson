@@ -62,9 +62,7 @@
 			$res =& $db->query("SELECT UploadName, Uploadable FROM assignment WHERE AssignmentIndex = $assignmentindex");
 			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 			if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-				if($row['Uploadable'] == 0) {
-					dbfuncMkDir($assignmentindex, $upload_name);
-				} else {
+				if($row['Uploadable'] != 0) {
 					if($row['UploadName'] != $upload_name) {
 						dbfuncMoveDir($assignmentindex, $row['UploadName'], $upload_name);
 					}
