@@ -503,8 +503,9 @@
 					print "<p>Unable to create $dir.</p>\n";
 				}
 				chmod("$dir", 0777);
-				chmod("$dir/..", 0777);
-				chmod("$dir/../..", 0777);				
+				chmod("$dir/..", 0777); // Class
+				chmod("$dir/../..", 0777); // Term
+				chmod("$dir/../../..", 0777); // Year
 			}
 		}
 		return $result;
