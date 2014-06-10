@@ -394,7 +394,8 @@
 	/* Get overall averages */
 	$query =	"SELECT term.TermNumber, classlist.Rank, " .
 				"       classlist.Average, classterm.Average AS ClassAverage, classterm.AverageType, " .
-				"       classlist.Conduct, classterm.Conduct AS ClassConduct, classterm.ConductType," .
+				"       classlist.Conduct, classterm.Conduct AS ClassConduct, classterm.ConductType, " .
+				"       classlist.CTComment, classlist.HODComment, classlist.PrincipalComment, " .
 				"       get_term_weight(term.TermIndex, classterm.ClassIndex, '$student_username') AS Weight FROM " .
 				" (term INNER JOIN term AS depterm " .
 				"       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
@@ -479,12 +480,37 @@
 			$term_conduct = "";
 			$class_term_conduct = "";			
 		}
+		
+		if($ct_comment_type == $COMMENT_TYPE_NONE) {
+			$ct_comment = "-";
+		} elseif($ct_comment_type == $COMMENT_TYPE_MANDATORY or
+			     $ct_comment_type == $COMMENT_TYPE_OPTIONAL) {
+			$ct_comment = htmlspecialchars($cRow['CTComment'], ENT_QUOTES);
+		}
+	
+		if($hod_comment_type == $COMMENT_TYPE_NONE) {
+			$hod_comment = "-";
+		} elseif($hod_comment_type == $COMMENT_TYPE_MANDATORY or
+			     $hod_comment_type == $COMMENT_TYPE_OPTIONAL) {
+			$hod_comment = htmlspecialchars($cRow['HODComment'], ENT_QUOTES);
+		}
+	
+		if($pr_comment_type == $COMMENT_TYPE_NONE) {
+			$pr_comment = "-";
+		} elseif($pr_comment_type == $COMMENT_TYPE_MANDATORY or
+			     $pr_comment_type == $COMMENT_TYPE_OPTIONAL) {
+			$pr_comment = htmlspecialchars($cRow['PrincipalComment'], ENT_QUOTES);
+		}
+		
 		$termnum = $cRow['TermNumber'];
 		$data = str_replace("&lt;&lt;average_t$termnum&gt;&gt;", htmlspecialchars($term_average, ENT_QUOTES), $data);
 		$data = str_replace("&lt;&lt;class_average_t$termnum&gt;&gt;", htmlspecialchars($class_term_average, ENT_QUOTES), $data);
 		$data = str_replace("&lt;&lt;conduct_t$termnum&gt;&gt;", htmlspecialchars($term_conduct, ENT_QUOTES), $data);
 		$data = str_replace("&lt;&lt;class_conduct_t$termnum&gt;&gt;", htmlspecialchars($class_term_conduct, ENT_QUOTES), $data);
 		$data = str_replace("&lt;&lt;rank_t$termnum&gt;&gt;", htmlspecialchars($term_rank, ENT_QUOTES), $data);
+		$data = str_replace("&lt;&lt;class_teacher_comment_t$termnum&gt;&gt;", $ct_comment, $data);
+		$data = str_replace("&lt;&lt;head_of_department_comment_t$termnum&gt;&gt;", $hod_comment, $data);
+		$data = str_replace("&lt;&lt;principal_comment_t$termnum&gt;&gt;", $pr_comment, $data);
 	}
 	
 	$query =	"SELECT classlist.Username, term.TermNumber, term.TermIndex, " .
@@ -539,11 +565,14 @@
 	if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
 	while ($nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
 		$termnum = $nrow["TermNumber"];
-		$data = str_replace("&lt;&lt;average_t$termnum&gt;&gt;",       "", $data);
-		$data = str_replace("&lt;&lt;rank_t$termnum&gt;&gt;",          "", $data);
-		$data = str_replace("&lt;&lt;class_average_t$termnum&gt;&gt;", "", $data);
-		$data = str_replace("&lt;&lt;conduct_t$termnum&gt;&gt;",       "", $data);
-		$data = str_replace("&lt;&lt;class_conduct_t$termnum&gt;&gt;", "", $data);
+		$data = str_replace("&lt;&lt;average_t$termnum&gt;&gt;",                    "", $data);
+		$data = str_replace("&lt;&lt;rank_t$termnum&gt;&gt;",                       "", $data);
+		$data = str_replace("&lt;&lt;class_average_t$termnum&gt;&gt;",              "", $data);
+		$data = str_replace("&lt;&lt;conduct_t$termnum&gt;&gt;",                    "", $data);
+		$data = str_replace("&lt;&lt;class_conduct_t$termnum&gt;&gt;",              "", $data);
+		$data = str_replace("&lt;&lt;class_teacher_comment_t$termnum&gt;&gt;",      "", $data);
+		$data = str_replace("&lt;&lt;head_of_department_comment_t$termnum&gt;&gt;", "", $data);
+		$data = str_replace("&lt;&lt;principal_comment_t$termnum&gt;&gt;",          "", $data);
 	}
 	
 	if($ovl_average_max > 0) {
