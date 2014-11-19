@@ -122,8 +122,8 @@
 											"        '$username', '$dateinfo', '$thisdate', '$violdate', " .
 											"        '$reason')";
 								$res =& $db->query($query);
+								if(DB::isError($res)) die($res->getDebugInfo()); // Check for errors in query
 								update_conduct_mark($studentusername);
-								if(DB::isError($res)) die($res->getDebugInfo()); // Check for errors in query	
 							}  else {
 								echo "      <p align=\"center\">$punishment has not been set up for this term.</p>\n";
 							}
@@ -131,7 +131,8 @@
 							$disciplineindex = $row['DisciplineIndex'];
 							$query =	"DELETE FROM discipline WHERE DisciplineIndex=$disciplineindex";
 							$res =& $db->query($query);
-							if(DB::isError($res)) die($res->getDebugInfo()); // Check for errors in query	
+							if(DB::isError($res)) die($res->getDebugInfo()); // Check for errors in query
+							update_conduct_mark($studentusername);
 						}
 						$res =& $db->query("DELETE FROM disciplinebacklog " .
 											"WHERE DisciplineBacklogIndex = $backlogindex");
