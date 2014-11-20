@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * admin/punishment/approve_all_pending.php  (c) 2006-2013 Jonathan Dieter
+	 * admin/punishment/approve_all_pending.php  (c) 2006-2014 Jonathan Dieter
 	 *
 	 * Approve all pending punishments
 	 *****************************************************************/
@@ -85,9 +85,48 @@
 					echo "      <p align=\"center\">$punishment for $name successfully approved.</p>\n";
 					log_event($LOG_LEVEL_ADMIN, "admin/punishment/approve_all_pending.php", $LOG_ADMIN,
 							"Approved $log_pun for $name.");
+					
 				} else {
 					echo "      <p align=\"center\">Unable to approve punishment for $studentusername as $punishment has not been set up for this term.</p>\n";
 				}
+			}
+			/* Get information about punishment */
+			$query =	"SELECT disciplinetype.DisciplineType, disciplinebacklog.WorkerUsername, user.Username, " .
+						"       user.FirstName, user.Surname, disciplinebacklog.Date, disciplinebacklog.Comment, " .
+						"       discipline.DateIssued, disciplinebacklog.DisciplineIndex, " .
+						"       disciplinebacklog.DisciplineBacklogIndex " .
+						"       FROM discipline, disciplineweight, disciplinetype, disciplinebacklog, user " .
+						"WHERE  disciplinebacklog.DisciplineIndex = discipline.DisciplineIndex " .
+						"AND    discipline.DisciplineWeightIndex = disciplineweight.DisciplineWeightIndex " .
+						"AND    disciplineweight.DisciplineTypeIndex = disciplinetype.DisciplineTypeIndex " .
+						"AND    discipline.Username = user.Username " .
+						"AND    disciplinebacklog.RequestType = 2 ";
+			$res =&  $db->query($query);
+			if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+			while($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+				$backlogindex    = $row['DisciplineBacklogIndex'];
+				$studentusername = $row['Username'];
+				$workerusername  = $row['WorkerUsername'];
+				$name            = "{$row['FirstName']} {$row['Surname']} ({$row['Username']})";
+				$dateinfo        = $row['Date'];
+				$violdate        = $row['DateIssued'];
+				$printdate       = date($dateformat, strtotime($row['DateIssued']));
+				$thisdate        = date($dateformat);
+				$reason          = safe($row['Comment']);
+				$punishment      = "{$row['DisciplineType']} on $printdate";
+				$log_pun         = "{$row['DisciplineType']} on {$row['DateIssued']}";
+			
+				$query = "DELETE FROM discipline WHERE DisciplineIndex = {$row['DisciplineIndex']}";
+				$nrs =& $db->query($query);
+				if(DB::isError($nrs)) die($nrs->getDebugInfo());          // Check for errors in query
+				update_conduct_mark($studentusername);
+				$sres =& $db->query("DELETE FROM disciplinebacklog " .
+							"WHERE DisciplineBacklogIndex = $backlogindex");
+				if(DB::isError($sres)) die($sres->getDebugInfo());          // Check for errors in query
+						
+				echo "      <p align=\"center\">Removal of $punishment for $name successfully approved.</p>\n";
+				log_event($LOG_LEVEL_ADMIN, "admin/punishment/approve_all_pending.php", $LOG_ADMIN,
+					"Removed $log_pun for $name.");
 			}
 			echo "      <p align=\"center\"><a href=\"$nextLink\">Continue</a></p>\n";
 		} else {
