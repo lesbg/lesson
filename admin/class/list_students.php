@@ -132,7 +132,6 @@
 							"AND    subject.YearIndex = $yearindex " .
 							"AND    subject.TermIndex = $termindex " .
 							"AND    period.Period = 1 " .
-							"AND    attendance.AttendanceTypeIndex > 0 " .
 							"GROUP BY AttendanceTypeIndex ";
 				$cRes =&   $db->query($query);
 				if(DB::isError($cRes)) die($cRes->getDebugInfo());          // Check for errors in query
