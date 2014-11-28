@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * student/absence.php  (c) 2007 Jonathan Dieter
+	 * student/absence.php  (c) 2007-2014 Jonathan Dieter
 	 *
 	 * Print information about student's attendance history for term
 	 *****************************************************************/
@@ -64,11 +64,11 @@
 		include "core/settermandyear.php";
 		include "core/titletermyear.php";
 
-		$query =	"SELECT AttendanceTypeIndex, Date FROM view_attendance " .
-					"WHERE YearIndex = $yearindex " .
-					"AND   TermIndex = $termindex " .
-					"AND   Username  = \"$studentusername\" " .
-					"AND   AttendanceTypeIndex > 0 " .
+		$query =	"SELECT AttendanceTypeIndex, Date FROM attendance, subject " .
+					"WHERE attendance.SubjectIndex = subject.SubjectIndex " . 
+					"AND   attendance.Username  = \"$studentusername\" " .
+					"AND   subject.YearIndex = $yearindex " .
+					"AND   subject.TermIndex = $termindex " .
 					"ORDER BY Date DESC";
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
@@ -101,7 +101,7 @@
 			if($row['AttendanceTypeIndex'] == $ATT_ABSENT)    $absent    = "X";
 			if($row['AttendanceTypeIndex'] == $ATT_LATE)      $late      = "X";
 			if($row['AttendanceTypeIndex'] == $ATT_SUSPENDED) $suspended = "X";
-			$dateinfo = date($dateformat, strtotime($row['Date']));
+			$dateinfo = date("l, $dateformat", strtotime($row['Date']));
 			echo "         <tr$alt>\n";
 			echo "            <td>$dateinfo</td>\n";
 			echo "            <td align=\"center\">$absent</td>\n";
