@@ -29,6 +29,7 @@
 		$res =&  $db->query($query);
 		if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 		if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+			$student_username = $row['Username'];
 			$name       = "{$row['FirstName']} {$row['Surname']} ({$row['Username']})";
 			$dateinfo   = date($dateformat, strtotime($row['Date']));
 			$punishment = "{$row['DisciplineType']} on $dateinfo";
@@ -67,7 +68,7 @@
 				$res =&  $db->query("DELETE FROM discipline " .          // Remove punishment from discipline table
 									"WHERE DisciplineIndex = $disciplineindex");
 				if(DB::isError($res)) die($res->getDebugInfo());          // Check for errors in query
-				update_conduct_mark($row['Username']);
+				update_conduct_mark($student_username);
 
 				echo "      <p align=\"center\">$punishment for $name successfully deleted.</p>\n";
 				log_event($LOG_LEVEL_ADMIN, "admin/punishment/delete.php", $LOG_ADMIN,
