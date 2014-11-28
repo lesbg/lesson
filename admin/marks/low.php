@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * admin/marks/low.php  (c) 2007 Jonathan Dieter
+	 * admin/marks/low.php  (c) 2007-2014 Jonathan Dieter
 	 *
 	 * Print student's marks that are below a certain criteria
 	 *****************************************************************/
@@ -209,7 +209,7 @@
 					"         INNER JOIN user           USING (Username) " .
 					"         INNER JOIN ( " .
 					"           classlist INNER JOIN classterm " .
-					"             ON  (class.ClassTermIndex = classlist.ClassTermIndex " .
+					"             ON  (classterm.ClassTermIndex = classlist.ClassTermIndex " .
 					"                  AND classterm.TermIndex = $termindex) " .
 					"             INNER JOIN class " .
 					"             ON  (class.ClassIndex = classterm.ClassIndex " .
