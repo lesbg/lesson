@@ -59,6 +59,7 @@
 				" AND    subject.YearIndex           = $checkyear " .
 				" AND    subject.TermIndex           = $checkterm " .
 				" AND    subject.DepartmentIndex     = $depindex " .
+				" AND    subject.ShowInList          = 1 " .
 				" AND    subjectstudent.SubjectIndex = subject.SubjectIndex " .
 				" AND    period.PeriodIndex          = timetable.PeriodIndex " .
 				" AND    period.Period               = 1 " .
@@ -79,6 +80,7 @@
 				" AND    subject.YearIndex           = $checkyear " .
 				" AND    subject.TermIndex           = $checkterm " .
 				" AND    subject.DepartmentIndex     = $depindex " .
+				" AND    subject.ShowInList          = 1 " .
 				" AND    class.ClassIndex            = subject.ClassIndex " .
 				" AND    subjectstudent.SubjectIndex = subject.SubjectIndex " .
 				" AND    period.PeriodIndex          = timetable.PeriodIndex " .
@@ -99,14 +101,32 @@
 	echo "      <table align=\"center\" border=\"1\">\n"; // Table headers
 	echo "         <tr>\n";
 	echo "            <th>Subject</th>\n";
-	echo "            <th>Teacher</th>\n";
+	echo "            <th>Teachers</th>\n";
 	echo "            <th>Done</th>\n";
+	echo "            <th>Recorded by</th>\n";
 	echo "         </tr>\n";
 	
 	/* For each assignment, print a row with the title, date, score and comment */
 	$alt_count = 0;
 	while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-		if(is_null($row['Date'])) {
+		$query =	"SELECT user.FirstName, user.Surname FROM attendancedone, user " .
+					"WHERE attendancedone.SubjectIndex={$row['SubjectIndex']} " .
+					"AND   attendancedone.PeriodIndex={$row['PeriodIndex']} " .
+					"AND   attendancedone.Date=\"$date\" " .
+					"AND   attendancedone.Username = user.Username ";
+		$nres =&  $db->query($query);
+		if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
+		
+		if($nres->numRows() == 0) {
+			$recorded_name = "<em>N/A</em>";
+			$done = False;
+		} else {
+			$nrow =& $nres->fetchRow(DB_FETCHMODE_ASSOC);
+					
+			$recorded_name = "{$nrow['FirstName']} {$nrow['Surname']}";
+			$done = True;
+		}
+		if(!$done) {
 			$bon = "<b>";
 			$boff = "</b>";
 		} else {
@@ -147,12 +167,13 @@
 			echo "            <td>$bon<i>No teacher</i>$boff</td>\n";
 		}
 		echo "            <td>";
-		if(is_null($row['Date'])) {
+		if(!$done) {
 			echo "{$bon}No{$boff}";
 		} else {
 			echo "{$bon}Yes{$boff}";
 		}
 		echo "</td>\n";
+		echo "            <td>$recorded_name</td>\n";
 		echo "         </tr>\n";
 	}
 	echo "      </table>\n";

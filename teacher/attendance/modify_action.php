@@ -67,26 +67,40 @@
 									"AND   PeriodIndex    =  $periodindex ";
 						$nres =&  $db->query($query);
 						if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
-
-						/* Check to see if there's any attendance information for this student */
-						$query =	"SELECT AttendanceIndex FROM attendance " .
-									"WHERE Date = \"$date\" " .
-									"AND   Username = \"{$row['Username']}\" " .
-									"AND   SubjectIndex   =  $subjectindex " .
-									"AND   PeriodIndex    =  $periodindex ";
-						$nres =&  $db->query($query);
-						if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
-						if($nres->numRows() == 0) {
-							$query =	"INSERT INTO attendance (Username, AttendanceTypeIndex, SubjectIndex, " .
-										"                        PeriodIndex, Date) " .
-										" VALUES (\"{$row['Username']}\", $value, $subjectindex, " .
-										"         $periodindex, \"$date\")";
+						if($value != $ATT_IN_CLASS) {
+							/* Check to see if there's any attendance information for this student */
+							$query =	"SELECT AttendanceIndex FROM attendance " .
+										"WHERE Date = \"$date\" " .
+										"AND   Username = \"{$row['Username']}\" " .
+										"AND   SubjectIndex   =  $subjectindex " .
+										"AND   PeriodIndex    =  $periodindex ";
 							$nres =&  $db->query($query);
-							if(DB::isError($nres)) die($nres->getDebugInfo());
+							if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
+							if($nres->numRows() == 0) {
+								$query =	"INSERT INTO attendance (Username, AttendanceTypeIndex, SubjectIndex, " .
+											"                        PeriodIndex, Date) " .
+											" VALUES (\"{$row['Username']}\", $value, $subjectindex, " .
+											"         $periodindex, \"$date\")";
+								$nres =&  $db->query($query);
+								if(DB::isError($nres)) die($nres->getDebugInfo());
+							}
 						}
 					}
 				}
 			}
+			$query =	"SELECT AttendanceDoneIndex FROM attendancedone " .
+						"WHERE SubjectIndex=$subjectindex " .
+						"AND   PeriodIndex=$periodindex " .
+						"AND   Date=\"$date\" ";
+			$res =&  $db->query($query);
+			if(DB::isError($res)) die($res->getDebugInfo());
+			if($res->numRows() == 0) {
+				$query =	"INSERT INTO attendancedone (SubjectIndex, PeriodIndex, Date, Username) " .
+							"                    VALUES ($subjectindex, $periodindex, \"$date\", \"$username\")";
+				$res =&  $db->query($query);
+				if(DB::isError($res)) die($res->getDebugInfo());
+			}
+						
 
 			echo " done</p>\n";
 			

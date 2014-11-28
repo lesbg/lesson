@@ -52,15 +52,16 @@
 	/* For each day, print a row with the date and number of subjects */
 	$alt_count = 0;
 
-	$query =	"SELECT attendance.Date, COUNT(attendance.SubjectIndex) As SubjectCount " .
-				"       FROM attendance INNER JOIN subject ON attendance.SubjectIndex = subject.SubjectIndex " .
-				"AND   subject.YearIndex       = $yearindex " .
-				"AND   subject.TermIndex       = $termindex, currentterm " .
+	$query =	"SELECT attendancedone.Date, COUNT(attendancedone.SubjectIndex) As SubjectCount " .
+				"       FROM currentterm, attendancedone INNER JOIN subject " .
+				"            ON (attendancedone.SubjectIndex = subject.SubjectIndex " .
+				"                AND   subject.YearIndex     = $yearindex " .
+				"                AND   subject.TermIndex     = $termindex) " .
 				"WHERE currentterm.DepartmentIndex = $depindex " .
-				"AND   attendance.Date >= currentterm.StartDate " .
-				"AND   attendance.Date <= CURRENT_DATE() " .
-				"GROUP BY attendance.Date " .
-				"ORDER BY attendance.Date DESC ";
+				"AND   attendancedone.Date >= currentterm.StartDate " .
+				"AND   attendancedone.Date <= CURRENT_DATE() " .
+				"GROUP BY attendancedone.Date " .
+				"ORDER BY attendancedone.Date DESC ";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
 

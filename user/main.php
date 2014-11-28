@@ -173,6 +173,54 @@
 		$pun_type = strtolower($row['DisciplineType']);
 		echo "<p><a href='$link'>Punishment attendance for next $pun_type</a></p>\n";
 	}
+	
+	$date = date("Y-m-d");
+	$datestring = "today";
+	/* Check whether teacher is taking attendance for a subject */
+	$query =	"SELECT subject.Name, period.PeriodIndex, " .
+				"       subject.SubjectIndex FROM timetable, period, subject, subjectteacher " .
+				"WHERE  subject.SubjectIndex        = timetable.SubjectIndex " .
+				"AND    subject.YearIndex           = $yearindex " .
+				"AND    subject.TermIndex           = $termindex " .
+				"AND    subject.DepartmentIndex     = $depindex " .
+				"AND    subject.ShowInList          = 1 " .
+				"AND    subjectteacher.SubjectIndex = subject.SubjectIndex " .
+				"AND    subjectteacher.Username     = '$username' " .
+				"AND    period.PeriodIndex          = timetable.PeriodIndex " .
+				"AND    period.Period               = 1 " .
+				"AND    timetable.DayIndex          = DAYOFWEEK(\"$date\") - 1 " .
+				"ORDER BY subject.Name";
+	$res =&  $db->query($query);
+	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
+	
+	$count = $res->numRows();
+	while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		$boldst = "";
+		$boldend = "";
+		
+		$query =	"SELECT AttendanceDoneIndex FROM attendancedone " .
+					"WHERE SubjectIndex={$row['SubjectIndex']} " .
+					"AND   PeriodIndex={$row['PeriodIndex']} " .
+					"AND   Date=\"$date\"";
+		$nres =&  $db->query($query);
+		if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
+		
+		if($nres->numRows() == 0) {
+			$boldst = "<strong>";
+			$boldend = "</strong>";
+		}
+		$link = "index.php?location="    . dbfuncString2Int("teacher/attendance/modify.php") .
+				"&amp;key="      . dbfuncString2Int($row['SubjectIndex']) .
+				"&amp;key2="     . dbfuncString2Int($row['PeriodIndex']) .
+				"&amp;key3="     . dbfuncString2Int($date) .
+				"&amp;keyname= " . dbfuncString2Int($row['Name']) .
+				"&amp;next="     . dbfuncString2Int("index.php?location=" .
+									dbfuncString2Int("user/main.php"));
+		if($count != 1) {
+			$extra = " for {$row['Name']}";
+		}
+		echo "$boldst<p><a href='$link'>Attendance$extra</a></p>$boldend\n";
+	}
 	echo "      </div>\n";
 
 	/* Get classes */
