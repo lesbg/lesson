@@ -45,47 +45,29 @@
 	}
 
 	$query =	"(SELECT subject.Name, NULL AS ClassName, subject.Grade, period.PeriodIndex, " .
-				"        subject.SubjectIndex, attinfo.Date FROM timetable, period, " .
-				"        subject, subjectstudent " .
-				"        LEFT OUTER JOIN " .
-				"          (SELECT attendance.Date, attendance.Username " .
-				"                  FROM attendance, period " .
-				"           WHERE  attendance.PeriodIndex = period.PeriodIndex " .
-				"           AND    period.Period          = 1 " .
-				"           AND    attendance.Date        = \"$date\" " .
-				"          ) AS attinfo USING (Username) " .
-				" WHERE  subject.SubjectIndex        = timetable.SubjectIndex " .
-				" AND    subject.ClassIndex          IS NULL " .
+				"        subject.SubjectIndex FROM timetable, period, " .
+				"        subject " .
+				" WHERE  subject.ClassIndex          IS NULL " .
 				" AND    subject.YearIndex           = $checkyear " .
 				" AND    subject.TermIndex           = $checkterm " .
 				" AND    subject.DepartmentIndex     = $depindex " .
-				" AND    subject.ShowInList          = 1 " .
-				" AND    subjectstudent.SubjectIndex = subject.SubjectIndex " .
+				" AND    timetable.SubjectIndex      = subject.SubjectIndex " .
+				" AND    timetable.DayIndex          = DAYOFWEEK(\"$date\") - 1 " .
 				" AND    period.PeriodIndex          = timetable.PeriodIndex " .
 				" AND    period.Period               = 1 " .
-				" AND    timetable.DayIndex          = DAYOFWEEK(\"$date\") - 1 " .
 				" GROUP BY subject.SubjectIndex) " .
 				"UNION " .
 				"(SELECT subject.Name, class.ClassName, class.Grade, period.PeriodIndex, " .
-				"        subject.SubjectIndex, attinfo.Date FROM timetable, class, " .
-				"        period, subject, subjectstudent " .
-				"        LEFT OUTER JOIN " .
-				"          (SELECT attendance.Date, attendance.Username " .
-				"                  FROM attendance, period " .
-				"           WHERE  attendance.PeriodIndex = period.PeriodIndex " .
-				"           AND    period.Period          = 1 " .
-				"           AND    attendance.Date        = \"$date\" " .
-				"          ) AS attinfo USING (Username) " .
-				" WHERE  subject.SubjectIndex        = timetable.SubjectIndex " .
-				" AND    subject.YearIndex           = $checkyear " .
+				"        subject.SubjectIndex FROM timetable, class, " .
+				"        period, subject " .
+				" WHERE  subject.YearIndex           = $checkyear " .
 				" AND    subject.TermIndex           = $checkterm " .
 				" AND    subject.DepartmentIndex     = $depindex " .
-				" AND    subject.ShowInList          = 1 " .
+				" AND    timetable.SubjectIndex      = subject.SubjectIndex " .
+				" AND    timetable.DayIndex          = DAYOFWEEK(\"$date\") - 1 " .
 				" AND    class.ClassIndex            = subject.ClassIndex " .
-				" AND    subjectstudent.SubjectIndex = subject.SubjectIndex " .
 				" AND    period.PeriodIndex          = timetable.PeriodIndex " .
 				" AND    period.Period               = 1 " .
-				" AND    timetable.DayIndex          = DAYOFWEEK(\"$date\") - 1 " .
 				" GROUP BY subject.SubjectIndex) " .
 				"ORDER BY Grade, ClassName, Name";
 	$res =&  $db->query($query);

@@ -179,16 +179,15 @@
 	/* Check whether teacher is taking attendance for a subject */
 	$query =	"SELECT subject.Name, period.PeriodIndex, " .
 				"       subject.SubjectIndex FROM timetable, period, subject, subjectteacher " .
-				"WHERE  subject.SubjectIndex        = timetable.SubjectIndex " .
-				"AND    subject.YearIndex           = $yearindex " .
+				"WHERE  subject.YearIndex           = $yearindex " .
 				"AND    subject.TermIndex           = $termindex " .
 				"AND    subject.DepartmentIndex     = $depindex " .
-				"AND    subject.ShowInList          = 1 " .
 				"AND    subjectteacher.SubjectIndex = subject.SubjectIndex " .
 				"AND    subjectteacher.Username     = '$username' " .
+				"AND    timetable.SubjectIndex      = subject.SubjectIndex " .
+				"AND    timetable.DayIndex          = DAYOFWEEK(\"$date\") - 1 " .
 				"AND    period.PeriodIndex          = timetable.PeriodIndex " .
 				"AND    period.Period               = 1 " .
-				"AND    timetable.DayIndex          = DAYOFWEEK(\"$date\") - 1 " .
 				"ORDER BY subject.Name";
 	$res =&  $db->query($query);
 	if(DB::isError($res)) die($res->getDebugInfo());           // Check for errors in query
