@@ -67,7 +67,7 @@
 
 	$row =& $res->fetchRow(DB_FETCHMODE_ASSOC);
 	
-	while ($check_date != $end_date) {
+	while (strtotime($check_date) <= strtotime($end_date)) {
 		$alt_count += 1;
 		if($alt_count % 2 == 0) {
 			$alt_step = "alt";
