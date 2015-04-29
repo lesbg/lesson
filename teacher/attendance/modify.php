@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * teacher/attendance/modify.php  (c) 2007 Jonathan Dieter
+	 * teacher/attendance/modify.php  (c) 2007-2015 Jonathan Dieter
 	 *
 	 * List of all students who were in class
 	 *****************************************************************/
@@ -10,7 +10,9 @@
 	$periodindex  = safe(dbfuncInt2String($_GET['key2']));
 	$date         = safe(dbfuncInt2String($_GET['key3']));
 	
-	$title = "Attendance for $subject_name";
+	$datestring = date(dbfuncGetDateFormat(), strtotime($date));
+		
+	$title = "Attendance for $subject_name for $datestring";
 	
 	include "header.php";
 	
@@ -117,7 +119,7 @@
 					/* Check whether student's status for first period has been set */
 					$query =	"SELECT attendance.AttendanceTypeIndex FROM attendance, period " .
 								"WHERE attendance.Username = \"{$row['Username']}\" " .
-								"AND   attendance.Date = CURDATE() " .
+								"AND   attendance.Date = \"$date\" " .
 								"AND   attendance.PeriodIndex = period.PeriodIndex " .
 								"AND   period.Period = 1";
 					$nres =&  $db->query($query);

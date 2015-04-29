@@ -1,6 +1,6 @@
 <?php
 	/*****************************************************************
-	 * teacher/attendance/modify_action.php  (c) 2007 Jonathan Dieter
+	 * teacher/attendance/modify_action.php  (c) 2007-2015 Jonathan Dieter
 	 *
 	 * Insert attendance information into database
 	 *****************************************************************/
@@ -63,8 +63,6 @@
 									"WHERE Date = \"$date\" " .
 									"AND   Username = \"{$row['Username']}\" ";
 						if(!$is_admin) $query .= "AND   AttendanceTypeIndex != $ATT_SUSPENDED ";
-						$query .=	"AND   SubjectIndex   =  $subjectindex " .
-									"AND   PeriodIndex    =  $periodindex ";
 						$nres =&  $db->query($query);
 						if(DB::isError($nres)) die($nres->getDebugInfo());           // Check for errors in query
 						if($value != $ATT_IN_CLASS) {
