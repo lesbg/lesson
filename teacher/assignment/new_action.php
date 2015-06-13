@@ -156,7 +156,7 @@
 			$error = true;
 		}
 		
-		if(($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) and $_POST['hidden'] == '0') {
+		if($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
 			update_marks($assignmentindex);
 		}
 
