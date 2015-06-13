@@ -441,20 +441,18 @@
 		$termcount = 0;
 	}
 	
-	$query =		"SELECT subject.Name AS SubjectName, subject.SubjectIndex, ";
+	$query =		"SELECT subject.Name AS SubjectName, subject.SubjectIndex, " .
 					"       subject.Average AS SubjectAverage, " .
 					"       subject.AverageType, subject.EffortType, subject.ConductType, " .
 					"       subject.AverageTypeIndex, subject.EffortTypeIndex, " .
-					"       subject.ConductTypeIndex, subject.CommentType, ";
-	if(!($is_admin or $is_ct or $is_hod or $is_principal)) {
-		$query .=	"       subjectstudent.Average, subjectstudent.Effort, subjectstudent.Conduct, " .
+					"       subject.ConductTypeIndex, subject.CommentType, " .
+					"       subjectstudent.Average, subjectstudent.Effort, subjectstudent.Conduct, " .
 					"       average_index.Display AS AverageDisplay, " .
 					"       effort_index.Display AS EffortDisplay, " .
 					"       conduct_index.Display AS ConductDisplay, " .
 					"       subjectstudent.Comment, subjectstudent.CommentValue, " .
-					"       subjectstudent.ReportDone, ";
-	}
-	$query .=		"       get_weight(subject.SubjectIndex, $class_index, '$student_username') AS SubjectWeight " .
+					"       subjectstudent.ReportDone, " .
+					"       get_weight(subject.SubjectIndex, $class_index, '$student_username') AS SubjectWeight " .
 					"       FROM subject, subjecttype, ";
 	if($is_admin or $is_ct or $is_hod or $is_principal) {
 		$query .=	" 		(SELECT subject.Name AS SubjectName FROM subjectstudent, subject, term, term AS currentterm " .
@@ -466,8 +464,16 @@
 					"		 AND   currentterm.TermIndex        = $termindex " .
 					"		 AND   subject.YearIndex            = $yearindex " .
 					"		 AND   subject.ShowInList           = 1 " .
-					"		 GROUP BY subject.Name) AS tempsubjectlist " .
+					"		 GROUP BY subject.Name) AS tempsubjectlist, subjectstudent " .
+					"       LEFT OUTER JOIN nonmark_index AS average_index ON " .
+					"            subjectstudent.Average = average_index.NonmarkIndex " .
+					"       LEFT OUTER JOIN nonmark_index AS effort_index ON " .
+					"            subjectstudent.Effort = effort_index.NonmarkIndex " .
+					"       LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
+					"            subjectstudent.Conduct = conduct_index.NonmarkIndex " .
 					"WHERE subject.Name = tempsubjectlist.SubjectName " .
+					"AND   subjectstudent.Username      = '$student_username' " .
+					"AND   subjectstudent.SubjectIndex  = subject.SubjectIndex " .
 					"AND   subject.YearIndex = $yearindex " .
 					"AND   subject.TermIndex = $termindex ";
 	} else {
