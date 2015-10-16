@@ -4,7 +4,7 @@ body {
 }
 
 .home {
-	color:            #550;
+	color: #550;
 }
 
 /* Tables */
@@ -15,18 +15,20 @@ table {
 th {
 	background-color: #dd7;
 }
+
 .std {
 	background-color: #ffb;
 }
+
 .alt {
 	background-color: #ff9;
 }
 
-
 /* Hyperlinks */
 a {
-	color:            #550;
+	color: #550;
 }
+
 a:hover {
-	color:            #770;
+	color: #770;
 }

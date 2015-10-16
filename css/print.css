@@ -1,110 +1,122 @@
 /* Body */
 body {
-	font-family:      "Times New Roman", serif;
+	font-family: "Times New Roman", serif;
 	background-color: white;
-	font-size:        medium;
+	font-size: medium;
 }
 
 /* Errors */
 .error {
-	color:            black;
-	font-style:       italic;
+	color: black;
+	font-style: italic;
 }
 
 /* Different button types */
 .title {
-	font-size:        x-large;
+	font-size: x-large;
 }
+
 .subtitle {
-	font-size:        large;
+	font-size: large;
 }
+
 .text {
-	font-size:        medium;
+	font-size: medium;
 }
+
 .home {
-	color:            black;
+	color: black;
 }
+
 .logout {
-	color:            black;
+	color: black;
 }
+
 .prevnext {
+	
 }
+
 .sort {
-	color:            black;
+	color: black;
 }
+
 .edit {
-	color:            black;
+	color: black;
 }
+
 .view {
-	color:            black;
+	color: black;
 }
+
 .delete {
-	color:            black;
+	color: black;
 }
 
 /* Text sizes */
 .small_text {
-	font-size:        smaller;
-}
-.large_text {
-	font-size:        larger;
+	font-size: smaller;
 }
 
+.large_text {
+	font-size: larger;
+}
 
 td.logo {
-	text-align:       left;
-	vertical-align:   top;
+	text-align: left;
+	vertical-align: top;
 }
 
 td.title {
-	vertical-align:   top;
-	text-align:       center;
+	vertical-align: top;
+	text-align: center;
 }
 
 td.home {
-	vertical-align:   top;
-	text-align:       right;
+	vertical-align: top;
+	text-align: right;
 }
 
 /* Tables */
 table {
-	font-family:      "Arial", sans-serif;
-	color:            black;
+	font-family: "Arial", sans-serif;
+	color: black;
 	background-color: white;
-	border-color:     black;
-	border-collapse:  collapse;
-	padding:          0.2em;
+	border-color: black;
+	border-collapse: collapse;
+	padding: 0.2em;
 }
+
 table.transparent {
-	font-family:      "Times New Roman", serif;
-	border-collapse:  collapse;
-	border-color:     transparent;
+	font-family: "Times New Roman", serif;
+	border-collapse: collapse;
+	border-color: transparent;
 	background-color: transparent;
 }
 
 /* Psuedo-button hyperlinks */
 .button {
-	font-family:      "Arial", sans-serif;
+	font-family: "Arial", sans-serif;
 	background-color: white;
-	color:            black;
-	text-decoration:  none;
-	padding-left:     0.2em;
-	padding-right:    0.2em;
+	color: black;
+	text-decoration: none;
+	padding-left: 0.2em;
+	padding-right: 0.2em;
 }
+
 a.button {
-	color:            black;
+	color: black;
 }
-a.button:hover{
-	color:            black;
+
+a.button:hover {
+	color: black;
 	background-color: white;
-	text-decoration:  none;
+	text-decoration: none;
 }
 
 .disabled-button {
-	font-family:      "Arial", sans-serif;
-	color:            black;
-	text-decoration:  none;
-	padding-left:     0.2em;
-	padding-right:    0.2em;
+	font-family: "Arial", sans-serif;
+	color: black;
+	text-decoration: none;
+	padding-left: 0.2em;
+	padding-right: 0.2em;
 }
-
