@@ -38,6 +38,7 @@ include "header.php"?>
 	</p>
 
 	<p></p>
+</form>
 
 <?php
 include "footer.php";
