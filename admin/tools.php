@@ -31,6 +31,8 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) { // Make sure user has perm
 	
 	$studentListLink = "index.php?location=" .
 					 dbfuncString2Int("admin/studentlist.php");
+	$familyListLink = "index.php?location=" .
+			         dbfuncString2Int("admin/family/list.php");
 	$teacherListLink = "index.php?location=" .
 					 dbfuncString2Int("admin/teacherlist.php");
 	$subjectListLink = "index.php?location=" .
@@ -74,6 +76,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) { // Make sure user has perm
 	echo "      <div class='button' style='position: absolute; width: 200px; left: 50%; margin-left: -100px;'>\n";
 	echo "      <p><a href='$lowmarksLink'>View low marks</a></p>\n";
 	echo "      <p><a href='$studentListLink'>Student List</a></p>\n";
+	echo "      <p><a href='$familyListLink'>Family List</a></p>\n";
 	echo "      <p><a href='$teacherListLink'>Teacher List</a></p>\n";
 	echo "      <p><a href='$classListLink'>Class List</a></p>\n";
 	echo "      <p><a href='$ctermListLink'>Class Report Options</a></p>\n";

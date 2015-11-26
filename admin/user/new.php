@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/user/new.php (c) 2005 Jonathan Dieter
+ * admin/user/new.php (c) 2005, 2015 Jonathan Dieter
  *
  * Show fields to fill in for a new user
  * ***************************************************************
@@ -12,7 +12,11 @@ $title = "Create New User";
 $link = "index.php?location=" .
 		 dbfuncString2Int("admin/user/new_or_modify_action.php") . "&amp;next=" .
 		 dbfuncString2Int($backLink);
-
+if(isset($_GET['key4']))
+	$fcode = safe(dbfuncInt2String($_GET['key4']));
+else 
+	unset($fcode)
+	
 include "header.php"; // Show header
 
 if ($is_admin) {
@@ -68,6 +72,31 @@ if ($is_admin) {
 	echo "                   <input type='checkbox' name='user1'>New student<br>\n";
 	echo "                   <input type='checkbox' name='user2'>Special student<br></td>\n";
 	echo "            </tr>\n";
+	$res = &  $db->query(
+			"SELECT FamilyCode FROM family " .
+			"ORDER BY FamilyCode");
+	if (DB::isError($res))
+		die($res->getDebugInfo()); // Check for errors in query
+	
+	if ($res->numRows() > 0) {
+		echo "            <tr>\n";
+		echo "               <td><b>Family Code</b></td>\n";
+		echo "               <td colspan='2'>\n";
+		echo "                  <select name='fcode'>\n";
+		echo "                     <option value=''>None</option>\n";
+		while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+			if(isset($fcode) && $fcode == $row['FamilyCode']) {
+				$selected = " selected";
+			} else {
+				$selected = "";
+			}
+			echo "                     <option value='{$row['FamilyCode']}' $selected>{$row['FamilyCode']}</option>\n";
+		}
+		echo "                  </select>\n";
+		echo "                  <br/>\n";
+		echo "            </tr>\n";
+	}
+	
 	$res = &  $db->query(
 					"SELECT Department, DepartmentIndex FROM department " .
 					 "ORDER BY DepartmentIndex");

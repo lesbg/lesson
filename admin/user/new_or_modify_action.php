@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/user/new_or_modify_action.php (c) 2005 Jonathan Dieter
+ * admin/user/new_or_modify_action.php (c) 2005, 2015 Jonathan Dieter
  *
  * Show common page information for changing or adding a new user
  * and call appropriate second page.
@@ -50,6 +50,22 @@ if ($_POST["action"] == "Save" || $_POST["action"] == "Update") { // If update o
 		$error = true;
 	} else {
 		$_POST['sname'] = safe($_POST['sname']);
+	}
+	
+	if (isset($_POST['fcode']) && $_POST['fcode'] != "") {
+		$_POST['fcode'] = safe($_POST['fcode']);
+		$query = "SELECT FamilyCode FROM family WHERE FamilyCode='{$_POST['fcode']}'";
+		$res = & $db->query($query);
+		if (DB::isError($res))
+			die($res->getDebugInfo()); // Check for errors in query
+		if($res->numRows() == 0) {
+			echo "<p>Invalid family code.  Press \"Back\" to fix this.</p>\n";
+			$error = true;
+		} else {
+			$_POST['fcode'] = "'{$_POST['fcode']}'";
+		}
+	} else {
+		$_POST['fcode'] = "NULL";
 	}
 	
 	if ($_POST['password'] != $_POST['confirmpassword']) { // Make sure passwords match.

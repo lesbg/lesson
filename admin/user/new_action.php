@@ -48,11 +48,12 @@ if ($is_admin) {
 		$error = true;
 	} else {
 		/* Add new user */
-		$query = "INSERT INTO user (Username, FirstName, Surname, Gender, DOB, Password, Password2, " .
+		$query = "INSERT INTO user (Username, FirstName, Surname, FamilyCode, Gender, DOB, Password, Password2, " .
 				 "                  Permissions, Title, PhoneNumber, DateType, DateSeparator, " .
 				 "                  ActiveStudent, ActiveTeacher, SupportTeacher, DepartmentIndex, " .
 				 "                  User1, User2) " .
 				 "VALUES ('{$_POST['uname']}', '{$_POST['fname']}', '{$_POST['sname']}', " .
+				 "        {$_POST['fcode']}, " .
 				 "        '{$_POST['gender']}', {$_POST['DOB']}, MD5('{$_POST['password']}'), " .
 				 "        {$_POST['password2']}, " .
 				 "        {$_POST['perms']}, {$_POST['title']}, '{$_POST['phone']}', " .

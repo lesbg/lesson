@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/user/modify.php (c) 2005, 2006 Jonathan Dieter
+ * admin/user/modify.php (c) 2005, 2006, 2015 Jonathan Dieter
  *
  * Show fields to fill in for a new user
  * ***************************************************************
@@ -21,7 +21,7 @@ if ($is_admin) {
 	$res = &  $db->query(
 					"SELECT Username, FirstName, Surname, Gender, DOB, Permissions, DepartmentIndex, " .
 					 "       Title, DateType, DateSeparator, Password2, PhoneNumber, ActiveStudent, " .
-					 "       ActiveTeacher, SupportTeacher, User1, User2 FROM user " .
+					 "       ActiveTeacher, SupportTeacher, FamilyCode, User1, User2 FROM user " .
 					 "WHERE Username = '$uname'");
 	if (DB::isError($res))
 		die($res->getDebugInfo()); // Check for errors in query
@@ -73,34 +73,37 @@ if ($is_admin) {
 			$check1 = "checked";
 		if ($row['User2'] == 1)
 			$check2 = "checked";
+
+		if (isset($row['FamilyCode']))
+			$fcode = $row['FamilyCode'];
 		
-		echo "      <form action=\"$link\" method=\"post\">\n"; // Form method
+		echo "      <form action='$link' method='post'>\n"; // Form method
 		
-		echo "         <table class=\"transparent\" align=\"center\">\n";
+		echo "         <table class='transparent' align='center'>\n";
 		echo "            <tr>\n";
-		echo "               <td colspan=\"1\"><b>Username:</b></td>\n";
-		echo "               <td colspan=\"2\">$uname</td>\n";
+		echo "               <td colspan='1'><b>Username:</b></td>\n";
+		echo "               <td colspan='2'>$uname</td>\n";
 		echo "            </tr>\n";
 		echo "            <tr>\n";
-		echo "               <td colspan=\"1\"><b>Title:</b></td>\n";
-		echo "               <td colspan=\"2\"><input type=\"text\" name=\"title\" size=35 value=\"{$row['Title']}\"></td>\n";
+		echo "               <td colspan='1'><b>Title:</b></td>\n";
+		echo "               <td colspan='2'><input type='text' name='title' size=35 value='{$row['Title']}'></td>\n";
 		echo "            </tr>\n";
 		echo "            <tr>\n";
-		echo "               <td colspan=\"1\"><b>First Name:</b></td>\n";
-		echo "               <td colspan=\"2\"><input type=\"text\" name=\"fname\" size=35 value=\"{$row['FirstName']}\"></td>\n";
+		echo "               <td colspan='1'><b>First Name:</b></td>\n";
+		echo "               <td colspan='2'><input type='text' name='fname' size=35 value='{$row['FirstName']}'></td>\n";
 		echo "            </tr>\n";
 		echo "            <tr>\n";
-		echo "               <td colspan=\"1\"><b>Surname:</b></td>\n";
-		echo "               <td colspan=\"2\"><input type=\"text\" name=\"sname\" size=35 value=\"{$row['Surname']}\"></td>\n";
+		echo "               <td colspan='1'><b>Surname:</b></td>\n";
+		echo "               <td colspan='2'><input type='text' name='sname' size=35 value='{$row['Surname']}'></td>\n";
 		echo "            </tr>\n";
-		echo "            <tr><td colspan=\"3\">&nbsp;</td></tr>\n";
+		echo "            <tr><td colspan='3'>&nbsp;</td></tr>\n";
 		echo "            <tr>\n";
-		echo "               <td colspan=\"1\"><b>Gender:</b><br>\n";
-		echo "                   <input type=\"radio\" name=\"gender\" value=\"M\" $sexM>Male<br>\n";
-		echo "                   <input type=\"radio\" name=\"gender\" value=\"F\" $sexF>Female</td>\n";
+		echo "               <td colspan='1'><b>Gender:</b><br>\n";
+		echo "                   <input type='radio' name='gender' value='M' $sexM>Male<br>\n";
+		echo "                   <input type='radio' name='gender' value='F' $sexF>Female</td>\n";
 		/*
-		 * echo " <td colspan=\"2\"><b>Date of Birth:</b><br>\n";
-		 * echo " <input type=\"text\" name=\"DOB\" size=35 value=\"{$row['DOB']}\"><br>&nbsp;</td>\n";
+		 * echo " <td colspan='2'><b>Date of Birth:</b><br>\n";
+		 * echo " <input type='text' name='DOB' size=35 value='{$row['DOB']}'><br>&nbsp;</td>\n";
 		 */
 		echo "            </tr>\n";
 		
@@ -108,26 +111,51 @@ if ($is_admin) {
 			$row['PhoneNumber'] = "+{$row['PhoneNumber']}";
 		}
 		echo "            <tr>\n";
-		echo "               <td colspan=\"1\"><b>Phone Number:</b></td>\n";
-		echo "               <td colspan=\"2\"><input type=\"text\" name=\"phone\" size=35 value=\"{$row['PhoneNumber']}\"></td>\n";
+		echo "               <td colspan='1'><b>Phone Number:</b></td>\n";
+		echo "               <td colspan='2'><input type='text' name='phone' size=35 value='{$row['PhoneNumber']}'></td>\n";
 		echo "            </tr>\n";
 		echo "            <tr>\n";
-		echo "               <td colspan=\"1\"><b>Date Type:</b><br>\n";
-		echo "                   <input type=\"radio\" name=\"datetype\" value=\"D\" $dateTypeD><i>LESSON default</i><br>\n";
-		echo "                   <input type=\"radio\" name=\"datetype\" value=\"0\" $dateType0>American<br>\n";
-		echo "                   <input type=\"radio\" name=\"datetype\" value=\"1\" $dateType1>European<br>&nbsp;<br>&nbsp;</td>\n";
-		echo "               <td colspan=\"1\"><b>Date Separator:</b><br>\n";
-		echo "                   <input type=\"radio\" name=\"datesep\" value=\"D\" $dateSepD><i>LESSON default</i><br>\n";
-		echo "                   <input type=\"radio\" name=\"datesep\" value=\"/\" $dateSep0>/ (ex. 1/1/2000)<br>\n";
-		echo "                   <input type=\"radio\" name=\"datesep\" value=\"-\" $dateSep1>- (ex. 1-1-2000)<br>\n";
-		echo "                   <input type=\"radio\" name=\"datesep\" value=\".\" $dateSep2>. (ex. 1.1.2000)<br>&nbsp;</td>\n";
-		echo "               <td colspan=\"1\"><b>User Status:</b><br>\n";
-		echo "                   <input type=\"checkbox\" name=\"activestudent\" $activeStudent>Active student<br>\n";
-		echo "                   <input type=\"checkbox\" name=\"activeteacher\" $activeTeacher>Active teacher<br>\n";
-		echo "                   <input type=\"checkbox\" name=\"supportteacher\" $supportTeacher>Support teacher<br>\n";
-		echo "                   <input type=\"checkbox\" name=\"user1\" $check1>New student<br>\n";
-		echo "                   <input type=\"checkbox\" name=\"user2\" $check2>Special student<br></td>\n";
+		echo "               <td colspan='1'><b>Date Type:</b><br>\n";
+		echo "                   <input type='radio' name='datetype' value='D' $dateTypeD><i>LESSON default</i><br>\n";
+		echo "                   <input type='radio' name='datetype' value='0' $dateType0>American<br>\n";
+		echo "                   <input type='radio' name='datetype' value='1' $dateType1>European<br>&nbsp;<br>&nbsp;</td>\n";
+		echo "               <td colspan='1'><b>Date Separator:</b><br>\n";
+		echo "                   <input type='radio' name='datesep' value='D' $dateSepD><i>LESSON default</i><br>\n";
+		echo "                   <input type='radio' name='datesep' value='/' $dateSep0>/ (ex. 1/1/2000)<br>\n";
+		echo "                   <input type='radio' name='datesep' value='-' $dateSep1>- (ex. 1-1-2000)<br>\n";
+		echo "                   <input type='radio' name='datesep' value='.' $dateSep2>. (ex. 1.1.2000)<br>&nbsp;</td>\n";
+		echo "               <td colspan='1'><b>User Status:</b><br>\n";
+		echo "                   <input type='checkbox' name='activestudent' $activeStudent>Active student<br>\n";
+		echo "                   <input type='checkbox' name='activeteacher' $activeTeacher>Active teacher<br>\n";
+		echo "                   <input type='checkbox' name='supportteacher' $supportTeacher>Support teacher<br>\n";
+		echo "                   <input type='checkbox' name='user1' $check1>New student<br>\n";
+		echo "                   <input type='checkbox' name='user2' $check2>Special student<br></td>\n";
 		echo "            </tr>\n";
+		$nres = &  $db->query(
+				"SELECT FamilyCode FROM family " .
+				"ORDER BY FamilyCode");
+		if (DB::isError($nres))
+			die($nres->getDebugInfo()); // Check for errors in query
+		
+		if ($nres->numRows() > 0) {
+			echo "            <tr>\n";
+			echo "               <td><b>Family Code</b></td>\n";
+			echo "               <td colspan='2'>\n";
+			echo "                  <select name='fcode'>\n";
+			echo "                     <option value=''>None</option>\n";
+			while ( $nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC) ) {
+				if(isset($fcode) && $fcode == $nrow['FamilyCode']) {
+					$selected = "selected";
+				} else {
+					$selected = "";
+				}
+				echo "                     <option value='{$nrow['FamilyCode']}' $selected>{$nrow['FamilyCode']}</option>\n";
+			}
+			echo "                  </select>\n";
+			echo "                  <br/>\n";
+			echo "            </tr>\n";
+		}
+		
 		$nres = &  $db->query(
 							"SELECT Department, DepartmentIndex FROM department " .
 							 "ORDER BY DepartmentIndex");
@@ -156,52 +184,52 @@ if ($is_admin) {
 			echo "            </tr>\n";
 		}
 		echo "            <tr>\n";
-		echo "               <td colspan=\"3\"><i>Note: if you leave the passwords blank, they will not be changed.</i></td>\n";
+		echo "               <td colspan='3'><i>Note: if you leave the passwords blank, they will not be changed.</i></td>\n";
 		echo "            </tr>\n";
 		echo "            <tr>\n";
-		echo "               <td colspan=\"1\"><b>New Primary Password:</b></td>\n";
-		echo "               <td colspan=\"2\"><input type=\"password\" name=\"password\" size=35></td>\n";
+		echo "               <td colspan='1'><b>New Primary Password:</b></td>\n";
+		echo "               <td colspan='2'><input type='password' name='password' size=35></td>\n";
 		echo "            </tr>\n";
 		echo "            <tr>\n";
-		echo "               <td colspan=\"1\"><b>Confirm New Primary Password:</b></td>\n";
-		echo "               <td colspan=\"2\"><input type=\"password\" name=\"confirmpassword\" size=35></td>\n";
+		echo "               <td colspan='1'><b>Confirm New Primary Password:</b></td>\n";
+		echo "               <td colspan='2'><input type='password' name='confirmpassword' size=35></td>\n";
 		echo "            </tr>\n";
-		echo "            <tr><td colspan=\"3\">&nbsp;</td></tr>\n";
+		echo "            <tr><td colspan='3'>&nbsp;</td></tr>\n";
 		if (is_null($row['Password2'])) {
 			echo "            <tr>\n";
-			echo "               <td colspan=\"3\"><i>Secondary password is currently not set</i></td>\n";
+			echo "               <td colspan='3'><i>Secondary password is currently not set</i></td>\n";
 			echo "            </tr>\n";
 		}
 		echo "            <tr>\n";
-		echo "               <td colspan=\"1\"><b>New Secondary Password:</b></td>\n";
-		echo "               <td colspan=\"2\"><input type=\"password\" name=\"password2\" size=35></td>\n";
+		echo "               <td colspan='1'><b>New Secondary Password:</b></td>\n";
+		echo "               <td colspan='2'><input type='password' name='password2' size=35></td>\n";
 		echo "            </tr>\n";
 		echo "            <tr>\n";
-		echo "               <td colspan=\"1\"><b>Confirm Secondary Primary Password:</b></td>\n";
-		echo "               <td colspan=\"2\"><input type=\"password\" name=\"confirmpassword2\" size=35></td>\n";
+		echo "               <td colspan='1'><b>Confirm Secondary Primary Password:</b></td>\n";
+		echo "               <td colspan='2'><input type='password' name='confirmpassword2' size=35></td>\n";
 		echo "            </tr>\n";
-		echo "            <tr><td colspan=\"3\">&nbsp;</td></tr>\n";
+		echo "            <tr><td colspan='3'>&nbsp;</td></tr>\n";
 		echo "            <tr>\n";
-		echo "               <td colspan=\"1\"><b>Permissions:</b></td>\n";
-		echo "               <td colspan=\"2\"><input type=\"text\" name=\"perms\" size=35 " .
-			 "value=\"{$row['Permissions']}\"></td>\n";
+		echo "               <td colspan='1'><b>Permissions:</b></td>\n";
+		echo "               <td colspan='2'><input type='text' name='perms' size=35 " .
+			 "value='{$row['Permissions']}'></td>\n";
 		echo "            </tr>\n";
 		echo "         </table>\n";
 		echo "         <p></p>\n";
 		
-		echo "         <p align=\"center\">\n";
-		echo "            <input type=\"submit\" name=\"action\" value=\"Update\" \>&nbsp; \n";
-		echo "            <input type=\"submit\" name=\"action\" value=\"Delete\" \>&nbsp; \n";
-		echo "            <input type=\"submit\" name=\"action\" value=\"Cancel\" \>&nbsp; \n";
+		echo "         <p align='center'>\n";
+		echo "            <input type='submit' name='action' value='Update' />&nbsp; \n";
+		echo "            <input type='submit' name='action' value='Delete' />&nbsp; \n";
+		echo "            <input type='submit' name='action' value='Cancel' />&nbsp; \n";
 		echo "         </p>\n";
 		echo "      </form>";
 	} else {
-		echo "      <p align=\"center\">Error finding user $uname.  Have you already removed them?<p>\n";
-		echo "      <p align=\"center\"><a href=\"$backLink\">Click here to go back</a></p>\n";
+		echo "      <p align='center'>Error finding user $uname.  Have you already removed them?<p>\n";
+		echo "      <p align='center'><a href='$backLink'>Click here to go back</a></p>\n";
 	}
 } else { // User isn't authorized to view or change users.
 	echo "      <p>You do not have permission to access this page</p>\n";
-	echo "      <p><a href=\"$backLink\">Click here to go back</a></p>\n";
+	echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";
 }
 
 include "footer.php";
