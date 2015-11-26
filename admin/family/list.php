@@ -59,32 +59,32 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 	$fnameAsc = dbfuncGetButton(
 								"index.php?location=" .
 								 dbfuncString2Int("admin/family/list.php") .
-								 "&amp;sort=4", "A", "small", "sort", 
+								 "&amp;sort=2", "A", "small", "sort", 
 								"Sort ascending");
 	$fnameDec = dbfuncGetButton(
 								"index.php?location=" .
 								 dbfuncString2Int("admin/family/list.php") .
-								 "&amp;sort=5", "D", "small", "sort", 
+								 "&amp;sort=3", "D", "small", "sort", 
 								"Sort descending");
 	$dadnameAsc = dbfuncGetButton(
 								"index.php?location=" .
 								 dbfuncString2Int("admin/family/list.php") .
-								 "&amp;sort=6", "A", "small", "sort", 
+								 "&amp;sort=4", "A", "small", "sort", 
 								"Sort ascending");
 	$dadnameDec = dbfuncGetButton(
 								"index.php?location=" .
 								 dbfuncString2Int("admin/family/list.php") .
-								 "&amp;sort=7", "D", "small", "sort", 
+								 "&amp;sort=5", "D", "small", "sort", 
 								"Sort descending");
 	$momnameAsc = dbfuncGetButton(
 								"index.php?location=" .
 								 dbfuncString2Int("admin/family/list.php") .
-								 "&amp;sort=2", "A", "small", "sort", 
+								 "&amp;sort=6", "A", "small", "sort", 
 								"Sort ascending");
 	$momnameDec = dbfuncGetButton(
 								"index.php?location=" .
 								 dbfuncString2Int("admin/family/list.php") .
-								 "&amp;sort=3", "D", "small", "sort", 
+								 "&amp;sort=7", "D", "small", "sort", 
 								"Sort descending");
 	
 	$newlink = "index.php?location=" .
@@ -99,7 +99,8 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 	
 	/* Get student list */
 	$query = "SELECT family.FamilyCode, family.FamilyName, family.FatherName, family.MotherName " .
-		     "       FROM family";
+		     "       FROM family LEFT OUTER JOIN user USING (FamilyCode) " .
+			 "GROUP BY family.FamilyCode " .
 		     "ORDER BY $sortorder";
 	$res = &  $db->query($query);
 	if (DB::isError($res))
@@ -146,7 +147,32 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 			echo "            <td>{$row['FamilyName']}</td>\n";
 			echo "            <td>{$row['FatherName']}</td>\n";
 			echo "            <td>{$row['MotherName']}</td>\n";
-			echo "            <td>&nbsp;</td>\n";
+			echo "            <td>\n";
+			$query = "SELECT user.Username, user.FirstName, user.Surname, user.Title, user.ActiveStudent, user.ActiveTeacher " .
+					 "       FROM user WHERE FamilyCode='{$row['FamilyCode']}'";
+			         "ORDER BY user.ActiveTeacher DESC, user.ActiveStudent DESC, user.Username";
+			$nres = &  $db->query($query);
+			if (DB::isError($nres))
+				die($nres->getDebugInfo()); // Check for errors in query
+			if($nres->numRows() == 0) {
+				echo "&nbsp;";
+			}
+			while ( $nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC) ) {
+				if($nrow['ActiveStudent'] == 1) {
+					echo "<strong>";
+				}
+				if($nrow['ActiveTeacher'] == 1) {
+					echo "<em>{$nrow['Title']} ";
+				}
+				echo "{$nrow['FirstName']} {$nrow['Surname']} ({$nrow['Username']})";
+				if($nrow['ActiveTeacher'] == 1) {
+					echo "</em>";
+				}
+				if($nrow['ActiveStudent'] == 1) {
+					echo "</strong>";
+				}
+				echo "<br />\n";
+			}
 			echo "         </tr>\n";
 		}
 		echo "      </table>\n"; // End of table
