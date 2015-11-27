@@ -7,6 +7,12 @@
  * ***************************************************************
  */
 $title = "Family List";
+if(isset($_GET['key2']) && dbfuncInt2String($_GET['key2']) == "1") {
+	$show_all = 1;
+} else {
+	$show_all = 0;
+}
+$show_str = dbfuncString2Int($show_all);
 
 include "header.php"; // Show header
 
@@ -49,42 +55,42 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 	$fcodeAsc = dbfuncGetButton(
 								"index.php?location=" .
 								 dbfuncString2Int("admin/family/list.php") .
-								 "&amp;sort=0", "A", "small", "sort", 
+								 "&amp;sort=0&amp;key2=$show_str", "A", "small", "sort", 
 								"Sort ascending");
 	$fcodeDec = dbfuncGetButton(
 								"index.php?location=" .
 								 dbfuncString2Int("admin/family/list.php") .
-								 "&amp;sort=1", "D", "small", "sort", 
+								 "&amp;sort=1&amp;key2=$show_str", "D", "small", "sort", 
 								"Sort descending");
 	$fnameAsc = dbfuncGetButton(
 								"index.php?location=" .
 								 dbfuncString2Int("admin/family/list.php") .
-								 "&amp;sort=2", "A", "small", "sort", 
+								 "&amp;sort=2&amp;key2=$show_str", "A", "small", "sort", 
 								"Sort ascending");
 	$fnameDec = dbfuncGetButton(
 								"index.php?location=" .
 								 dbfuncString2Int("admin/family/list.php") .
-								 "&amp;sort=3", "D", "small", "sort", 
+								 "&amp;sort=3&amp;key2=$show_str", "D", "small", "sort", 
 								"Sort descending");
 	$dadnameAsc = dbfuncGetButton(
 								"index.php?location=" .
 								 dbfuncString2Int("admin/family/list.php") .
-								 "&amp;sort=4", "A", "small", "sort", 
+								 "&amp;sort=4&amp;key2=$show_str", "A", "small", "sort", 
 								"Sort ascending");
 	$dadnameDec = dbfuncGetButton(
 								"index.php?location=" .
 								 dbfuncString2Int("admin/family/list.php") .
-								 "&amp;sort=5", "D", "small", "sort", 
+								 "&amp;sort=5&amp;key2=$show_str", "D", "small", "sort", 
 								"Sort descending");
 	$momnameAsc = dbfuncGetButton(
 								"index.php?location=" .
 								 dbfuncString2Int("admin/family/list.php") .
-								 "&amp;sort=6", "A", "small", "sort", 
+								 "&amp;sort=6&amp;key2=$show_str", "A", "small", "sort", 
 								"Sort ascending");
 	$momnameDec = dbfuncGetButton(
 								"index.php?location=" .
 								 dbfuncString2Int("admin/family/list.php") .
-								 "&amp;sort=7", "D", "small", "sort", 
+								 "&amp;sort=7&amp;key2=$show_str", "D", "small", "sort", 
 								"Sort descending");
 	
 	$newlink = "index.php?location=" .
@@ -92,16 +98,32 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 			"&amp;next=" .
 			dbfuncString2Int(
 					"index.php?location=" .
-					dbfuncString2Int("admin/family/list.php"));
-	$newbutton = dbfuncGetButton($newlink, "New family", "medium", "",
-			"Create new subject");
-	echo "      <p align=\"center\">$newbutton</p>\n";
+					dbfuncString2Int("admin/family/list.php") .
+					"&amp;key2=$show_str");
+	$newbutton = dbfuncGetButton($newlink, "New family", "medium", "", "Create new family");
+	if($show_all == 1) {
+		$showlink = "index.php?location=" .
+				dbfuncString2Int("admin/family/list.php") . // link to create a new subject
+				"&amp;key2=$show_str" .
+				dbfuncString2Int("0");
+		$showbutton = dbfuncGetButton($showlink, "Show active families", "medium", "", "Show families with active students");
+	} else {
+		$showlink = "index.php?location=" .
+				dbfuncString2Int("admin/family/list.php") . // link to create a new subject
+				"&amp;key2=" .
+				dbfuncString2Int("1");
+		$showbutton = dbfuncGetButton($showlink, "Show all families", "medium", "", "Show all families");
+	}
+	echo "      <p align=\"center\">$newbutton $showbutton</p>\n";
 	
 	/* Get student list */
-	$query = "SELECT family.FamilyCode, family.FamilyName, family.FatherName, family.MotherName " .
-		     "       FROM family LEFT OUTER JOIN user USING (FamilyCode) " .
-			 "GROUP BY family.FamilyCode " .
-		     "ORDER BY $sortorder";
+	$query = 		"SELECT family.FamilyCode, family.FamilyName, family.FatherName, family.MotherName " .
+		     		"       FROM family LEFT OUTER JOIN user USING (FamilyCode) ";
+	if(!$show_all) {
+		$query .=	"WHERE user.ActiveStudent=1 ";
+	}
+	$query .=		"GROUP BY family.FamilyCode " .
+		     		"ORDER BY $sortorder";
 	$res = &  $db->query($query);
 	if (DB::isError($res))
 		die($res->getDebugInfo()); // Check for errors in query
