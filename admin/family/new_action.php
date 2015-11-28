@@ -26,11 +26,6 @@ if ($is_admin) {
 		echo "</p>\n      <p>The {$_POST['sname']} family's code is {$_POST['fcode']}.</p>\n      <p>";
 	}
 	
-	/* Set primary password to be the same as username if not entered */
-	if (! isset($_POST['changepassword']) or $_POST['changepassword'] == "") {
-		$_POST['changepassword'] = password_hash($_POST['fcode'], PASSWORD_DEFAULT);
-	}
-	
 	/* Check whether a user already exists with new username */
 	$res = & $db->query(
 					"SELECT FamilyCode FROM family WHERE FamilyCode = '{$_POST['fcode']}'");
@@ -40,9 +35,8 @@ if ($is_admin) {
 		$error = true;
 	} else {
 		/* Add new user */
-		$query = "INSERT INTO family (FamilyCode, FatherName, MotherName, FamilyName, Password) " .
-				 "VALUES ('{$_POST['fcode']}', '{$_POST['fathername']}', '{$_POST['mothername']}', " .
-				 "        '{$_POST['sname']}', '{$_POST['changepassword']}')";
+		$query = "INSERT INTO family (FamilyCode, FamilyName) " .
+				 "VALUES ('{$_POST['fcode']}', '{$_POST['sname']}')";
 		$aRes = & $db->query($query);
 		if (DB::isError($aRes))
 			die($aRes->getDebugInfo()); // Check for errors in query

@@ -17,12 +17,7 @@ if ($is_admin) {
 	
 	/* Modify user */
 	$query = "UPDATE family SET FamilyName = '{$_POST['sname']}', " .
-			 "FatherName = '{$_POST['fathername']}', " .
-			 "MotherName = '{$_POST['mothername']}'";
-	if (isset($_POST['changepassword']) && $_POST['changepassword'] != "") {
-		$query .= ", Password = '{$_POST['changepassword']}'";
-	}
-	$query .= " WHERE FamilyCode = '$fcode'";
+			 " WHERE FamilyCode = '$fcode'";
 	$aRes = & $db->query($query);
 	if (DB::isError($aRes))
 		die($aRes->getDebugInfo()); // Check for errors in query

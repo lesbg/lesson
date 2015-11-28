@@ -19,7 +19,7 @@ include "header.php"; // Show header
 
 if ($is_admin) {
 	$res = &  $db->query(
-					"SELECT FamilyCode, FatherName, MotherName, FamilyName FROM family " .
+					"SELECT FamilyCode, FamilyName FROM family " .
 					 "WHERE FamilyCode = '$fcode'");
 	if (DB::isError($res))
 		die($res->getDebugInfo()); // Check for errors in query
@@ -36,25 +36,6 @@ if ($is_admin) {
 		echo "            <tr>\n";
 		echo "               <td colspan='1'><b>Surname:</b></td>\n";
 		echo "               <td colspan='2'><input type='text' name='sname' value='{$row['FamilyName']}' size=35></td>\n";
-		echo "            </tr>\n";
-		echo "            <tr>\n";
-		echo "               <td colspan='1'><b>Father&apos;s Name:</b></td>\n";
-		echo "               <td colspan='2'><input type='text' name='fathername' value='{$row['FatherName']}' size=35></td>\n";
-		echo "            </tr>\n";
-		echo "            <tr>\n";
-		echo "               <td colspan='1'><b>Mother&apos;s Name:</b></td>\n";
-		echo "               <td colspan='2'><input type='text' name='mothername' value='{$row['MotherName']}' size=35></td>\n";
-		echo "            </tr>\n";
-		echo "            <tr>\n";
-		echo "               <td colspan='3'><i>Note: if you leave the password blank, it will not be changed.</i></td>\n";
-		echo "            </tr>\n";
-		echo "            <tr>\n";
-		echo "               <td colspan='1'><b>New Password:</b></td>\n";
-		echo "               <td colspan='2'><input type='password' name='password' size=35></td>\n";
-		echo "            </tr>\n";
-		echo "            <tr>\n";
-		echo "               <td colspan='1'><b>Confirm New Password:</b></td>\n";
-		echo "               <td colspan='2'><input type='password' name='confirmpassword' size=35></td>\n";
 		echo "            </tr>\n";
 		echo "         </table>\n";
 		echo "         <p></p>\n";
