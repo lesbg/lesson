@@ -172,10 +172,14 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 			$loop = array(1, 0);
 			foreach($loop as $guardian) {
 				echo "            <td>\n";
-				$query = "SELECT user.Username, user.FirstName, user.Surname, user.Title, user.ActiveStudent, user.ActiveTeacher, familylist.Guardian " .
+				$query = "SELECT user.Username, user.FirstName, user.Surname, user.Title, user.ActiveStudent, user.ActiveTeacher, familylist.Guardian, class.ClassName " .
 						 "       FROM user INNER JOIN familylist ON familylist.FamilyCode='{$row['FamilyCode']}' AND familylist.Username=user.Username " .
+						 "       LEFT OUTER JOIN (classlist INNER JOIN " .
+						 "           (classterm INNER JOIN currentterm ON classterm.TermIndex=currentterm.TermIndex " .
+						 "             INNER JOIN class ON class.ClassIndex=classterm.ClassIndex AND class.YearIndex=$yearindex ) " .
+						 "         USING (ClassTermIndex)) ON classlist.Username=user.Username " .
 						 "WHERE familylist.Guardian=$guardian " .
-				         "ORDER BY user.ActiveTeacher DESC, user.ActiveStudent DESC, user.Username";
+				         "ORDER BY user.ActiveTeacher DESC, user.ActiveStudent DESC, class.Grade, class.ClassName, user.Username";
 				$nres = &  $db->query($query);
 				if (DB::isError($nres))
 					die($nres->getDebugInfo()); // Check for errors in query
@@ -183,6 +187,11 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 					echo "&nbsp;";
 				}
 				while ( $nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC) ) {
+					if($guardian == 1) {
+						$who = "guardian";
+					} else {
+						$who = "student";
+					}
 					$viewlink = "index.php?location=" .
 							dbfuncString2Int("admin/subject/list_student.php") .
 							"&amp;key=" . dbfuncString2Int($nrow['Username']) .
@@ -202,15 +211,15 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 					 		"&amp;keyname2=" . dbfuncSTring2Int($nrow['FirstName']);
 					if($nrow['ActiveStudent'] == 1 && $guardian == 0) {
 						$viewbutton = dbfuncGetButton($viewlink, "V", "small", "view",
-								"View student's subjects");
+								"View $who's subjects");
 					} else {
 						$viewbutton = "";
 					}
 					$editbutton = dbfuncGetButton($editlink, "E", "small", "edit",
-							"Edit student");
+							"Edit $who");
 					if($nrow['ActiveTeacher'] != 1) {
 						$cnbutton = dbfuncGetButton($cnlink, "C", "small", "cn",
-								"Casenotes for student");
+								"Casenotes for $who");
 					} else {
 						$cnbutton = "";
 					}
@@ -226,6 +235,9 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 						}
 					}
 					echo "{$nrow['FirstName']} {$nrow['Surname']} ({$nrow['Username']})";
+					if($nrow['ActiveStudent'] == 1) {
+						echo " - {$nrow['ClassName']}";
+					}
 					if($nrow['ActiveTeacher'] == 1 || $guardian == 1) {
 						echo "</em>";
 					}
