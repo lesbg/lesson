@@ -166,9 +166,9 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 			echo "            <td>{$row['FamilyCode']}</td>\n";
 			echo "            <td>{$row['FamilyName']}</td>\n";
 			echo "            <td>\n";
-			$query = "SELECT user.Username, user.FirstName, user.Surname, user.Title, user.ActiveStudent, user.ActiveTeacher " .
-					 "       FROM user INNER JOIN familylist USING (Username) WHERE familylist.FamilyCode='{$row['FamilyCode']}'";
-			         "ORDER BY user.ActiveTeacher DESC, user.ActiveStudent DESC, user.Username";
+			$query = "SELECT user.Username, user.FirstName, user.Surname, user.Title, user.ActiveStudent, user.ActiveTeacher, groupgenmem.Username AS GuardianUsername" .
+					 "       FROM user INNER JOIN familylist ON familylist.FamilyCode='{$row['FamilyCode']}' AND familylist.Username=user.Username LEFT OUTER JOIN groupgenmem ON groupgenmem.GroupIndex=2 AND groupgenmem.Username=user.Username " .
+			         "ORDER BY groupgenmem.Username DESC, user.ActiveTeacher DESC, user.ActiveStudent DESC, user.Username";
 			$nres = &  $db->query($query);
 			if (DB::isError($nres))
 				die($nres->getDebugInfo()); // Check for errors in query

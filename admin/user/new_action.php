@@ -118,7 +118,9 @@ if ($is_admin) {
 				if (DB::isError($aRes))
 					die($aRes->getDebugInfo()); // Check for errors in query
 			}
+			gen_group_members($group);
 		}
+		
 		log_event($LOG_LEVEL_ADMIN, "admin/user/new_action.php", $LOG_ADMIN, 
 			"Added {$_POST['fname']} {$_POST['sname']} ($uname).");
 	}

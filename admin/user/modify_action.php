@@ -93,7 +93,9 @@ if ($is_admin) {
 			if (DB::isError($aRes))
 				die($aRes->getDebugInfo()); // Check for errors in query
 		}
+		gen_group_members($group);
 	}
+	
 	log_event($LOG_LEVEL_ADMIN, "admin/user/modify_action.php", $LOG_ADMIN, 
 		"Modified {$_POST['fname']} {$_POST['sname']} ($uname).");
 } else { // User isn't authorized to view or change users.

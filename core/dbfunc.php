@@ -1341,3 +1341,69 @@ function format_mark($mark, $type, $mark_type = 0) {
 	
 	return $score;
 }
+
+function gen_members($group_id, &$members, &$group_ids) {
+	global $db;
+	
+	if(in_array($group_id, $group_ids))
+		return;
+	
+	$group_ids[] = $group_id;
+	
+	$query = "SELECT Member FROM groupmem WHERE GroupIndex=$group_id";
+	$res = & $db->query($query);
+	if (DB::isError($res))
+		die($res->getDebugInfo());
+	
+	# Todo: Allow exclusion as well as inclusion based on priority
+	while ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		if(substr($row['Member'], 0, 1) == "@") {
+			gen_members(substr($row['Member'], 1), $members, $group_ids);
+		} else {
+			if(!in_array($row['Member'], $members)) {
+				$members[] = $row['Member'];
+			}
+		}
+	}
+	
+	return;
+}
+
+function gen_group_members($group_id) {
+	global $db;
+	
+	$members = array();
+	$group_ids = array();
+	
+	gen_members($group_id, $members, $group_ids);
+	
+	$query = "SELECT GroupGenMemberIndex, Username FROM groupgenmem WHERE GroupIndex=$group_id";
+	$res = & $db->query($query);
+	if (DB::isError($res))
+		die($res->getDebugInfo());
+	
+	/* Remove members who have been removed from group */
+	while ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		if(!in_array($row['Username'], $members)) {
+			$query = "DELETE FROM groupgenmem WHERE GroupGenMemberIndex={$row['GroupGenMemberIndex']}";
+			$nres = & $db->query($query);
+			if (DB::isError($nres))
+				die($nres->getDebugInfo());
+		}
+	}
+	
+	/* Add new members into group */
+	foreach($members as $uname) {
+		$query = "SELECT GroupGenMemberIndex, Username FROM groupgenmem WHERE GroupIndex=$group_id AND Username='$uname'";
+		$res = & $db->query($query);
+		if (DB::isError($res))
+			die($res->getDebugInfo());
+		
+		if($res->numRows() == 0) {
+			$query = "INSERT INTO groupgenmem (Username, GroupIndex) VALUES ('$uname', $group_id)";
+			$nres = & $db->query($query);
+			if (DB::isError($nres))
+				die($nres->getDebugInfo());
+		}
+	}
+}
