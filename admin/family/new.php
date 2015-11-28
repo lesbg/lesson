@@ -29,25 +29,6 @@ if ($is_admin) {
 	echo "               <td colspan='1'><b>Surname:</b></td>\n";
 	echo "               <td colspan='2'><input type='text' name='sname' size=35></td>\n";
 	echo "            </tr>\n";
-	echo "            <tr>\n";
-	echo "               <td colspan='1'><b>Father&apos;s Name:</b></td>\n";
-	echo "               <td colspan='2'><input type='text' name='fathername' size=35></td>\n";
-	echo "            </tr>\n";
-	echo "            <tr>\n";
-	echo "               <td colspan='1'><b>Mother&apos;s Name:</b></td>\n";
-	echo "               <td colspan='2'><input type='text' name='mothername' size=35></td>\n";
-	echo "            </tr>\n";
-	echo "            <tr>\n";
-	echo "               <td colspan='3'><i>Note: if you leave the password blank, it will default to the family code, all lowercase.</i></td>\n";
-	echo "            </tr>\n";
-	echo "            <tr>\n";
-	echo "               <td colspan='1'><b>New Password:</b></td>\n";
-	echo "               <td colspan='2'><input type='password' name='changepassword' size=35></td>\n";
-	echo "            </tr>\n";
-	echo "            <tr>\n";
-	echo "               <td colspan='1'><b>Confirm New Password:</b></td>\n";
-	echo "               <td colspan='2'><input type='password' name='confirmpassword' size=35></td>\n";
-	echo "            </tr>\n";
 	echo "         </table>\n";
 	echo "         <p></p>\n";
 	

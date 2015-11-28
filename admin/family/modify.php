@@ -8,8 +8,9 @@
  */
 
 /* Get variables */
-$fcode = safe(dbfuncInt2String($_GET['key']));
-$title = "Modify " . dbfuncInt2String($_GET['keyname']) . " family ($fcode)";
+$fcodem = safe(dbfuncInt2String($_GET['key']));
+$fcode = htmlspecialchars(dbfuncInt2String($_GET['key']), ENT_QUOTES);
+$title = "Modify " . htmlspecialchars(dbfuncInt2String($_GET['keyname']), ENT_QUOTES) . " family ($fcode)";
 $link = "index.php?location=" .
 		 dbfuncString2Int("admin/family/new_or_modify_action.php") . "&amp;key=" .
 		 $_GET['key'] . "&amp;keyname=" . $_GET['keyname'] . "&amp;next=" .
@@ -20,11 +21,12 @@ include "header.php"; // Show header
 if ($is_admin) {
 	$res = &  $db->query(
 					"SELECT FamilyCode, FamilyName FROM family " .
-					 "WHERE FamilyCode = '$fcode'");
+					 "WHERE FamilyCode = '$fcodem'");
 	if (DB::isError($res))
 		die($res->getDebugInfo()); // Check for errors in query
 	
 	if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		$fname = htmlspecialchars($row['FamilyName'], ENT_QUOTES);
 		echo "      <form action='$link' method='post'>\n"; // Form method
 		echo "         <table class='transparent' align='center'>\n";
 		echo "            <tr>\n";
@@ -35,7 +37,7 @@ if ($is_admin) {
 		echo "            </tr>\n";
 		echo "            <tr>\n";
 		echo "               <td colspan='1'><b>Surname:</b></td>\n";
-		echo "               <td colspan='2'><input type='text' name='sname' value='{$row['FamilyName']}' size=35></td>\n";
+		echo "               <td colspan='2'><input type='text' name='sname' value='$fname' size=35></td>\n";
 		echo "            </tr>\n";
 		echo "         </table>\n";
 		echo "         <p></p>\n";
