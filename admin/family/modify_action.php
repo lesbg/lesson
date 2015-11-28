@@ -16,7 +16,7 @@ $fullname = dbfuncInt2String($_GET['keyname']);
 if ($is_admin) {
 	
 	/* Modify user */
-	$query = "UPDATE family SET FamilyName = '{$_POST['sname']}', " .
+	$query = "UPDATE family SET FamilyName = '{$_POST['sname']}' " .
 			 " WHERE FamilyCode = '$fcode'";
 	$aRes = & $db->query($query);
 	if (DB::isError($aRes))
