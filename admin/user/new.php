@@ -15,7 +15,7 @@ $link = "index.php?location=" .
 if(isset($_GET['key4']))
 	$fcode = safe(dbfuncInt2String($_GET['key4']));
 else 
-	unset($fcode)
+	unset($fcode);
 	
 include "header.php"; // Show header
 
@@ -82,8 +82,7 @@ if ($is_admin) {
 		echo "            <tr>\n";
 		echo "               <td><b>Family Code</b></td>\n";
 		echo "               <td colspan='2'>\n";
-		echo "                  <select name='fcode'>\n";
-		echo "                     <option value=''>None</option>\n";
+		echo "                  <select multiple name='fcode[]'>\n";
 		while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
 			if(isset($fcode) && $fcode == $row['FamilyCode']) {
 				$selected = " selected";
@@ -114,6 +113,23 @@ if ($is_admin) {
 		}
 		echo "                  </select>\n";
 		echo "                  <br/>\n";
+		echo "            </tr>\n";
+	}
+	
+	$res = &  $db->query(
+			"SELECT groups.GroupIndex, groups.GroupName FROM groups " .
+			"ORDER BY GroupName");
+	if (DB::isError($res))
+		die($res->getDebugInfo()); // Check for errors in query
+	
+	if ($res->numRows() > 0) {
+		echo "            <tr>\n";
+		echo "               <td><b>Groups</b></td>\n";
+		echo "               <td colspan='2'>\n";
+		while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+			echo "					<label><input type='checkbox' name='groups[]' value='{$row['GroupIndex']}'>{$row['GroupName']}</label><br>\n";
+		}
+		echo "                  </td>\n";
 		echo "            </tr>\n";
 	}
 	echo "            <tr>\n";

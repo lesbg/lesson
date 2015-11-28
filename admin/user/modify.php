@@ -21,7 +21,7 @@ if ($is_admin) {
 	$res = &  $db->query(
 					"SELECT Username, FirstName, Surname, Gender, DOB, Permissions, DepartmentIndex, " .
 					 "       Title, DateType, DateSeparator, Password2, PhoneNumber, ActiveStudent, " .
-					 "       ActiveTeacher, SupportTeacher, FamilyCode, User1, User2 FROM user " .
+					 "       ActiveTeacher, SupportTeacher, User1, User2 FROM user " .
 					 "WHERE Username = '$uname'");
 	if (DB::isError($res))
 		die($res->getDebugInfo()); // Check for errors in query
@@ -73,9 +73,6 @@ if ($is_admin) {
 			$check1 = "checked";
 		if ($row['User2'] == 1)
 			$check2 = "checked";
-
-		if (isset($row['FamilyCode']))
-			$fcode = $row['FamilyCode'];
 		
 		echo "      <form action='$link' method='post'>\n"; // Form method
 		
@@ -132,7 +129,8 @@ if ($is_admin) {
 		echo "                   <input type='checkbox' name='user2' $check2>Special student<br></td>\n";
 		echo "            </tr>\n";
 		$nres = &  $db->query(
-				"SELECT FamilyCode FROM family " .
+				"SELECT familylist.Username, family.FamilyCode FROM family LEFT OUTER JOIN familylist " . 
+				"       ON familylist.FamilyCode=family.FamilyCode AND familylist.Username='$uname' " .
 				"ORDER BY FamilyCode");
 		if (DB::isError($nres))
 			die($nres->getDebugInfo()); // Check for errors in query
@@ -141,10 +139,9 @@ if ($is_admin) {
 			echo "            <tr>\n";
 			echo "               <td><b>Family Code</b></td>\n";
 			echo "               <td colspan='2'>\n";
-			echo "                  <select name='fcode'>\n";
-			echo "                     <option value=''>None</option>\n";
+			echo "                  <select multiple name='fcode[]'>\n";
 			while ( $nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC) ) {
-				if(isset($fcode) && $fcode == $nrow['FamilyCode']) {
+				if( $nrow['Username'] == $uname ) {
 					$selected = "selected";
 				} else {
 					$selected = "";
@@ -181,6 +178,29 @@ if ($is_admin) {
 			}
 			echo "                  </select>\n";
 			echo "                  <br/>\n";
+			echo "            </tr>\n";
+		}
+		
+		$nres = &  $db->query(
+				"SELECT groups.GroupIndex, groups.GroupName, groupmem.Member FROM groups LEFT OUTER JOIN groupmem ON " .
+				"       groupmem.GroupIndex=groups.GroupIndex AND groupmem.Member='$uname' " .
+				"ORDER BY GroupName");
+		if (DB::isError($nres))
+			die($nres->getDebugInfo()); // Check for errors in query
+		
+		if ($nres->numRows() > 0) {
+			echo "            <tr>\n";
+			echo "               <td><b>Groups</b></td>\n";
+			echo "               <td colspan='2'>\n";
+			while ( $nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC) ) {
+				if( $nrow['Member'] == $uname ) {
+					$in_group = " checked";
+				} else {
+					$in_group = "";
+				}
+				echo "					<label><input type='checkbox' name='groups[]' value='{$nrow['GroupIndex']}' $in_group>{$nrow['GroupName']}</label><br>\n";
+			}
+			echo "                  </td>\n";
 			echo "            </tr>\n";
 		}
 		echo "            <tr>\n";

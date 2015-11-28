@@ -52,20 +52,36 @@ if ($_POST["action"] == "Save" || $_POST["action"] == "Update") { // If update o
 		$_POST['sname'] = safe($_POST['sname']);
 	}
 	
-	if (isset($_POST['fcode']) && $_POST['fcode'] != "") {
-		$_POST['fcode'] = safe($_POST['fcode']);
-		$query = "SELECT FamilyCode FROM family WHERE FamilyCode='{$_POST['fcode']}'";
-		$res = & $db->query($query);
-		if (DB::isError($res))
-			die($res->getDebugInfo()); // Check for errors in query
-		if($res->numRows() == 0) {
-			echo "<p>Invalid family code.  Press \"Back\" to fix this.</p>\n";
-			$error = true;
-		} else {
-			$_POST['fcode'] = "'{$_POST['fcode']}'";
+	if (isset($_POST['fcode']) && count($_POST['fcode']) > 0) {
+		foreach($_POST['fcode'] as $i => $fcode) {
+			$_POST['fcode'][$i] = safe($fcode);
+			$query = "SELECT FamilyCode FROM family WHERE FamilyCode='{$_POST['fcode'][$i]}'";
+			$res = & $db->query($query);
+			if (DB::isError($res))
+				die($res->getDebugInfo()); // Check for errors in query
+			if($res->numRows() == 0) {
+				echo "<p>Invalid family code {$_POST['fcode'][$i]}).  Press \"Back\" to fix this.</p>\n";
+				$error = true;
+			}
 		}
 	} else {
-		$_POST['fcode'] = "NULL";
+		$_POST['fcode'] = array();
+	}
+
+	if (isset($_POST['groups']) && count($_POST['groups']) > 0) {
+		foreach($_POST['groups'] as $i => $fcode) {
+			$_POST['groups'][$i] = safe($fcode);
+			$query = "SELECT GroupIndex FROM groups WHERE GroupIndex='{$_POST['groups'][$i]}'";
+			$res = & $db->query($query);
+			if (DB::isError($res))
+				die($res->getDebugInfo()); // Check for errors in query
+			if($res->numRows() == 0) {
+				echo "<p>Invalid group id {$_POST['groups'][$i]}).  Press \"Back\" to fix this.</p>\n";
+				$error = true;
+			}
+		}
+	} else {
+		$_POST['groups'] = array();
 	}
 	
 	if ($_POST['password'] != $_POST['confirmpassword']) { // Make sure passwords match.

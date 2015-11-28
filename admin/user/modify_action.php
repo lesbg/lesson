@@ -18,7 +18,6 @@ if ($is_admin) {
 	/* Modify user */
 	$query = "UPDATE user SET FirstName = '{$_POST['fname']}', " .
 			 "Surname = '{$_POST['sname']}', " .
-			 "FamilyCode = {$_POST['fcode']}, " .
 			 "Gender = '{$_POST['gender']}', " .
 			 "PhoneNumber = '{$_POST['phone']}', " . "DOB = {$_POST['DOB']}, " .
 			 "Permissions = {$_POST['perms']}, " . "Title = {$_POST['title']}, " .
@@ -39,6 +38,62 @@ if ($is_admin) {
 	$aRes = & $db->query($query);
 	if (DB::isError($aRes))
 		die($aRes->getDebugInfo()); // Check for errors in query
+	
+	/* Remove any family codes we've been removed from */
+	$query = "SELECT FamilyListIndex, FamilyCode FROM familylist WHERE Username='$uname'";
+	$aRes = & $db->query($query);
+	if (DB::isError($aRes))
+		die($aRes->getDebugInfo()); // Check for errors in query
+	while ( $arow = & $aRes->fetchRow(DB_FETCHMODE_ASSOC) ) {
+		if(!in_array($aRow['FamilyCode'], $_POST['fcode'])) {
+			$query = "DELETE FROM familylist WHERE FamilyListIndex={$arow['FamilyListIndex']}";
+			$bRes = & $db->query($query);
+			if (DB::isError($bRes))
+				die($bRes->getDebugInfo()); // Check for errors in query
+		}
+	}
+	
+	/* Add any family codes we've been added to */
+	foreach($_POST['fcode'] as $fcode) {
+		$query = "SELECT FamilyListIndex, FamilyCode FROM familylist WHERE Username='$uname' AND FamilyCode='$fcode'";
+		$aRes = & $db->query($query);
+		if (DB::isError($aRes))
+			die($aRes->getDebugInfo()); // Check for errors in query
+		if ($aRes->numRows() == 0) {
+			$query = "INSERT INTO familylist (Username, FamilyCode) VALUES ('$uname', '$fcode')";
+			$aRes = & $db->query($query);
+			if (DB::isError($aRes))
+				die($aRes->getDebugInfo()); // Check for errors in query
+		}
+	}
+	
+	/* Remove any groups we've been removed from */
+	$query = "SELECT GroupMemberIndex, GroupIndex FROM groupmem WHERE Member='$uname'";
+	$aRes = & $db->query($query);
+	if (DB::isError($aRes))
+		die($aRes->getDebugInfo()); // Check for errors in query
+	while ( $arow = & $aRes->fetchRow(DB_FETCHMODE_ASSOC) ) {
+		if(!in_array($aRow['GroupIndex'], $_POST['groups'])) {
+			$query = "DELETE FROM groupmem WHERE GroupMemberIndex={$arow['GroupMemberIndex']}";
+			$bRes = & $db->query($query);
+			if (DB::isError($bRes))
+				die($bRes->getDebugInfo()); // Check for errors in query
+		}
+	}
+	
+	/* Add any groups we've been added to */
+	foreach($_POST['groups'] as $group) {
+		$query = "SELECT GroupMemberIndex, GroupIndex FROM groupmem WHERE Member='$uname' AND GroupIndex='$group'";
+		$aRes = & $db->query($query);
+		if (DB::isError($aRes))
+			die($aRes->getDebugInfo()); // Check for errors in query
+		if ($aRes->numRows() == 0) {
+			$query = "INSERT INTO groupmem (Member, GroupIndex) VALUES ('$uname', '$group')";
+			$aRes = & $db->query($query);
+			if (DB::isError($aRes))
+				die($aRes->getDebugInfo()); // Check for errors in query
+		}
+	}
 	log_event($LOG_LEVEL_ADMIN, "admin/user/modify_action.php", $LOG_ADMIN, 
 		"Modified {$_POST['fname']} {$_POST['sname']} ($uname).");
 } else { // User isn't authorized to view or change users.
