@@ -8,8 +8,9 @@
  */
 
 /* Get variables */
-$delfcode = dbfuncInt2String($_GET['key']);
-$delfullname = dbfuncInt2String($_GET['keyname']);
+$delfcode = htmlspecialchars(dbfuncInt2String($_GET['key']));
+$delfcodem = safe(dbfuncInt2String($_GET['key']));
+$delfullname = htmlspecialchars(dbfuncInt2String($_GET['keyname']));
 $nextLink = dbfuncInt2String($_GET['next']);
 
 include "core/settermandyear.php";
@@ -27,7 +28,7 @@ if ($_POST['action'] == "Yes, delete family code") {
 		$iserror = False;
 		
 		/* Check whether any users have been assigned to this family */
-		$query = "SELECT Username FROM user WHERE FamilyCode = '$delfcode'";	
+		$query = "SELECT Username FROM familylist WHERE FamilyCode = '$delfcodem'";	
 		$res = &  $db->query($query);
 		if (DB::isError($res))
 			die($res->getDebugInfo()); // Check for errors in query
@@ -44,7 +45,7 @@ if ($_POST['action'] == "Yes, delete family code") {
 		} else {
 			$res = &  $db->query(
 							"DELETE FROM family " . // Remove family from family table
-							 "WHERE FamilyCode  = '$delfcode'");
+							 "WHERE FamilyCode  = '$delfcodem'");
 			if (DB::isError($res))
 				die($res->getDebugInfo()); // Check for errors in query
 			

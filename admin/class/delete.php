@@ -8,7 +8,7 @@
  */
 
 /* Get variables */
-$classname = dbfuncInt2String($_GET['keyname']);
+$classname = htmlspecialchars(dbfuncInt2String($_GET['keyname']));
 $classindex = dbfuncInt2String($_GET['key']);
 $nextLink = dbfuncInt2String($_GET['next']);
 

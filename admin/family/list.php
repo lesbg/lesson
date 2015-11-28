@@ -162,9 +162,12 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 				$editbutton = "";
 			}
 			
+			$fcode = htmlspecialchars($row['FamilyCode']);
+			$fname = htmlspecialchars($row['FamilyName']);
+			$row['FamilyCode'] = safe($row['FamilyCode']);
 			echo "            <td>$editbutton</td>\n";
-			echo "            <td>{$row['FamilyCode']}</td>\n";
-			echo "            <td>{$row['FamilyName']}</td>\n";
+			echo "            <td>$fcode</td>\n";
+			echo "            <td>$fname</td>\n";
 			echo "            <td>\n";
 			$query = "SELECT user.Username, user.FirstName, user.Surname, user.Title, user.ActiveStudent, user.ActiveTeacher, groupgenmem.Username AS GuardianUsername" .
 					 "       FROM user INNER JOIN familylist ON familylist.FamilyCode='{$row['FamilyCode']}' AND familylist.Username=user.Username LEFT OUTER JOIN groupgenmem ON groupgenmem.GroupIndex=2 AND groupgenmem.Username=user.Username " .
