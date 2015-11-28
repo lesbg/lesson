@@ -11,8 +11,13 @@
 $error = false; // Boolean to store any errors
 
 /* Check whether user is authorized to change scores */
-if ($is_admin) {	
-	$codei = strtoupper(substr($_POST['sname'], 0, 4));
+if ($is_admin) {
+	$remove = array(" ", "-", "_", "=", "$", ".", ",", "/", "?", "<", ">", "{", "}", "[", "]", "\\", "'", ":", ";", "|")
+	$codei = str_replace($remove, "", $_POST['sname']);
+	
+	$codei = strtoupper($codei, 0, 4));
+	if(strlen($codei) < 4)
+		$codei = $codei . str_repeat("X", 4-strlen($codei));
 	
 	if ($_POST['autofcode'] == "Y") {
 		$res = & $db->query(
