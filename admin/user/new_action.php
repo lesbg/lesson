@@ -27,9 +27,9 @@ if ($is_admin) {
 						"SELECT Username FROM user WHERE Username REGEXP '{$fi}{$si}.*' ORDER BY Username DESC LIMIT 1");
 		if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 			$num = intval(substr($row['Username'], 2)) + 1;
-			$_POST['uname'] = sprintf("{$fi}{$si}%03d", $num);
+			$_POST['uname'] = sprintf("{$fi}{$si}%04d", $num);
 		} else {
-			$_POST['uname'] = "{$fi}{$si}001";
+			$_POST['uname'] = "{$fi}{$si}0001";
 		}
 		echo "</p>\n      <p>{$_POST['fname']}'s username is {$_POST['uname']}.</p>\n      <p>";
 	}
