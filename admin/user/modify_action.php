@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/user/modify_action.php (c) 2005 Jonathan Dieter
+ * admin/user/modify_action.php (c) 2005, 2015 Jonathan Dieter
  *
  * Run query to modify a user in the database.
  * ***************************************************************
@@ -29,10 +29,12 @@ if ($is_admin) {
 			 "DepartmentIndex = {$_POST['department']}, " .
 			 "User1 = {$_POST['user1']}, " . "User2 = {$_POST['user2']}";
 	if (isset($_POST['password']) && $_POST['password'] != "") {
-		$query .= ", Password = MD5('{$_POST['password']}')";
+		$phash = password_hash($_POST['password'], PASSWORD_DEFAULT, ['cost' => "15"]);
+		$query .= ", Password = '$phash'";
 	}
 	if (isset($_POST['password2']) && $_POST['password2'] != "") {
-		$query .= ", Password2 = MD5('{$_POST['password2']}')";
+		$phash = password_hash($_POST['password2'], PASSWORD_DEFAULT, ['cost' => "15"]);
+		$query .= ", Password2 = '$phash'";
 	}
 	$query .= " WHERE username = '$uname'";
 	$aRes = & $db->query($query);
@@ -45,7 +47,12 @@ if ($is_admin) {
 	if (DB::isError($aRes))
 		die($aRes->getDebugInfo()); // Check for errors in query
 	while ( $arow = & $aRes->fetchRow(DB_FETCHMODE_ASSOC) ) {
-		if(!in_array($aRow['FamilyCode'], $_POST['fcode'])) {
+		$found = False;
+		foreach($_POST['fcode'] as $val) {
+			if($aRow['FamilyCode'] == $val[0])
+				$found = True;
+		}
+		if(!$found) {
 			$query = "DELETE FROM familylist WHERE FamilyListIndex={$arow['FamilyListIndex']}";
 			$bRes = & $db->query($query);
 			if (DB::isError($bRes))
@@ -54,13 +61,20 @@ if ($is_admin) {
 	}
 	
 	/* Add any family codes we've been added to */
-	foreach($_POST['fcode'] as $fcode) {
+	foreach($_POST['fcode'] as $val) {
+		$fcode = $val[0];
+		$guardian = $val[1];
 		$query = "SELECT FamilyListIndex, FamilyCode FROM familylist WHERE Username='$uname' AND FamilyCode='$fcode'";
 		$aRes = & $db->query($query);
 		if (DB::isError($aRes))
 			die($aRes->getDebugInfo()); // Check for errors in query
 		if ($aRes->numRows() == 0) {
-			$query = "INSERT INTO familylist (Username, FamilyCode) VALUES ('$uname', '$fcode')";
+			$query = "INSERT INTO familylist (Username, FamilyCode, Guardian) VALUES ('$uname', '$fcode', $guardian)";
+			$aRes = & $db->query($query);
+			if (DB::isError($aRes))
+				die($aRes->getDebugInfo()); // Check for errors in query
+		} else {
+			$query = "UPDATE familylist SET Guardian=$guardian WHERE Username='$uname' AND FamilyCode='$fcode'";
 			$aRes = & $db->query($query);
 			if (DB::isError($aRes))
 				die($aRes->getDebugInfo()); // Check for errors in query

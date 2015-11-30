@@ -48,7 +48,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) { // Make sure user has perm
 	$ctermListLink = "index.php?location=" .
 					 dbfuncString2Int("admin/class_term/list.php");
 	$newUserLink = "index.php?location=" .
-				 dbfuncString2Int("admin/user/new.php");
+				 dbfuncString2Int("admin/user/modify.php");
 	$newQuarterLink = "index.php?location=" .
 					 dbfuncString2Int("admin/newquarter.php");
 	$openreportLink = "index.php?location=" .

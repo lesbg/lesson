@@ -12,6 +12,22 @@
 $nextLink = dbfuncInt2String($_GET['next']); // Link to next page
 
 /* Check which button was pressed */
+if ($_POST["action"] == "Test") {
+	include "admin/user/new.php";
+	exit(0);
+} elseif($_POST["action"] == "+") {
+	include "admin/user/choose_family.php";
+	exit(0);
+}
+foreach($_POST as $key => $value) {
+	if(substr($key, 0, 7) == "action-") {
+		$fremove = safe(substr($key, 7));
+		if(strlen($fremove) > 0 && $value="-") {
+			include "admin/user/remove_family.php";
+			exit(0);
+		}
+	}
+}
 if ($_POST["action"] == "Save" || $_POST["action"] == "Update") { // If update or save were pressed, print
 	$title = "LESSON - Saving changes..."; // common info and go to the appropriate page.
 	$noHeaderLinks = true;
@@ -54,13 +70,18 @@ if ($_POST["action"] == "Save" || $_POST["action"] == "Update") { // If update o
 	
 	if (isset($_POST['fcode']) && count($_POST['fcode']) > 0) {
 		foreach($_POST['fcode'] as $i => $fcode) {
-			$_POST['fcode'][$i] = safe($fcode);
-			$query = "SELECT FamilyCode FROM family WHERE FamilyCode='{$_POST['fcode'][$i]}'";
+			$_POST['fcode'][$i][0] = safe($fcode[0]);
+			if($fcode[1] === "on" || intval($fcode[1]) === 1) {
+				$_POST['fcode'][$i][1] = 1;
+			} else {
+				$_POST['fcode'][$i][1] = 0;
+			}
+			$query = "SELECT FamilyCode FROM family WHERE FamilyCode='{$_POST['fcode'][$i][0]}'";
 			$res = & $db->query($query);
 			if (DB::isError($res))
 				die($res->getDebugInfo()); // Check for errors in query
 			if($res->numRows() == 0) {
-				echo "<p>Invalid family code {$_POST['fcode'][$i]}).  Press \"Back\" to fix this.</p>\n";
+				echo "<p>Invalid family code {$_POST['fcode'][$i][0]}).  Press \"Back\" to fix this.</p>\n";
 				$error = true;
 			}
 		}
@@ -87,17 +108,11 @@ if ($_POST["action"] == "Save" || $_POST["action"] == "Update") { // If update o
 	if ($_POST['password'] != $_POST['confirmpassword']) { // Make sure passwords match.
 		echo "<p>The primary passwords don't match.  Press \"Back\" to fix this.</p>\n";
 		$error = true;
-	} else {
-		$_POST['password'] = safe($_POST['password']);
-		$_POST['confirmpassword'] = $_POST['password'];
 	}
 	
 	if ($_POST['password2'] != $_POST['confirmpassword2']) { // Make sure passwords match.
 		echo "<p>The secondary passwords don't match.  Press \"Back\" to fix this.</p>\n";
 		$error = true;
-	} else {
-		$_POST['password2'] = safe($_POST['password2']);
-		$_POST['confirmpassword2'] = $_POST['password2'];
 	}
 	
 	$_POST['phone'] = trim($_POST['phone']);

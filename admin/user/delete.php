@@ -64,10 +64,29 @@ if ($_POST['action'] == "Yes, delete user") {
 			log_event($LOG_LEVEL_ADMIN, "admin/user/delete.php", $LOG_ERROR, 
 					"Attempted to delete user $delfullname, but they were still teaching a subject.");
 		}
+
+		$res = &  $db->query(
+				"SELECT Username FROM familylist " . // Check whether user to be deleted teaches any subjects
+				"WHERE Username  = '$delusername'");
+		if (DB::isError($res))
+			die($res->getDebugInfo()); // Check for errors in query
+		if ($res->numRows() > 0) {
+			$errorname .= "      <p align=\"center\">You cannot delete $delfullname until you remove them from their " .
+			"family.</p>\n";
+			$iserror = True;
+			log_event($LOG_LEVEL_ADMIN, "admin/user/delete.php", $LOG_ERROR,
+			"Attempted to delete user $delfullname, but they were still in a family.");
+		}
 		
 		if ($iserror) { // Check whether there have been any errors during the
 			echo $errorname; // sanity checks
 		} else {
+			$res = &  $db->query(
+					"DELETE FROM groupgenmem " . // Remove user from user table
+					"WHERE Username  = '$delusername'");
+			if (DB::isError($res))
+				die($res->getDebugInfo()); // Check for errors in query
+			
 			$res = &  $db->query(
 							"DELETE FROM user " . // Remove user from user table
 							 "WHERE Username  = '$delusername'");

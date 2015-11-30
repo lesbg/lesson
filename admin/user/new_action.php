@@ -11,14 +11,7 @@
 $error = false; // Boolean to store any errors
 
 /* Check whether user is authorized to change scores */
-if ($is_admin) {
-	/* Set secondary password to null if not entered */
-	if (! isset($_POST['password2']) or $_POST['password2'] == "") {
-		$_POST['password2'] = "NULL";
-	} else {
-		$_POST['password2'] = "MD5('{$_POST['password2']}')";
-	}
-	
+if ($is_admin) {	
 	$fi = strtolower(substr($_POST['fname'], 0, 1));
 	$si = strtolower(substr($_POST['sname'], 0, 1));
 	
@@ -34,10 +27,6 @@ if ($is_admin) {
 		echo "</p>\n      <p>{$_POST['fname']}'s username is {$_POST['uname']}.</p>\n      <p>";
 	}
 	
-	/* Set primary password to be the same as username if not entered */
-	if (! isset($_POST['password']) or $_POST['password'] == "") {
-		$_POST['password'] = $_POST['uname'];
-	}
 	
 	/* Check whether a user already exists with new username */
 	$res = & $db->query(
@@ -48,18 +37,30 @@ if ($is_admin) {
 		$error = true;
 	} else {
 		/* Add new user */
-		$query = "INSERT INTO user (Username, FirstName, Surname, FamilyCode, Gender, DOB, Password, Password2, " .
+		echo strlen($_POST['password']);
+		if(isset($_POST['password']) && strlen($_POST['password']) > 0) {
+			$phash = password_hash($_POST['password'], PASSWORD_DEFAULT, ['cost' => "15"]);
+		} else {
+			$phash = password_hash($_POST['uname'], PASSWORD_DEFAULT, ['cost' => "15"]);
+		}
+		if(isset($_POST['password2']) && strlen($_POST['password2']) > 0) {
+			$phash2 = password_hash($_POST['password2'], PASSWORD_DEFAULT, ['cost' => "15"]);
+		} else {
+			$phash2 = "!!";
+		}
+		
+		$query = "INSERT INTO user (Username, FirstName, Surname, Gender, DOB, Password, Password2, " .
 				 "                  Permissions, Title, PhoneNumber, DateType, DateSeparator, " .
 				 "                  ActiveStudent, ActiveTeacher, SupportTeacher, DepartmentIndex, " .
 				 "                  User1, User2) " .
 				 "VALUES ('{$_POST['uname']}', '{$_POST['fname']}', '{$_POST['sname']}', " .
-				 "        {$_POST['fcode']}, " .
-				 "        '{$_POST['gender']}', {$_POST['DOB']}, MD5('{$_POST['password']}'), " .
-				 "        {$_POST['password2']}, " .
+				 "        '{$_POST['gender']}', {$_POST['DOB']}, '$phash', " .
+				 "        '$phash2', " .
 				 "        {$_POST['perms']}, {$_POST['title']}, '{$_POST['phone']}', " .
 				 "        {$_POST['datetype']}, {$_POST['datesep']}, {$_POST['activestudent']}, " .
 				 "        {$_POST['activeteacher']}, {$_POST['supportteacher']}, {$_POST['department']}, " .
 				 "        {$_POST['user1']}, {$_POST['user2']})";
+		echo "$query";
 		$aRes = & $db->query($query);
 		if (DB::isError($aRes))
 			die($aRes->getDebugInfo()); // Check for errors in query
@@ -70,7 +71,12 @@ if ($is_admin) {
 		if (DB::isError($aRes))
 			die($aRes->getDebugInfo()); // Check for errors in query
 		while ( $arow = & $aRes->fetchRow(DB_FETCHMODE_ASSOC) ) {
-			if(!in_array($aRow['FamilyCode'], $_POST['fcode'])) {
+			$found = False;
+			foreach($_POST['fcode'] as $val) {
+				if($aRow['FamilyCode'] == $val[0])
+					$found = True;
+			}
+			if(!$found) {
 				$query = "DELETE FROM familylist WHERE FamilyListIndex={$arow['FamilyListIndex']}";
 				$bRes = & $db->query($query);
 				if (DB::isError($bRes))
@@ -79,13 +85,20 @@ if ($is_admin) {
 		}
 		
 		/* Add any family codes we've been added to */
-		foreach($_POST['fcode'] as $fcode) {
+		foreach($_POST['fcode'] as $val) {
+			$fcode = $val[0];
+			$guardian = $val[1];
 			$query = "SELECT FamilyListIndex, FamilyCode FROM familylist WHERE Username='{$_POST['uname']}' AND FamilyCode='$fcode'";
 			$aRes = & $db->query($query);
 			if (DB::isError($aRes))
 				die($aRes->getDebugInfo()); // Check for errors in query
 			if ($aRes->numRows() == 0) {
-				$query = "INSERT INTO familylist (Username, FamilyCode) VALUES ('{$_POST['uname']}', '$fcode')";
+				$query = "INSERT INTO familylist (Username, FamilyCode, Guardian) VALUES ('{$_POST['uname']}', '$fcode', $guardian)";
+				$aRes = & $db->query($query);
+				if (DB::isError($aRes))
+					die($aRes->getDebugInfo()); // Check for errors in query
+			} else {
+				$query = "UPDATE familylist SET Guardian=$guardian WHERE Username='{$_POST['uname']}' AND FamilyCode='$fcode'";
 				$aRes = & $db->query($query);
 				if (DB::isError($aRes))
 					die($aRes->getDebugInfo()); // Check for errors in query
