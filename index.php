@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * index.php (c) 2004, 2005 Jonathan Dieter
+ * index.php (c) 2004, 2005, 2015 Jonathan Dieter
  *
  * Central script that runs by default. This script includes
  * any child scripts that need to be run. Thus, as far as the
@@ -21,13 +21,41 @@ $query = "SET NAMES 'utf8'";
 $res = &  $db->query($query);
 if (DB::isError($res))
 	die($res->getDebugInfo()); // Check for errors in query
-	
+
+session_name("LESSONSESSION");
+session_start();
+
+if (isset($_SERVER['REMOTE_HOST'])) {
+	$remote_host = $_SERVER['REMOTE_HOST'];
+} else {
+	$remote_host = $_SERVER['REMOTE_ADDR'];
+}
+if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+	if ($_SERVER['HTTP_X_FORWARDED_FOR'] != "unknown" and isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+		$remote_host = "{$_SERVER['HTTP_X_FORWARDED_FOR']} through $remote_host";
+	}
+}
+
+if (isset($_SERVER['REMOTE_HOST']) and strtolower(substr($_SERVER['REMOTE_HOST'], - strlen($LOCAL_HOSTS))) == strtolower($LOCAL_HOSTS)) {
+	$is_local = TRUE;
+} else {
+	$is_local = FALSE;
+}
+
+$change_pw = False;
+
+if(!isset($_SESSION['username'])) {
+	if(!isset($_POST['username'])) {
+		include "user/login.php";
+		exit(0);
+	} else {
+		include "user/login_action.php";
+	}
+}
 /* Perform login */
-require_once "Auth.php"; // Get Auth class
-include "core/loginfunc.php"; // Get login functions
+
 $shown = False; // Whether login screen has been shown already
-$loginSession = & loginfuncDoLogin(); // Authenticate login
-$username = strtolower($loginSession->getUsername()); // Get login username
+$username = $_SESSION['username']; // Get login username
 $yearindex = dbfuncGetYearIndex(); // Get current year
 $depindex = dbfuncGetDepIndex(); // Get current department index
 $termindex = dbfuncGetTermIndex($depindex); // Get current term
@@ -76,21 +104,13 @@ if (isset($_SESSION['yearindex'])) { // Set yearindex to session variable if set
 if (isset($_SESSION['termindex'])) { // Set termindex to session variable if set
 	$termindex = $_SESSION['termindex'];
 }
-
-if ($_SESSION['password_number'] == 2) {
-	$pwd_val = "Password2";
-} else {
-	$pwd_val = "Password";
-}
-$query = "SELECT Username FROM user WHERE Username='$username' AND $pwd_val=MD5('$username')";
-$res = &  $db->query($query);
-if (DB::isError($res))
-	die($res->getDebugInfo()); // Check for errors in query
-if ($res->numRows() > 0 and $location != "user/dochangepassword.php") {
-	log_event($LOG_LEVEL_ACCESS, "index.php", $LOG_USER, 
-			"Forcing user to change their password because it is the same as their username.");
+if (isset($_SESSION['samepass']) and $_SESSION['samepass']) {
 	$samepass = true;
-	$location = "user/changepassword.php";
+	if($location != "user/dochangepassword.php") {
+		log_event($LOG_LEVEL_ACCESS, "index.php", $LOG_USER, 
+				"Forcing user to change their password because it is the same as their username.");
+		$location = "user/changepassword.php";
+	}
 }
 
 if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
@@ -115,4 +135,3 @@ include "$location"; // Switch to current page
                      
 // update_conduct_year_term(5, 7);
 $db->disconnect(); // Close connection to database
-?>
