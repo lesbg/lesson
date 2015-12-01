@@ -11,7 +11,7 @@
 log_event($LOG_LEVEL_ACCESS, "user/logout.php", $LOG_LOGOUT);
 
 session_unset();
-$loginSession->logout();
+session_destroy();
 
 /* Show logout message */
 $title = "Logged out of LESSON";
