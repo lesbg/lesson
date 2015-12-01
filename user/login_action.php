@@ -80,7 +80,13 @@ if(!$good_pw) {
 	exit(0);
 }
 
-if($_POST['password'] == $_POST['username'] or $_POST['password'] == "p{$_POST['username']}") {
+if($_POST['password'] == $_POST['username']) {
+	$_SESSION['samepass'] = True;
+	$change_pw = True;
+}
+
+if($_POST['password'] == "p{$_POST['username']}") {
+	$_SESSION['samepass2'] = True;
 	$_SESSION['samepass'] = True;
 	$change_pw = True;
 }

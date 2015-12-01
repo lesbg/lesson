@@ -19,8 +19,9 @@ if ($password_number == 2) {
 /* Check which button was pressed */
 if ($_POST["action"] == "Ok") { // If ok was pressed, try to change password
 	/* Check whether password has been set to username and give error if it was */
-	if (isset($_POST["new"]) and
-		 strtoupper($_POST["new"]) == strtoupper($username)) {
+	if (isset($_POST["new"]) and (
+		 strtoupper($_POST["new"]) == strtoupper($username) or 
+		 strtoupper($_POST["new"]) == strtoupper("p$username"))) {
 		$error = true;
 		include "user/changepassword.php";
 		exit();
@@ -70,6 +71,7 @@ if ($_POST["action"] == "Ok") { // If ok was pressed, try to change password
 					die($res->getDebugInfo()); // Check for errors in query
 				echo "done.</p>\n";
 				unset($_SESSION['samepass']);
+				unset($_SESSION['samepass2']);
 				log_event($LOG_LEVEL_ADMIN, "user/dochangepassword.php", 
 						$LOG_USER, "Changed password $password_number.");
 			} else {

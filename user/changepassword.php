@@ -29,7 +29,11 @@ if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 	}
 	if (isset($samepass) and $samepass) {
 		echo "      <p align='center' class='error'>Your password is the same as your username!  This is very insecure.  Please change it to something different now.</p>\n";
-		$pass = $username;
+		if(isset($_SESSION['samepass2']) and $_SESSION['samepass2']) {
+			$pass = "p$username";
+		} else {
+			$pass = $username;
+		}
 	} else {
 		$pass = "";
 	}
