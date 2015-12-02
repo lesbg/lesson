@@ -10,19 +10,17 @@
 /* Get variables */
 $nextLink = dbfuncInt2String($_GET['next']); // Link to next page
 
-foreach($_POST as $key => $value) {
-	if(substr($key, 0, 7) == "select-") {
-		$fadd = substr($key, 7);
-		if(strlen($fadd) > 0 && $value="+") {
-			if(!isset($_SESSION['post'])) {
-				$_SESSION['post'] = array();
-			}
-			if(!isset($_SESSION['post']['fcode'])) {
-				$_SESSION['post']['fcode'] = array();
-			}
-			$_SESSION['post']['fcode'][] = array($fadd, 0);
-		}
+if(isset($_POST['action']) and $_POST['action'] == "Add" and isset($_POST['fcode']) and $_POST['fcode'] != "") {
+	if(!isset($_SESSION['post'])) {
+		$_SESSION['post'] = array();
 	}
+	if(!isset($_SESSION['post']['fcode'])) {
+		$_SESSION['post']['fcode'] = array();
+	}
+	$_SESSION['post']['fcode'][] = array($_POST['fcode'], 0);
 }
+
+unset($_POST);
+$_POST = array();
 
 include "admin/user/modify.php";

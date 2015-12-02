@@ -12,6 +12,11 @@ $title = "Choose family";
 
 
 if ($is_admin) {
+	if(isset($_POST['sname'])) {
+		$sname = $_POST['sname'];
+	} else {
+		$sname = "";
+	}
 	if(isset($_GET['next'])) {
 		$next = $_GET['next'];
 	} else {
@@ -43,11 +48,8 @@ if ($is_admin) {
 	include "header.php";
 	
 	echo "      <form action='$link' method='post'>\n"; // Form method
-	echo "         <table class='transparent' align='center'>\n";
-	echo "            <tr>\n";
-	echo "               <th>Family Code</th>";
-	echo "               <th>&nbsp;</th>";
-	echo "			  </tr>\n";
+	echo "         <p align='center'>\n";
+	echo "            <select name='fcode'>\n";
 	
 	$query =	"SELECT FamilyCode FROM family " .
 				"ORDER BY FamilyCode"; 
@@ -55,37 +57,42 @@ if ($is_admin) {
 	if (DB::isError($res))
 		die($res->getDebugInfo()); // Check for errors in query
 	
+	$first_match = False;
 	while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
 		$found = False;
+		
+		if(!$first_match and strcasecmp($sname, $row['FamilyCode']) < 0) {
+			$first_match = True;
+			$selected = "selected";
+		} else {
+			$selected = "";
+		}
 		foreach($_SESSION['post']['fcode'] as $fcode) {
 			if($row['FamilyCode'] == $fcode[0]) {
 				$found = True;
 				break;
 			}
 		}
+		
 		$fcode = htmlspecialchars($row['FamilyCode']);
 		$disabled = "";
 		if($found) {
-			$fcode = "<em>$fcode</em>";
 			$disabled = "disabled";
+			if($selected != "") {
+				$first_match = False;
+				$selected = "";
+			}
 		}
-		$button = "<input type='submit' name='select-$fcode' value='+' $disabled>";
-		echo "            <tr><td>$fcode</td><td>$button</td></tr>\n";
+		echo "                        <option value='$fcode' $disabled $selected>$fcode</option>\n";
 	}
-	echo "         </table>\n";
+	echo "            </select>\n";
+	echo "         </p>\n";
+	echo "         <p align='center'>\n";
+	echo "            <input type='submit' name='action' value='Add'>&nbsp;\n";
+	echo "            <input type='submit' name='action' value='Cancel'>\n";
+	echo "         </p>\n";
 	echo "      </form>\n";
 	
-	/*nextLink=dbfuncString2Int($backLink);
-	$extraMeta = "      <meta http-equiv=\"REFRESH\" content=\"0;url=$backLink\">\n";
-	$noJS = true;
-	$noHeaderLinks = true;
-	$title = "LESSON - Redirecting...";
-	
-	include "header.php";
-	
-	echo "      <p align=\"center\">Redirecting you to <a href=\"$backLink\">$backLink</a>." .
-	"</p>\n";
-	*/
 	include "footer.php";
 } else { // User isn't authorized to view or change users.
 	include "header.php"; // Show header
