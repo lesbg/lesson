@@ -27,7 +27,7 @@ if (preg_match('|MSIE ([0-6].[0-9]{1,2})|', $useragent, $matched)) {
 echo "         <p>&nbsp;</p>\n";
 
 echo "         <form method='post' action='" . $_SERVER['PHP_SELF'] . "'>\n";
-echo "            <p>NewUsername: <input type='text' name='username'></p>\n";
+echo "            <p>Username: <input type='text' name='username'></p>\n";
 echo "            <p>Password: <input type='password' name='password'></p>\n";
 echo "            <p><input type='submit' value='Login'></p>\n";
 echo "         </form>\n";
