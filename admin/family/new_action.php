@@ -10,6 +10,12 @@
 /* Get variables */
 $error = false; // Boolean to store any errors
 
+if(isset($_GET['key']) && dbfuncInt2String($_GET['key']) == "1") {
+	$set_session = True;
+} else {
+	$set_session = False;
+}
+
 /* Check whether user is authorized to change scores */
 if ($is_admin) {
 	$remove = array(" ", "-", "_", "=", "$", ".", ",", "/", "?", "<", ">", "{", "}", "[", "]", "\\", "'", ":", ";", "|");
@@ -45,6 +51,15 @@ if ($is_admin) {
 		$aRes = & $db->query($query);
 		if (DB::isError($aRes))
 			die($aRes->getDebugInfo()); // Check for errors in query
+		
+		if(!isset($_SESSION['post'])) {
+			$_SESSION['post'] = array();
+		}
+		if(!isset($_SESSION['post']['fcode'])) {
+			$_SESSION['post']['fcode'] = array();
+		}
+		$_SESSION['post']['fcode'][] = array($_POST['fcode'], 0);
+		
 		log_event($LOG_LEVEL_ADMIN, "admin/family/new_action.php", $LOG_ADMIN, 
 			"Added new code {$_POST['fcode']} for the {$_POST['sname']} family.");
 	}

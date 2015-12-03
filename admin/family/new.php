@@ -10,8 +10,21 @@
 /* Get variables */
 $title = "Create New Family Code";
 $link = "index.php?location=" .
-		 dbfuncString2Int("admin/family/new_or_modify_action.php") . "&amp;next=" .
-		 dbfuncString2Int($backLink);
+		 dbfuncString2Int("admin/family/new_or_modify_action.php");
+
+if(isset($_GET['keyname'])) {
+	$sname = htmlspecialchars(dbfuncInt2String($_GET['keyname']));
+	$sname = "value='$sname'";
+	$link .= "&amp;key=" . dbfuncString2Int("1");
+} else {
+	$sname = "";
+}
+
+if(!isset($_GET['next'])) {
+	$link .= "&amp;next=" . dbfuncString2Int($backLink);
+} else {
+	$link .= "&amp;next=" . $_GET['next'];
+}
 
 include "header.php"; // Show header
 
@@ -27,7 +40,7 @@ if ($is_admin) {
 	echo "            </tr>\n";
 	echo "            <tr>\n";
 	echo "               <td colspan='1'><b>Surname:</b></td>\n";
-	echo "               <td colspan='2'><input type='text' name='sname' size=35></td>\n";
+	echo "               <td colspan='2'><input type='text' name='sname' size=35 $sname></td>\n";
 	echo "            </tr>\n";
 	echo "         </table>\n";
 	echo "         <p></p>\n";

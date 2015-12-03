@@ -17,11 +17,11 @@ if ($is_admin) {
 	} else {
 		$sname = "";
 	}
-	if(isset($_GET['next'])) {
+	/*if(isset($_GET['next'])) {
 		$next = $_GET['next'];
-	} else {
+	} else {*/
 		$next = dbfuncString2Int($backLink);
-	}
+	//}
 	
 	$link = "index.php?location=" .
 			dbfuncString2Int("admin/user/choose_family_action.php") . "&amp;next=" .
@@ -48,6 +48,13 @@ if ($is_admin) {
 	include "header.php";
 	
 	echo "      <form action='$link' method='post'>\n"; // Form method
+	
+	$newlink = "index.php?location=" .
+			dbfuncString2Int("admin/family/new.php") . 
+			"&amp;next=" . $next .
+			"&amp;keyname=" . dbfuncString2Int($sname);
+	$newbutton = dbfuncGetButton($newlink, "New family", "medium", "", "Create new family");
+	echo "         <p align='center'>$newbutton</p>\n";
 	echo "         <p align='center'>\n";
 	echo "            <select name='fcode'>\n";
 	
