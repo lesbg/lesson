@@ -22,7 +22,7 @@ include "header.php";
 if ($is_admin) {
 	$link = "index.php?location=" . dbfuncString2Int("admin/family/delete.php") .
 			 "&amp;key=" . $_GET['key'] . "&amp;keyname=" . $_GET['keyname'] .
-			 "&amp;next=" . dbfuncString2Int($backLink);
+			 "&amp;next=" . $_GET['next'];
 	
 	echo "      <p align=\"center\">Are you <b>sure</b> you want to delete the $delfullname family ($fcode)? " .
 		 "The family code cannot be assigned to any users.</p>\n";
