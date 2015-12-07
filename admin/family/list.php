@@ -120,7 +120,7 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 	$query = 		"SELECT family.FamilyCode, family.FamilyName, family.FatherName, family.MotherName " .
 		     		"       FROM family LEFT OUTER JOIN (familylist INNER JOIN user USING (Username)) USING (FamilyCode) ";
 	if(!$show_all) {
-		$query .=	"WHERE user.ActiveStudent=1 ";
+		$query .=	"WHERE (user.ActiveStudent=1 OR familylist.FamilyCode IS NULL) ";
 	}
 	$query .=		"GROUP BY family.FamilyCode " .
 		     		"ORDER BY $sortorder";
