@@ -31,8 +31,9 @@ $rheight = $HEIGHT + $BORDER * 2;
 echo "<!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.1//EN' 'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'>";
 echo "<svg width='100%' height='100%' version='1.1' viewBox='$rleft $rtop $rwidth $rheight' xmlns='http://www.w3.org/2000/svg' xml:space='preserve'>";
 
+session_name("LESSONSESSION");
 session_start();
-$username = $_SESSION['_auth_LESSONSESSION']['username'];
+$username = $_SESSION['username'];
 $ttusername = safe(dbfuncInt2String($_GET['key']));
 $tttype = safe(dbfuncInt2String($_GET['key2']));
 $yearindex = dbfuncGetYearIndex(); // Get current year
