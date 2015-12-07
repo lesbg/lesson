@@ -17,11 +17,8 @@ if ($is_admin) {
 	} else {
 		$sname = "";
 	}
-	/*if(isset($_GET['next'])) {
-		$next = $_GET['next'];
-	} else {*/
-		$next = dbfuncString2Int($backLink);
-	//}
+
+	$next = dbfuncString2Int($backLink);
 	
 	$link = "index.php?location=" .
 			dbfuncString2Int("admin/user/choose_family_action.php") . "&amp;next=" .
@@ -90,7 +87,7 @@ if ($is_admin) {
 				$selected = "";
 			}
 		}
-		echo "                        <option value='$fcode' $disabled $selected>$fcode</option>\n";
+		echo "               <option value='$fcode' $disabled $selected>$fcode</option>\n";
 	}
 	echo "            </select>\n";
 	echo "         </p>\n";
