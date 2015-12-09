@@ -10,6 +10,13 @@ $title = "Student List";
 
 include "header.php"; // Show header
 
+/* Check whether current user is a counselor */
+$res = &  $db->query(
+		"SELECT Username FROM counselorlist " .
+		"WHERE Username='$username'");
+if (DB::isError($res))
+	die($res->getDebugInfo()); // Check for errors in query
+
 if ($res->numRows() > 0) {
 	$is_counselor = true;
 } else {
