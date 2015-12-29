@@ -128,6 +128,15 @@ if ($is_admin) {
 	}
 	
 	echo "      <form action='$link' method='post'>\n"; // Form method
+	echo "         <p align='center'>\n";
+	if(!$modify) {
+		echo "            <input type='submit' name='action' value='Save'>&nbsp; \n";
+	} else {
+		echo "            <input type='submit' name='action' value='Update'>&nbsp; \n";
+		echo "            <input type='submit' name='action' value='Delete'>&nbsp; \n";
+	}
+	echo "            <input type='submit' name='action' value='Cancel'>&nbsp; \n";
+	echo "         </p>\n";
 	echo "         <table class='transparent' align='center'>\n";
 	echo "            <tr>\n";
 	echo "               <td colspan='1'><b>Username:</b></td>\n";
@@ -372,8 +381,6 @@ if ($is_admin) {
 	echo "         <p align='center'>\n";
 	if(!$modify) {
 		echo "            <input type='submit' name='action' value='Save'>&nbsp; \n";
-		echo "            <input type='submit' name='action' value='Test'>&nbsp; \n";
-		
 	} else {
 		echo "            <input type='submit' name='action' value='Update'>&nbsp; \n";
 		echo "            <input type='submit' name='action' value='Delete'>&nbsp; \n";
