@@ -16,14 +16,25 @@ if ($is_admin) {
 	$si = strtolower(substr($_POST['sname'], 0, 1));
 	
 	if ($_POST['autouname'] == "Y") {
-		$res = & $db->query(
-						"SELECT Username FROM user WHERE Username REGEXP '{$fi}{$si}.*' ORDER BY Username DESC LIMIT 1");
-		if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-			$num = intval(substr($row['Username'], 2)) + 1;
-			$_POST['uname'] = sprintf("{$fi}{$si}%04d", $num);
-		} else {
-			$_POST['uname'] = "{$fi}{$si}0001";
+		$num = 1;
+		$query = "SELECT Username FROM user WHERE Username REGEXP '{$fi}{$si}.*' ORDER BY Username";
+		while(true) {
+			$res = & $db->query($query);
+			
+			$found = false;
+			while ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+				if(intval(substr($row['Username'], 2)) == $num) {
+					$found = true;
+					$num += 1;
+					break;
+				}
+			}
+			if(!$found) {
+				break;
+			}
 		}
+		
+		$_POST['uname'] = sprintf("{$fi}{$si}%04d", $num);
 		echo "</p>\n      <p>{$_POST['fname']}'s username is {$_POST['uname']}.</p>\n      <p>";
 	}
 	
