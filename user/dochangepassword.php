@@ -63,7 +63,7 @@ if ($_POST["action"] == "Ok") { // If ok was pressed, try to change password
 	if($good_pw) {
 		if (strlen($_POST["new"]) >= 6) {
 			if ($_POST["new"] == $_POST["confirmnew"]) {
-				$phash = password_hash($_POST['new'], PASSWORD_DEFAULT, ['cost' => "15"]);
+				$phash = password_hash($_POST['new'], PASSWORD_DEFAULT, ['cost' => "13"]);
 				$res = & $db->query(
 								"UPDATE user SET $pass_str = '$phash' " .
 									 "WHERE Username = '$username'");
