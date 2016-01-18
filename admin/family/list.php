@@ -104,7 +104,7 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 	if($show_all == 1) {
 		$showlink = "index.php?location=" .
 				dbfuncString2Int("admin/family/list.php") . // link to create a new subject
-				"&amp;key2=$show_str" .
+				"&amp;key2=" .
 				dbfuncString2Int("0");
 		$showbutton = dbfuncGetButton($showlink, "Show active families", "medium", "", "Show families with active students");
 	} else {
@@ -118,20 +118,22 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 
 	/* Get student list */
 	$query =		"SELECT user.FirstName, user.Surname, user.Title, user.Username, user.ActiveStudent, " .
-					"       familylist.Guardian, familyinfo.*, class.ClassName FROM " .
+					"       familylist.Guardian, familyinfo.*, class.ClassName, phone.Number, phone.Type, phone.Comment FROM " .
 					"	(SELECT family.FamilyCode, family.FamilyName FROM " .
 					"       family LEFT OUTER JOIN " .
 					"            (familylist AS familylist2 INNER JOIN user AS user2 USING (Username)) USING (FamilyCode) ";
 	if(!$show_all) {
 		$query .=	"	 WHERE (user2.ActiveStudent=1 OR familylist2.FamilyCode IS NULL) ";
 	}
-	$query .=	"    GROUP BY family.FamilyCode) AS familyinfo " . 
-				"   LEFT OUTER JOIN (familylist INNER JOIN user USING (Username) " . 
+	$query .=	"    GROUP BY family.FamilyCode) AS familyinfo " .
+				"   LEFT OUTER JOIN (familylist INNER JOIN user USING (Username) " .
+				"          LEFT OUTER JOIN phone USING (Username) " .
 				"          LEFT OUTER JOIN (class INNER JOIN classterm " .
 				"               ON (class.YearIndex=12 AND classterm.ClassIndex=class.ClassIndex) " .
 				"          INNER JOIN currentterm ON classterm.TermIndex=currentterm.TermIndex " .
 				"          INNER JOIN classlist USING (ClassTermIndex)) ON classlist.Username=user.Username) " .
 				"   USING (FamilyCode) " .
+				"GROUP by user.Username " .
 				"ORDER BY $sortorder, Guardian DESC, IF(Guardian=1, user.Gender, Guardian) DESC, " .
 				"         class.Grade DESC, user.Username";
 	$res = &  $db->query($query);
@@ -246,6 +248,9 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 				echo " - {$row['ClassName']}";
 			}
 			if($row['ActiveTeacher'] == 1 || $row['Guardian'] == 1) {
+				if($row['Number'] != "") {
+					echo " - {$row['Number']}";
+				}
 				echo "</em>";
 			}
 			if($row['ActiveStudent'] == 1) {
