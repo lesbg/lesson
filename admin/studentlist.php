@@ -10,6 +10,19 @@ $title = "Student List";
 
 include "header.php"; // Show header
 
+if(isset($_GET['key2'])) {
+	if(dbfuncInt2String($_GET['key2']) == "1") {
+		$show_all = 1;
+	} elseif(dbfuncInt2String($_GET['key2']) == "2") {
+		$show_all = 2;
+	} else {
+		$show_all = 0;
+	}
+} else {
+	$show_all = 0;
+}
+$show_str = dbfuncString2Int($show_all);
+
 /* Check whether current user is a counselor */
 $res = &  $db->query(
 		"SELECT Username FROM counselorlist " .
@@ -30,10 +43,56 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
 }
 
 if ($is_admin or $is_counselor) { // Make sure user has permission to view and
-	$showalldeps = true;
 	include "core/settermandyear.php"; // edit students
-	include "core/titletermyear.php";
 	
+	if($show_all == 0) {
+		$showalldeps = true;
+		include "core/titletermyear.php";
+	} else {
+		if($yearindex != $currentyear) {
+			$yearindex = $currentyear;
+			include "core/settermandyear.php";
+		}
+		$nochangeyt = true;
+		$nochangeyear = true;
+		$showterm = false;
+		$showdeps = false;
+		include "core/titletermyear.php";
+	}
+	
+	if($yearindex == $currentyear) {
+		if(isset($_GET['sort'])) {
+			$sort = "&amp;sort={$_GET['sort']}";
+		} else {
+			$sort = "";
+		}
+		$showlink1 = "index.php?location=" .
+				dbfuncString2Int("admin/studentlist.php") .
+				"$sort&amp;key2=" .
+				dbfuncString2Int("0");
+		$showlink2 = "index.php?location=" .
+				dbfuncString2Int("admin/studentlist.php") .
+				"$sort&amp;key2=" .
+				dbfuncString2Int("1");
+		$showlink3 = "index.php?location=" .
+				dbfuncString2Int("admin/studentlist.php") .
+				"$sort&amp;key2=" .
+				dbfuncString2Int("2");
+		$showbutton1 = dbfuncGetButton($showlink1, "Show students in department", "medium", "", "Show students who are in the current department");
+		$showbutton2 = dbfuncGetButton($showlink2, "Show active students", "medium", "", "Show all active students");
+		$showbutton3 = dbfuncGetButton($showlink3, "Show all users", "medium", "", "Show all users");
+				
+		echo "<p align='center'>\n";
+		if($show_all == 0) {
+			$showbutton1 = dbfuncGetDisabledButton("Show students in department", "medium", "");
+		} elseif($show_all == 1) {
+			$showbutton2 = dbfuncGetDisabledButton("Show active students", "medium", "");
+		} else {
+			$showbutton3 = dbfuncGetDisabledButton("Show all users", "medium", "");
+		}
+		echo "$showbutton1 $showbutton2 $showbutton3\n";
+		echo "</p>\n";
+	}
 	if ($_GET['sort'] == '1') {
 		$sortorder = "user.Username DESC";
 	} elseif ($_GET['sort'] == '2') {
@@ -108,32 +167,35 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 								"Sort descending");
 	
 	/* Get student list */
-	if ($yearindex == $currentyear) {
-		$query = "SELECT user.FirstName, user.Surname, user.Username, user.User1, user.User2, " .
-			 "       user.House, query.ClassName, query.Grade, COUNT(subjectstudent.SubjectIndex) AS SubjectCount FROM user LEFT OUTER JOIN " .
-			 "       (SELECT class.ClassName, class.Grade, classlist.ClassOrder, " .
-			 "               classlist.Username FROM classlist, classterm, class, currentterm " .
-			 "        WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
-			 "        AND   classterm.TermIndex      = currentterm.TermIndex " .
-			 "        AND   classterm.ClassIndex     = class.ClassIndex " .
-			 "        AND   class.YearIndex          = $yearindex) " .
-			 "       AS query USING (Username) LEFT OUTER JOIN (subjectstudent INNER JOIN subject USING (SubjectIndex)) ON (subjectstudent.Username = user.Username AND subject.YearIndex = $yearindex AND subject.TermIndex = $termindex) " .
-			 "WHERE user.ActiveStudent = '1' " . "GROUP BY user.Username " .
-			 "ORDER BY $sortorder";
+	if ($show_all == 1 || $show_all == 2) {
+		$query =	"SELECT user.FirstName, user.Surname, user.Username, user.User1, user.User2, " .
+			 		"       user.House, class.ClassName, class.Grade FROM " .
+			 		"       user LEFT OUTER JOIN " .
+					"        (class INNER JOIN classterm ON " .
+					"           (class.YearIndex = $yearindex AND classterm.ClassIndex = class.ClassIndex) " .
+					"          INNER JOIN currentterm USING (TermIndex) " .
+					"          INNER JOIN classlist USING (ClassTermIndex)) " .
+					"        USING (Username) ";
+		if($show_all == 1) {
+			$query .=	"WHERE user.ActiveStudent = '1' ";
+		}
+		$query .=	"GROUP BY user.Username " .
+					"ORDER BY $sortorder";
 		$res = &  $db->query($query);
 		if (DB::isError($res))
 			die($res->getDebugInfo()); // Check for errors in query
 	} else {
-		$query = "SELECT user.FirstName, user.Surname, user.Username, user.User1, user.User2, " .
-				 "       user.House, query.ClassName, query.Grade, COUNT(subjectstudent.SubjectIndex) AS SubjectCount FROM user INNER JOIN " .
-				 "       (SELECT class.ClassName, class.Grade, classlist.ClassOrder, " .
-				 "        classlist.Username FROM classlist, classterm, class, currentterm " .
-				 "        WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
-				 "        AND   classterm.TermIndex      = currentterm.TermIndex " .
-				 "        AND   classterm.ClassIndex     = class.ClassIndex " .
-				 "        AND   class.YearIndex          = $yearindex) " .
-				 "       AS query USING (Username) LEFT OUTER JOIN (subjectstudent INNER JOIN subject USING (SubjectIndex)) ON (subjectstudent.Username = user.Username AND subject.YearIndex = $yearindex AND subject.TermIndex = $termindex) " .
-				 "GROUP BY user.Username " . "ORDER BY $sortorder";
+		$query =	"SELECT user.FirstName, user.Surname, user.Username, user.User1, user.User2, " .
+			 		"       user.House, class.ClassName, class.Grade FROM " .
+			 		"       user INNER JOIN " .
+					"        (class INNER JOIN classterm ON " .
+					"           (class.YearIndex = $yearindex " .
+					"            AND classterm.ClassIndex = class.ClassIndex " .
+					"            AND classterm.TermIndex = $termindex) " .
+					"          INNER JOIN classlist USING (ClassTermIndex)) " .
+					"        USING (Username) " .
+					"GROUP BY user.Username " .
+					"ORDER BY $sortorder";
 		$res = &  $db->query($query);
 		if (DB::isError($res))
 			die($res->getDebugInfo()); // Check for errors in query
@@ -141,6 +203,12 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 	
 	/* Print students and their class */
 	if ($res->numRows() > 0) {
+		$count = $res->numRows();
+		if($show_all == 2) {
+			echo "      <p align='center'><em>Total users: $count</em>";
+		} else {
+			echo "      <p align='center'><em>Total students: $count</em>";
+		}
 		echo "      <table align=\"center\" border=\"1\">\n"; // Table headers
 		echo "         <tr>\n";
 		echo "            <th>&nbsp;</th>\n";
@@ -151,7 +219,6 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 		echo "            <th>House $houseAsc $houseDec</th>\n";
 		echo "            <th>New</th>\n";
 		echo "            <th>Special</th>\n";
-		echo "            <th>Subjects</th>\n";
 		echo "         </tr>\n";
 		
 		/* For each student, print a row with the student's name and what class they're in */
@@ -264,7 +331,6 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 			} else {
 				echo "            <td>&nbsp;</td>\n";
 			}
-			echo "            <td>{$row['SubjectCount']}</td>\n";
 			echo "         </tr>\n";
 		}
 		echo "      </table>\n"; // End of table
