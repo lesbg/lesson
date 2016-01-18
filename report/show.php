@@ -53,11 +53,12 @@ $query = "SELECT classterm.Average, classterm.Effort, classterm.Conduct, " .
 		 "       classterm.ConductTypeIndex, classterm.CTCommentType, " .
 		 "       classterm.HODCommentType, classterm.PrincipalCommentType, " .
 		 "       classterm.CanDoReport, classterm.AbsenceType, " .
-		 "       classterm.ReportTemplate, classterm.ReportTemplateType, " .
+		 "       report.ReportTemplate, report.ReportTemplateType, " .
 		 "       class.ClassName, class.Grade, class.ClassIndex, " .
 		 "       MIN(classlist.ReportDone) AS ReportDone " .
 		 "       FROM classterm, class, classlist " .
 		 "WHERE classterm.ClassTermIndex    = $classtermindex " .
+		 "AND   report.ReportIndex          = classterm.ReportIndex " .
 		 "AND   classlist.ClassTermIndex    = classterm.ClassTermIndex " .
 		 "AND   class.ClassIndex            = classterm.ClassIndex " .
 		 "GROUP BY classterm.ClassIndex";
