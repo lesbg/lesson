@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/user/new_or_modify_action.php (c) 2005, 2015 Jonathan Dieter
+ * admin/user/new_or_modify_action.php (c) 2005, 2015-2016 Jonathan Dieter
  *
  * Show common page information for changing or adding a new user
  * and call appropriate second page.
@@ -19,11 +19,20 @@ if ($_POST["action"] == "Test") {
 	include "admin/user/choose_family.php";
 	exit(0);
 }
+
 foreach($_POST as $key => $value) {
 	if(substr($key, 0, 7) == "action-") {
 		$fremove = safe(substr($key, 7));
 		if(strlen($fremove) > 0 && $value="-") {
 			include "admin/user/remove_family.php";
+			exit(0);
+		}
+	} elseif(substr($key, 0, 12) == "phoneaction-" || $key == "phoneaction") {
+		include "admin/user/phone_action.php";
+		exit(0);
+		$fremove = safe(substr($key, 12));
+		if(strlen($fremove) > 0 && $value="-") {
+			include "admin/user/phone_action.php";
 			exit(0);
 		}
 	}
@@ -68,6 +77,42 @@ if ($_POST["action"] == "Save" || $_POST["action"] == "Update") { // If update o
 		$_POST['sname'] = safe($_POST['sname']);
 	}
 	
+	if (isset($_POST['phone']) && count($_POST['phone']) > 0) {
+		foreach($_POST['phone'] as $i => $phone) {
+			$_POST['phone'][$i][0] = intval($phone[0]);
+			if($phone[1] == "") {
+				if($phone[0] > -1)
+					$_POST['phone_remove'][] = $phone[0];
+				unset($_POST['phone'][$i]);
+				continue;
+			}
+			preg_match("/(^|[^\d])\+961[\s-\/]*(\d[\s-\/]*){7}(\d)?($|[^\d])/", $phone[1], $matches);
+			if(count($matches) > 0) {
+				$phone[1] = preg_replace('/\+961[\s-\/]*(\d)[\s-\/]*(\d)[\s-\/]*(\d)[\s-\/]*(\d)[\s-\/]*(\d)[\s-\/]*(\d)[\s-\/]*(\d)[\s-\/]*(\d)?/', "$1$2$3$4$5$6$7$8", $phone[1]);
+				$phone[1] = preg_replace('/0?(\d+)(\d{3})(\d{3})/', "\+961 $1 $2 $3", $phone[1]);
+			} else {
+				preg_match("/(^|[^\d])(\d[\s-\/]*){8}($|[^\d])/", $phone[1], $matches);
+				if(count($matches) > 0) {
+					$phone[1] = preg_replace('/(\d)[\s-\/]*(\d)[\s-\/]*(\d)[\s-\/]*(\d)[\s-\/]*(\d)[\s-\/]*(\d)[\s-\/]*(\d)[\s-\/]*(\d)/', "$1$2$3$4$5$6$7$8", $phone[1]);
+					$phone[1] = preg_replace('/0?(\d+)(\d{3})(\d{3})/', "\+961 $1 $2 $3", $phone[1]);
+				}
+			}
+			$_POST['phone'][$i][1] = safe($phone[1]);
+			$_POST['phone'][$i][2] = intval($phone[2]);
+			$_POST['phone'][$i][3] = safe($phone[3]);
+		}
+	} else {
+		$_POST['phone'] = array();
+	}
+	
+	if (isset($_POST['phone_remove']) && count($_POST['phone_remove']) > 0) {
+		foreach($_POST['phone_remove'] as $i => $phone) {
+			$_POST['phone_remove'][$i]= intval($phone);
+		}
+	} else {
+		$_POST['phone_remove'] = array();
+	}
+	
 	if (isset($_POST['fcode']) && count($_POST['fcode']) > 0) {
 		foreach($_POST['fcode'] as $i => $fcode) {
 			$_POST['fcode'][$i][0] = safe($fcode[0]);
@@ -88,7 +133,7 @@ if ($_POST["action"] == "Save" || $_POST["action"] == "Update") { // If update o
 	} else {
 		$_POST['fcode'] = array();
 	}
-
+	
 	if (isset($_POST['groups']) && count($_POST['groups']) > 0) {
 		foreach($_POST['groups'] as $i => $fcode) {
 			$_POST['groups'][$i] = safe($fcode);
@@ -113,20 +158,6 @@ if ($_POST["action"] == "Save" || $_POST["action"] == "Update") { // If update o
 	if ($_POST['password2'] != $_POST['confirmpassword2']) { // Make sure passwords match.
 		echo "<p>The secondary passwords don't match.  Press \"Back\" to fix this.</p>\n";
 		$error = true;
-	}
-	
-	$_POST['phone'] = trim($_POST['phone']);
-	if ($_POST['phone'] != "") {
-		if (substr($_POST['phone'], 0, 1) != "+") {
-			if ($phone_prefix != "") {
-				if ($phone_RLZ) {
-					$_POST['phone'] = ltrim($_POST['phone'], "0");
-				}
-				$_POST['phone'] = $phone_prefix . $_POST['phone'];
-			}
-		} else {
-			$_POST['phone'] = substr($_POST['phone'], 1);
-		}
 	}
 	
 	if (! $error) {

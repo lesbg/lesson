@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/user/modify_action.php (c) 2005, 2015 Jonathan Dieter
+ * admin/user/modify_action.php (c) 2005, 2015-2016 Jonathan Dieter
  *
  * Run query to modify a user in the database.
  * ***************************************************************
@@ -110,6 +110,34 @@ if ($is_admin) {
 		gen_group_members($group);
 	}
 	
+	/* Remove any phone numbers we've lost */
+	foreach($_POST['phone_remove'] as $phone_index) {
+		$query = "DELETE FROM phone WHERE PhoneIndex='$phone_index'";
+		$aRes = & $db->query($query);
+		if (DB::isError($aRes))
+			die($aRes->getDebugInfo()); // Check for errors in query
+	}
+	
+	/* Add any new phone numbers */
+	$count = 0;
+	foreach($_POST['phone'] as $phone) {
+		$count += 1;
+		if($phone[3] == "") {
+			$comment = "NULL";
+		} else {
+			$comment = "'${phone[3]}'";
+		}
+		if($phone[0] < 0) {
+			$query =	"INSERT INTO phone (SortOrder, Number, Username, Type, Comment) " .
+						"           VALUES ($count, '${phone[1]}', '$uname', ${phone[2]}, $comment)";
+		} else {
+			$query =	"UPDATE phone SET SortOrder=$count, Number='${phone[1]}', Username='$uname', " .
+						"                 Type=${phone[2]}, Comment=$comment WHERE PhoneIndex=${phone[0]}";
+		}
+		$aRes = & $db->query($query);
+		if (DB::isError($aRes))
+			die($aRes->getDebugInfo()); // Check for errors in query
+	}
 	log_event($LOG_LEVEL_ADMIN, "admin/user/modify_action.php", $LOG_ADMIN, 
 		"Modified {$_POST['fname']} {$_POST['sname']} ($uname).");
 } else { // User isn't authorized to view or change users.

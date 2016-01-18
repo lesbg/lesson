@@ -1,11 +1,14 @@
 <?php
 /**
  * ***************************************************************
- * admin/user/modify.php (c) 2005, 2015 Jonathan Dieter
+ * admin/user/modify.php (c) 2005, 2015-2016 Jonathan Dieter
  *
  * Show fields to fill in for a user
  * ***************************************************************
  */
+if(isset($_GET['next'])) {
+	$backLink = dbfuncInt2String($_GET['next']);
+}
 
 $link = "index.php?location=" .
 		dbfuncString2Int("admin/user/new_or_modify_action.php") . "&amp;next=" .
@@ -72,25 +75,12 @@ if ($is_admin) {
 					$_SESSION['post']['datesep'] = 'D';
 			}
 			$pwd2 = $row['Password2'];
-			if(!isset($_SESSION['post']['phone'])) $_SESSION['post']['phone'] = $row['PhoneNumber'];
 			if(!isset($_SESSION['post']['activestudent'])) $_SESSION['post']['activestudent'] = $row['ActiveStudent'];
 			if(!isset($_SESSION['post']['activeteacher'])) $_SESSION['post']['activeteacher'] = $row['ActiveTeacher'];
 			if(!isset($_SESSION['post']['supportteacher'])) $_SESSION['post']['supportteacher'] = $row['SupportTeacher'];
 			if(!isset($_SESSION['post']['user1'])) $_SESSION['post']['user1'] = $row['User1'];
 			if(!isset($_SESSION['post']['user2'])) $_SESSION['post']['user2'] = $row['User2'];
 			
-			if(!isset($_SESSION['post']['fcode'])) {
-				$query =	"SELECT FamilyCode, Guardian FROM familylist " .
-							"WHERE Username='$uname' " .
-							"ORDER BY FamilyCode";
-				$res = &  $db->query($query);
-				if (DB::isError($res))
-					die($res->getDebugInfo()); // Check for errors in query
-				
-				while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-					$_SESSION['post']['fcode'][] = array($row['FamilyCode'], $row['Guardian']);
-				}
-			}
 			if(!isset($_SESSION['post']['fcode'])) {
 				$_SESSION['post']['fcode'] = array();
 				
@@ -119,6 +109,24 @@ if ($is_admin) {
 					$_SESSION['post']['groups'][] = $row['GroupIndex'];
 				}
 			}
+			if(!isset($_SESSION['post']['phone'])) {
+				$_SESSION['post']['phone'] = array();
+			
+				$query =	"SELECT PhoneIndex, Number, SortOrder, Type, Comment FROM phone " .
+							"WHERE Username='$uname' " .
+							"ORDER BY SortOrder";
+				$res = &  $db->query($query);
+				if (DB::isError($res))
+					die($res->getDebugInfo()); // Check for errors in query
+						
+				while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+					$_SESSION['post']['phone'][] = array($row['PhoneIndex'], $row['Number'], $row['Type'], $row['Comment']);
+				}
+				$_SESSION['post']['phone'][] = array(-1, "", 2, "");
+			}
+			if(!isset($_SESSION['post']['phone_remove'])) {
+				$_SESSION['post']['phone_remove'] = array();
+			}				
 		}
 	}
 	
@@ -154,7 +162,7 @@ if ($is_admin) {
 		echo "                   <input type='radio' name='autouname' value='Y' $chcy>Automatic<br>\n";
 		echo "                   <input type='radio' name='autouname' value='N' $chcn><input type='text' name='uname' size=35 {$pval['uname']}>\n";
 	} else {
-		echo "                   <input type='hidden' name='autouname' value='N'\n";
+		echo "                   <input type='hidden' name='autouname' value='N'>\n";
 		echo "                   <input type='hidden' name='uname' value='$uname'>\n";
 		echo "                   $uname\n";
 	}
@@ -190,8 +198,58 @@ if ($is_admin) {
 	 */
 	echo "            </tr>\n";
 	echo "            <tr>\n";
-	echo "               <td colspan='1'><b>Phone Number:</b></td>\n";
-	echo "               <td colspan='2'><input type='text' name='phone' size=35 {$pval['phone']}></td>\n";
+	echo "               <td><b>Phone number</b></td>\n";
+	echo "               <td><b>Comment</b></td>\n";
+	echo "               <td>&nbsp;</td>\n";
+	echo "            </tr>\n";
+	
+	if(isset($_SESSION['post']['phone'])) {
+		$phone_matrix = array(
+				          array(2, 'Mobile'),
+				          array(1, 'Home'),
+				          array(3, 'Work'),
+				          array(4, 'Other')
+				        );
+		foreach($_SESSION['post']['phone'] as $key => $phone) {
+			$pindex = htmlspecialchars($phone[0]);
+			$pnum = htmlspecialchars($phone[1]);
+			$ptype = intval($phone[2]);
+			$pcomment = htmlspecialchars($phone[3]);
+			if(isset($fcode[1]) && ($fcode[1] === "on" || intval($fcode[1]) === 1)) {
+				$guardian = "checked";
+			} else {
+				$guardian = "";
+			}
+			echo "            <tr>\n";
+			echo "               <td><input type='hidden' name='phone[$key][0]' value='$pindex'><input type='text' name='phone[$key][1]' value='$pnum'></td>\n";
+			echo "               <td><input type='text' name='phone[$key][3]' value='$pcomment'>&nbsp;\n";
+			echo "                  <select name='phone[$key][2]'>\n";
+			foreach($phone_matrix as $item) {
+				if($ptype == $item[0]) 
+					$selected = " selected";
+				else
+					$selected = "";
+				echo "                     <option value='${item[0]}' $selected>${item[1]}</option>\n";
+			}
+			echo "                  </select>\n";
+			echo "               </td>\n";
+			echo "               <td><input type='submit' name='phoneaction-$pindex' value='▲' /><input type='submit' name='phoneaction-$pindex' value='▼' /><input type='submit' name='phoneaction-$pindex' value='-' /></td>\n";
+			echo "            </tr>\n";
+		}
+
+	}
+	echo "            <tr>\n";
+	echo "               <td>&nbsp;</td>\n";
+	echo "               <td>&nbsp;</td>\n";
+	echo "               <td>\n";
+	echo "                  <input type='submit' name='phoneaction' value='+'>\n";
+	$count = 0;
+	foreach($_SESSION['post']['phone_remove'] as $remove) {
+		$count += 1;
+		$remove = intval($remove);
+		echo "                  <input type='hidden' name='phone_remove[$count]' value='$remove'>\n";
+	}
+	echo "               </td>\n";
 	echo "            </tr>\n";
 
 	$chcd = "";
@@ -254,6 +312,7 @@ if ($is_admin) {
 	}
 	echo "                   <input type='checkbox' name='user2' $chc>Special student<br></td>\n";
 	echo "            </tr>\n";
+
 	$res = &  $db->query(
 			"SELECT FamilyCode FROM family " .
 			"ORDER BY FamilyCode");
