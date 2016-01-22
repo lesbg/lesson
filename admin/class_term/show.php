@@ -10,20 +10,20 @@
 /* Get variables */
 if (! isset($_GET['next']))
 	$_GET['next'] = dbfuncString2Int($backLink);
-$classtermindex = safe(dbfuncInt2String($_GET['key']));
+$reportindex = safe(dbfuncInt2String($_GET['key']));
 
 $MAX_SIZE = 10 * 1024 * 1024;
 
 include "core/settermandyear.php";
 
-$query = "SELECT classterm.ReportTemplate, classterm.ReportTemplateType " .
-		 "       FROM classterm " .
-		 "WHERE classterm.ClassTermIndex    = $classtermindex ";
+$query = "SELECT report.ReportTemplate, report.ReportTemplateType " .
+		 "       FROM report " .
+		 "WHERE report.ReportIndex = $reportindex ";
 $res = & $db->query($query);
 if (DB::isError($res))
 	die($res->getDebugInfo()); // Check for errors in query
 if (! $row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-	echo "      <p align='center'>Can't find class.  Have you deleted it?</p>\n";
+	echo "      <p align='center'>Can't find report.  Have you deleted it?</p>\n";
 	echo "      <p align='center'><a href='$backLink'>Click here to go back</a></p>\n";
 	include "footer.php";
 	exit(0);
@@ -32,7 +32,7 @@ if (! $row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 if (is_null($row['ReportTemplate'])) {
 	/* Print error message */
 	include "header.php";
-	echo "      <p>There's no report template for this class.</p>\n";
+	echo "      <p>There's no report template for this report.</p>\n";
 	echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";
 	include "footer.php";
 	exit(0);
@@ -56,11 +56,8 @@ if ($res->numRows() > 0) {
 
 /* Check whether current user is a hod */
 $res = &  $db->query(
-				"SELECT hod.Username FROM hod, class, classterm " .
-				 "WHERE hod.Username        = '$username' " .
-				 "AND   hod.DepartmentIndex = class.DepartmentIndex " .
-				 "AND   class.ClassIndex    = classterm.ClassIndex " .
-				 "AND   classterm.ClassTermIndex = $classtermindex");
+				"SELECT hod.Username FROM hod " .
+				 "WHERE hod.Username        = '$username'");
 if (DB::isError($res))
 	die($res->getDebugInfo()); // Check for errors in query
 
@@ -73,9 +70,9 @@ if ($res->numRows() > 0) {
 /* Check whether user is authorized to change scores */
 $res = & $db->query(
 				"SELECT class.ClassIndex FROM class, classterm " .
-				 "WHERE classterm.ClassTermIndex  = $classtermindex " .
-				 "AND   classterm.ClassIndex = class.ClassIndex " .
-				 "AND   class.ClassTeacherUsername = '$username'");
+				"WHERE classterm.ClassIndex = class.ClassIndex " .
+				"AND   class.YearIndex = $yearindex " .
+				"AND   class.ClassTeacherUsername = '$username'");
 if (DB::isError($res))
 	die($res->getDebugInfo()); // Check for errors in query
 

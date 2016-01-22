@@ -30,7 +30,7 @@ $query = "SELECT class.Grade, class.ClassName, classterm.AverageType, " .
 		 "       classterm.AbsenceType, class.ClassIndex, " .
 		 "       classterm.CTCommentType, classterm.HODCommentType, " .
 		 "       classterm.PrincipalCommentType, classterm.CanDoReport, " .
-		 "       report.ReportName, report.ReportTemplateType " .
+		 "       report.ReportIndex, report.ReportName, report.ReportTemplateType " .
 		 "       FROM class LEFT OUTER JOIN classterm ON " .
 		 "            (class.YearIndex           = $yearindex " .
 		 "             AND classterm.ClassIndex = class.ClassIndex " .
@@ -180,9 +180,12 @@ while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
 	if (is_null($row['ReportName'])) {
 		$report_type = "<i>None</i>";
 	} else {
+		$nlink = "index.php?location=" .
+				dbfuncString2Int("admin/class_term/show.php") . "&amp;key=" .
+				dbfuncString2Int($row['ReportIndex']);
 		$report_type = htmlspecialchars($row['ReportName']);
 	}
-	echo "            <td>$report_type</td>\n";
+	echo "            <td><a href='$nlink'>$report_type</a></td>\n";
 	
 	/* Show whether reports are enabled */
 	if ($row['CanDoReport']) {
