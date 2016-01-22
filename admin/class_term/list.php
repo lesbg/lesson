@@ -30,11 +30,12 @@ $query = "SELECT class.Grade, class.ClassName, classterm.AverageType, " .
 		 "       classterm.AbsenceType, class.ClassIndex, " .
 		 "       classterm.CTCommentType, classterm.HODCommentType, " .
 		 "       classterm.PrincipalCommentType, classterm.CanDoReport, " .
-		 "       classterm.ReportTemplateType " .
+		 "       report.ReportName, report.ReportTemplateType " .
 		 "       FROM class LEFT OUTER JOIN classterm ON " .
 		 "            (class.YearIndex           = $yearindex " .
 		 "             AND classterm.ClassIndex = class.ClassIndex " .
 		 "             AND classterm.TermIndex  = $termindex) " .
+		 "         LEFT OUTER JOIN report USING (ReportIndex) " .
 		 "WHERE class.YearIndex       = $yearindex " .
 		 "AND   class.DepartmentIndex = $depindex " .
 		 "ORDER BY class.Grade, class.ClassName";
@@ -60,7 +61,7 @@ echo "            <th>Absences</th>\n";
 echo "            <th>Class<br>Teacher's<br>Comment</th>\n";
 echo "            <th>Head of<br>Department's<br>Comment</th>\n";
 echo "            <th>Principal's<br>Comment</th>\n";
-echo "            <th>Report<br>Template<br>Type</th>\n";
+echo "            <th>Report<br>Template</th>\n";
 echo "            <th>Report<br>Editing<br>Enabled?</th>\n";
 echo "         </tr>\n";
 
@@ -176,13 +177,10 @@ while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
 	}
 	
 	/* Show report template type */
-	if (is_null($row['ReportTemplateType'])) {
+	if (is_null($row['ReportName'])) {
 		$report_type = "<i>None</i>";
-	} elseif ($row['ReportTemplateType'] ==
-			 "application/vnd.oasis.opendocument.text") {
-		$report_type = "OpenDocument Text";
 	} else {
-		$report_type = "<b>Unknown</b>";
+		$report_type = htmlspecialchars($row['ReportName']);
 	}
 	echo "            <td>$report_type</td>\n";
 	

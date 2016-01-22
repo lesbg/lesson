@@ -109,6 +109,13 @@ if ($_POST['action'] == "Update") {
 		$_POST['absence_type'] = NULL;
 	}
 	
+	if (isset($_POST['report_template'])) {
+		if($_POST['report_template'] != "NULL")
+			$_POST['report_template'] = intval($_POST['report_template']);
+	} else {
+		$_POST['report_template'] = NULL;
+	}
+	
 	$query = "UPDATE classterm SET ";
 	if (! is_null($_POST['report_enabled'])) {
 		$query .= "       CanDoReport = {$_POST['report_enabled']}, ";
@@ -134,6 +141,9 @@ if ($_POST['action'] == "Update") {
 	if (! is_null($_POST['absence_type'])) {
 		$query .= "       AbsenceType = {$_POST['absence_type']}, ";
 	}
+	if (! is_null($_POST['report_template'])) {
+		$query .= "       ReportIndex = {$_POST['report_template']}, ";
+	}
 	
 	$query = substr($query, 0, strlen($query) - 2); // Get rid of final comma
 	$query .= " WHERE classterm.ClassIndex = $classindex " .
@@ -149,6 +159,7 @@ if ($_POST['action'] == "Update") {
 	}
 	echo "      <p align='center'><a href='$nextLink'>Continue</a></p>\n"; // Link to next page
 	include "footer.php";
+/* Not here anymore
 } elseif ($_POST['action'] == "Upload") {
 	if (! isset($_FILES['report_template']) or
 			 $_FILES['report_template']['error'] != UPLOAD_ERR_OK) {
@@ -183,7 +194,7 @@ if ($_POST['action'] == "Update") {
 		if (DB::isError($nres))
 			die($nres->getUserInfo());
 	}
-	include "admin/class_term/modify.php";
+	include "admin/class_term/modify.php";*/
 } else {
 	$extraMeta = "      <meta http-equiv='REFRESH' content='0;url=$nextLink'>\n";
 	$noJS = true;

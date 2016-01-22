@@ -39,11 +39,12 @@ $query = "SELECT classterm.AverageType, classterm.ClassTermIndex, " .
 		 "       classterm.AbsenceType, " .
 		 "       classterm.CTCommentType, classterm.HODCommentType, " .
 		 "       classterm.PrincipalCommentType, classterm.CanDoReport, " .
-		 "       classterm.ReportTemplateType " .
+		 "       report.ReportIndex, report.ReportName, report.ReportTemplateType " .
 		 "       FROM class LEFT OUTER JOIN classterm ON " .
 		 "            (class.ClassIndex          = $classindex " .
 		 "             AND classterm.ClassIndex = $classindex " .
 		 "             AND classterm.TermIndex  = $termindex) " .
+		 "         LEFT OUTER JOIN report USING (ReportIndex) " .
 		 "WHERE class.ClassIndex = $classindex ";
 $res = & $db->query($query);
 if (DB::isError($res))
@@ -418,11 +419,43 @@ echo "               </td>\n";
 echo "            </tr>\n";
 
 /* Report template */
-echo "            <tr class='alt'>\n";
+/*echo "            <tr class='alt'>\n";
 echo "               <td>Report template</td>\n";
 echo "               <td>\n";
 echo "                   <input name='report_template' type='file'><input type='hidden' name='MAX_FILE_SIZE' value='100000000'><input type='submit' name='action' value='Upload'><br>\n";
 echo "                   Current template type: $report_type\n";
+echo "               </td>\n";
+echo "            </tr>\n";*/
+echo "            <tr class='alt'>\n";
+echo "               <td>Report template</td>\n";
+echo "               <td>\n";
+echo "                   <select name='report_template'>\n";
+if(is_null($row['ReportIndex'])) {
+	$selected = " selected";
+} else {
+	$selected = "";
+}
+echo "                      <option value='NULL' $selected>None</option>\n";
+$query = "SELECT ReportIndex, ReportName, ReportTemplateType FROM report ORDER BY ReportName";
+
+$nres = & $db->query($query);
+if (DB::isError($nres))
+	die($nres->getDebugInfo()); // Check for errors in query
+while($nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
+	if($row['ReportIndex'] == $nrow['ReportIndex']) {
+		$selected = " selected";
+	} else {
+		$selected = "";
+	}
+	if ($nrow['ReportTemplateType'] == "application/vnd.oasis.opendocument.text") {
+		$type = "odt";
+	} else {
+		$type = "unknown";
+	}
+	
+	echo "                      <option value='{$nrow['ReportIndex']}' $selected>{$nrow['ReportName']} - $type</option>\n";
+}
+echo "                   </select>\n";
 echo "               </td>\n";
 echo "            </tr>\n";
 
@@ -437,4 +470,3 @@ log_event($LOG_LEVEL_EVERYTHING, "admin/class_term/modify.php", $LOG_ADMIN,
 		"Opened $title for editing.");
 
 include "footer.php";
-?>
