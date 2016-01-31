@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/user/choose_family.php (c) 2015 Jonathan Dieter
+ * admin/user/choose_family.php (c) 2015-2016 Jonathan Dieter
  *
  * Choose family
  * ***************************************************************
@@ -18,7 +18,10 @@ if ($is_admin) {
 		$sname = "";
 	}
 
-	$next = dbfuncString2Int($backLink);
+	if(isset($_GET['next']) && strpos($backLink, "next=") === False) {
+		$backLink .= "&amp;next=" . $_GET['next'];
+	}
+	$next = dbfuncString2Int($backLink);	
 	
 	$link = "index.php?location=" .
 			dbfuncString2Int("admin/user/choose_family_action.php") . "&amp;next=" .
@@ -47,9 +50,10 @@ if ($is_admin) {
 	echo "      <form action='$link' method='post'>\n"; // Form method
 	
 	$newlink = "index.php?location=" .
-			dbfuncString2Int("admin/family/new.php") . 
+			dbfuncString2Int("admin/family/modify.php") . 
 			"&amp;next=" . $next .
-			"&amp;keyname=" . dbfuncString2Int($sname);
+			"&amp;keyname=" . dbfuncString2Int($sname) .
+			"&amp;key2=" . dbfuncString2Int('1');
 	$newbutton = dbfuncGetButton($newlink, "New family", "medium", "", "Create new family");
 	echo "         <p align='center'>$newbutton</p>\n";
 	echo "         <p align='center'>\n";

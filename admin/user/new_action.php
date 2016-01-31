@@ -76,44 +76,59 @@ if ($is_admin) {
 		if (DB::isError($aRes))
 			die($aRes->getDebugInfo()); // Check for errors in query
 		
-		/* Remove any family codes we've been removed from */
-		$query = "SELECT FamilyListIndex, FamilyCode FROM familylist WHERE Username='{$_POST['uname']}'";
-		$aRes = & $db->query($query);
-		if (DB::isError($aRes))
-			die($aRes->getDebugInfo()); // Check for errors in query
-		while ( $arow = & $aRes->fetchRow(DB_FETCHMODE_ASSOC) ) {
-			$found = False;
-			foreach($_POST['fcode'] as $val) {
-				if($aRow['FamilyCode'] == $val[0])
-					$found = True;
-			}
-			if(!$found) {
-				$query = "DELETE FROM familylist WHERE FamilyListIndex={$arow['FamilyListIndex']}";
-				$bRes = & $db->query($query);
-				if (DB::isError($bRes))
-					die($bRes->getDebugInfo()); // Check for errors in query
-			}
-		}
-		
-		/* Add any family codes we've been added to */
-		foreach($_POST['fcode'] as $val) {
-			$fcode = $val[0];
-			$guardian = $val[1];
-			$query = "SELECT FamilyListIndex, FamilyCode FROM familylist WHERE Username='{$_POST['uname']}' AND FamilyCode='$fcode'";
+		if(!isset($_POST['show_family']) || $_POST['show_family'] != '1') {
+			/* Remove any family codes we've been removed from */
+			$query = "SELECT FamilyListIndex, FamilyCode FROM familylist WHERE Username='{$_POST['uname']}'";
 			$aRes = & $db->query($query);
 			if (DB::isError($aRes))
 				die($aRes->getDebugInfo()); // Check for errors in query
-			if ($aRes->numRows() == 0) {
-				$query = "INSERT INTO familylist (Username, FamilyCode, Guardian) VALUES ('{$_POST['uname']}', '$fcode', $guardian)";
-				$aRes = & $db->query($query);
-				if (DB::isError($aRes))
-					die($aRes->getDebugInfo()); // Check for errors in query
-			} else {
-				$query = "UPDATE familylist SET Guardian=$guardian WHERE Username='{$_POST['uname']}' AND FamilyCode='$fcode'";
-				$aRes = & $db->query($query);
-				if (DB::isError($aRes))
-					die($aRes->getDebugInfo()); // Check for errors in query
+			while ( $arow = & $aRes->fetchRow(DB_FETCHMODE_ASSOC) ) {
+				$found = False;
+				foreach($_POST['fcode'] as $val) {
+					if($aRow['FamilyCode'] == $val[0])
+						$found = True;
+				}
+				if(!$found) {
+					$query = "DELETE FROM familylist WHERE FamilyListIndex={$arow['FamilyListIndex']}";
+					$bRes = & $db->query($query);
+					if (DB::isError($bRes))
+						die($bRes->getDebugInfo()); // Check for errors in query
+				}
 			}
+			
+			/* Add any family codes we've been added to */
+			foreach($_POST['fcode'] as $val) {
+				$fcode = $val[0];
+				$guardian = $val[1];
+				$query = "SELECT FamilyListIndex, FamilyCode FROM familylist WHERE Username='{$_POST['uname']}' AND FamilyCode='$fcode'";
+				$aRes = & $db->query($query);
+				if (DB::isError($aRes))
+					die($aRes->getDebugInfo()); // Check for errors in query
+				if ($aRes->numRows() == 0) {
+					$query = "INSERT INTO familylist (Username, FamilyCode, Guardian) VALUES ('{$_POST['uname']}', '$fcode', $guardian)";
+					$aRes = & $db->query($query);
+					if (DB::isError($aRes))
+						die($aRes->getDebugInfo()); // Check for errors in query
+				} else {
+					$query = "UPDATE familylist SET Guardian=$guardian WHERE Username='{$_POST['uname']}' AND FamilyCode='$fcode'";
+					$aRes = & $db->query($query);
+					if (DB::isError($aRes))
+						die($aRes->getDebugInfo()); // Check for errors in query
+				}
+			}
+		} else {
+			if(!isset($_SESSION['post_family'])) {
+				$_SESSION['post_family'] = array();
+			}
+			if(!isset($_SESSION['post_family']['uname'])) {
+				$_SESSION['post_family']['uname'] = array();
+			}
+			if($_POST['new_user_type'] == 'f' ||$_POST['new_user_type'] == 'm') {
+				$guardian = 1;
+			} else {
+				$guardian = 0;
+			}
+			$_SESSION['post_family']['uname'][] = array($_POST['uname'], $guardian);
 		}
 		
 		/* Remove any groups we've been removed from */

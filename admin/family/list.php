@@ -94,7 +94,7 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 								"Sort descending");*/
 	
 	$newlink = "index.php?location=" .
-			dbfuncString2Int("admin/family/new.php") . // link to create a new subject
+			dbfuncString2Int("admin/family/modify.php") . // link to create a new subject
 			"&amp;next=" .
 			dbfuncString2Int(
 					"index.php?location=" .
@@ -129,7 +129,7 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 				"   LEFT OUTER JOIN (familylist INNER JOIN user USING (Username) " .
 				"          LEFT OUTER JOIN phone USING (Username) " .
 				"          LEFT OUTER JOIN (class INNER JOIN classterm " .
-				"               ON (class.YearIndex=12 AND classterm.ClassIndex=class.ClassIndex) " .
+				"               ON (class.YearIndex=$yearindex AND classterm.ClassIndex=class.ClassIndex) " .
 				"          INNER JOIN currentterm ON classterm.TermIndex=currentterm.TermIndex " .
 				"          INNER JOIN classlist USING (ClassTermIndex)) ON classlist.Username=user.Username) " .
 				"   USING (FamilyCode) " .

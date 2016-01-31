@@ -23,6 +23,9 @@ if(isset($_GET['key'])) {
 	         "&amp;keyname=" . $_GET['keyname'];
 } else {
 	$title = "Create New User";
+	if(isset($_GET['keyname'])) {
+		$new_fname = dbfuncInt2String($_GET['keyname']);
+	}
 	$modify = False;
 }
 
@@ -42,8 +45,31 @@ if ($is_admin) {
 	foreach($_POST as $key => $value) {
 		$_SESSION['post'][$key] = $value;
 	}
-
+	
+	if(isset($_GET['key2']) && dbfuncInt2String($_GET['key2']) == '1') {
+		$_SESSION['post']['show_family'] = '1';
+		$show_family = False;
+	} else {
+		if(isset($_SESSION['post']['show_family']) && $_SESSION['post']['show_family'] == '1') {
+			$show_family = False;
+		} else {
+			$_SESSION['post']['show_family'] = '0';
+			$show_family = True;
+		}
+	}
+	if(isset($_GET['type'])) {
+		$_SESSION['post']['new_user_type'] = dbfuncInt2String($_GET['type']);
+		$new_user_type = $_SESSION['post']['new_user_type'];
+	} else {
+		if(isset($_SESSION['post']['new_user_type'])) {
+			$new_user_type = $_SESSION['post']['new_user_type'];
+		} else {
+			$new_user_type = 'a';
+		}
+	}
+	
 	$pwd2 = NULL;
+	
 	if($modify) {
 		$res = &  $db->query(
 				"SELECT Username, FirstName, Surname, Gender, DOB, Permissions, DepartmentIndex, " .
@@ -81,18 +107,20 @@ if ($is_admin) {
 			if(!isset($_SESSION['post']['user1'])) $_SESSION['post']['user1'] = $row['User1'];
 			if(!isset($_SESSION['post']['user2'])) $_SESSION['post']['user2'] = $row['User2'];
 			
-			if(!isset($_SESSION['post']['fcode'])) {
-				$_SESSION['post']['fcode'] = array();
+			if($show_family) {
+				if(!isset($_SESSION['post']['fcode'])) {
+					$_SESSION['post']['fcode'] = array();
+					
+					$query =	"SELECT FamilyCode, Guardian FROM familylist " .
+								"WHERE Username='$uname' " .
+								"ORDER BY FamilyCode";
+					$res = &  $db->query($query);
+					if (DB::isError($res))
+						die($res->getDebugInfo()); // Check for errors in query
 				
-				$query =	"SELECT FamilyCode, Guardian FROM familylist " .
-							"WHERE Username='$uname' " .
-							"ORDER BY FamilyCode";
-				$res = &  $db->query($query);
-				if (DB::isError($res))
-					die($res->getDebugInfo()); // Check for errors in query
-			
-				while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-					$_SESSION['post']['fcode'][] = array($row['FamilyCode'], $row['Guardian']);
+					while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+						$_SESSION['post']['fcode'][] = array($row['FamilyCode'], $row['Guardian']);
+					}
 				}
 			}
 			if(!isset($_SESSION['post']['groups'])) {
@@ -127,6 +155,23 @@ if ($is_admin) {
 			if(!isset($_SESSION['post']['phone_remove'])) {
 				$_SESSION['post']['phone_remove'] = array();
 			}				
+		}
+	} else {
+		if($new_user_type != 'a') {
+			if(!isset($_SESSION['post']['sname'])) $_SESSION['post']['sname'] = $new_fname;
+			if($new_user_type == 'f') {
+				if(!isset($_SESSION['post']['gender'])) {
+					$_SESSION['post']['title'] = "Mr.";
+					$_SESSION['post']['gender'] = "M";
+				}
+			} elseif ($new_user_type == 'm') {
+				if(!isset($_SESSION['post']['gender'])) {
+					$_SESSION['post']['title'] = "Mrs.";
+					$_SESSION['post']['gender'] = "F";
+				}
+			} elseif ($new_user_type == 's') {
+				if(!isset($_SESSION['post']['activestudent'])) $_SESSION['post']['activestudent'] = '1';
+			}
 		}
 	}
 	
@@ -166,6 +211,8 @@ if ($is_admin) {
 		echo "                   <input type='hidden' name='uname' value='$uname'>\n";
 		echo "                   $uname\n";
 	}
+	echo "                   <input type='hidden' name='show_family' value='{$_SESSION['post']['show_family']}'>\n";
+	echo "                   <input type='hidden' name='new_user_type' value='{$_SESSION['post']['new_user_type']}'>\n";
 	echo "               </td>\n";
 	echo "            </tr>\n";
 	echo "            <tr>\n";
@@ -313,38 +360,40 @@ if ($is_admin) {
 	echo "                   <input type='checkbox' name='user2' $chc>Special student<br></td>\n";
 	echo "            </tr>\n";
 
-	$res = &  $db->query(
-			"SELECT FamilyCode FROM family " .
-			"ORDER BY FamilyCode");
-	if (DB::isError($res))
-		die($res->getDebugInfo()); // Check for errors in query
-	
-	if ($res->numRows() > 0) {
-		echo "            <tr>\n";
-		echo "               <td><b>Family Code</b></td>\n";
-		echo "               <td><b>Guardian</b></td>\n";
-		echo "               <td>&nbsp;</td>\n";
-		echo "            </tr>\n";
-		if(isset($_SESSION['post']['fcode'])) {
-			foreach($_SESSION['post']['fcode'] as $key => $fcode) {
-				$fcodep = htmlspecialchars($fcode[0]);
-				if(isset($fcode[1]) && ($fcode[1] === "on" || intval($fcode[1]) === 1)) {
-					$guardian = "checked";
-				} else {
-					$guardian = "";
+	if($show_family) {
+		$res = &  $db->query(
+				"SELECT FamilyCode FROM family " .
+				"ORDER BY FamilyCode");
+		if (DB::isError($res))
+			die($res->getDebugInfo()); // Check for errors in query
+		
+		if ($res->numRows() > 0) {
+			echo "            <tr>\n";
+			echo "               <td><b>Family Code</b></td>\n";
+			echo "               <td><b>Guardian</b></td>\n";
+			echo "               <td>&nbsp;</td>\n";
+			echo "            </tr>\n";
+			if(isset($_SESSION['post']['fcode'])) {
+				foreach($_SESSION['post']['fcode'] as $key => $fcode) {
+					$fcodep = htmlspecialchars($fcode[0]);
+					if(isset($fcode[1]) && ($fcode[1] === "on" || intval($fcode[1]) === 1)) {
+						$guardian = "checked";
+					} else {
+						$guardian = "";
+					}
+					echo "            <tr>\n";
+					echo "               <td><input type='hidden' name='fcode[$key][0]' value='$fcodep'>$fcodep</td>\n";
+					echo "               <td><input type='checkbox' name='fcode[$key][1]' $guardian /></td>\n";
+					echo "               <td><input type='submit' name='action-$fcodep' value='-' /></td>\n";
+					echo "            </tr>\n";
 				}
-				echo "            <tr>\n";
-				echo "               <td><input type='hidden' name='fcode[$key][0]' value='$fcodep'>$fcodep</td>\n";
-				echo "               <td><input type='checkbox' name='fcode[$key][1]' $guardian /></td>\n";
-				echo "               <td><input type='submit' name='action-$fcodep' value='-' /></td>\n";
-				echo "            </tr>\n";
 			}
+			echo "            <tr>\n";
+			echo "               <td>&nbsp;</td>\n";
+			echo "               <td>&nbsp;</td>\n";
+			echo "               <td><input type='submit' name='action' value='+'></td>\n";
+			echo "            </tr>\n";
 		}
-		echo "            <tr>\n";
-		echo "               <td>&nbsp;</td>\n";
-		echo "               <td>&nbsp;</td>\n";
-		echo "               <td><input type='submit' name='action' value='+'></td>\n";
-		echo "            </tr>\n";
 	}
 	
 	$res = &  $db->query(
