@@ -1,13 +1,15 @@
 <?php
 /**
  * ***************************************************************
- * core/settermandyear.php (c) 2005 Jonathan Dieter
+ * core/settermandyear.php (c) 2005, 2016 Jonathan Dieter
  *
  * Set the variables $termindex and $yearindex.
  * ***************************************************************
  */
 if (isset($_GET['year'])) { // Check whether we're looking at a different year
 	$yearindex = safe(dbfuncInt2String($_GET['year']));
+	if($yearindex != $_SESSION['yearindex'])
+		$termindex = NULL;
 	$_SESSION['yearindex'] = $yearindex;
 }
 
@@ -130,20 +132,38 @@ if ($tty_row = & $tty_res->fetchRow(DB_FETCHMODE_ASSOC)) {
 }
 
 if (isset($termindex)) {
-	$query = "SELECT TermIndex FROM term " . "WHERE DepartmentIndex=$depindex " .
-			 "ORDER BY TermNumber";
+	$query =	"SELECT TermIndex FROM term " . 
+				"WHERE DepartmentIndex=$depindex " .
+				"AND   TermIndex=$termindex";
 	$tty_res = &  $db->query($query);
 	if (DB::isError($tty_res))
 		die($tty_res->getDebugInfo()); // Check for errors in query
-	$final = $currentterm;
-	while ( $tty_row = & $tty_res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-		if ($termindex == $tty_row['TermIndex'])
-			$final = $termindex;
+	if($tty_res->numRows() == 0)
+		$termindex = NULL;
+}
+
+if(!isset($termindex) || is_null($termindex)) {
+	$termindex = $currentterm;	
+	
+	$query = "SELECT YearIndex FROM currentinfo ORDER BY InputDate DESC LIMIT 1";
+	$tty_res =& $db->query($query);
+	if (DB::isError($tty_res))
+		die($tty_res->getDebugInfo()); // Check for errors in query
+
+	if ($tty_row =& $tty_res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		$current_year_index = $tty_row['YearIndex'];
+		if($current_year_index != $yearindex) {
+			$query =	"SELECT TermIndex FROM term " . 
+						"WHERE DepartmentIndex=$depindex " .
+						"AND TermNumber=1";
+			$tty_res =& $db->query($query);
+			if (DB::isError($tty_res))
+				die($tty_res->getDebugInfo()); // Check for errors in query
+			if ($tty_row =& $tty_res->fetchRow(DB_FETCHMODE_ASSOC)) {
+				$termindex = $tty_row['TermIndex'];
+			}
+		}		
 	}
-	$termindex = $final;
-} else {
-	$termindex = $currentterm;
 }
 
 $_SESSION['termindex'] = $termindex;
-?>
