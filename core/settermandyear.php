@@ -42,6 +42,8 @@ if (! isset($depindex)) {
 		die($tty_res->getDebugInfo()); // Check for errors in query
 	if ($tty_row = & $tty_res->fetchRow(DB_FETCHMODE_ASSOC)) {
 		$depindex = $tty_row['DepartmentIndex'];
+	} else {
+		$depindex = 3;
 	}
 }
 
