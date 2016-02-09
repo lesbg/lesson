@@ -219,12 +219,13 @@ while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
 $query = "INSERT INTO classterm (ClassIndex, TermIndex, AverageType, ConductType, " .
 		 "                        EffortType, AbsenceType, AverageTypeIndex, ConductTypeIndex, " .
 		 "                        EffortTypeIndex, CTCommentType, HODCommentType, " .
-		 "                        PrincipalCommentType, ReportTemplate, ReportTemplateType) " .
+		 "                        PrincipalCommentType, ReportIndex) " .
 		 "SELECT ClassIndex, $newterm, AverageType, ConductType, EffortType, AbsenceType, " .
 		 "       AverageTypeIndex, ConductTypeIndex, EffortTypeIndex, " .
 		 "       CTCommentType, HODCommentType, PrincipalCommentType, " .
-		 "       ReportTemplate, ReportTemplateType " . "       FROM classterm " .
-		 "WHERE classterm.TermIndex = $currentterm ";
+		 "       ReportIndex " . "       FROM classterm INNER JOIN class USING (ClassIndex) " .
+		 "WHERE classterm.TermIndex = $currentterm " .
+		 "AND   class.YearIndex     = $currentyear ";
 $nres = &  $db->query($query);
 if (DB::isError($nres))
 	die($nres->getDebugInfo()); // Check for errors in query
