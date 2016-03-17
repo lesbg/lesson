@@ -66,8 +66,8 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
 	if (DB::isError($res))
 		die($res->getDebugInfo()); // Check for errors in query
 	while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-		echo "                     <option value='{$row['Username']}'>{$row['FirstName']} " .
-			 "{$row['Surname']} ({$row['Username']})\n";
+		echo "                     <option value='{$row['Username']}'>{$row['Username']} - {$row['FirstName']} " .
+			 "{$row['Surname']}\n";
 	}
 	echo "                  </select>\n";
 	echo "               </td>\n";
@@ -89,8 +89,8 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
 	if (DB::isError($res))
 		die($res->getDebugInfo()); // Check for errors in query
 	while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-		echo "                     <option value='{$row['Username']}'>{$row['FirstName']} " .
-			 "{$row['Surname']} ({$row['Username']})\n";
+		echo "                     <option value='{$row['Username']}'>{$row['Username']} - {$row['FirstName']} " .
+			 "{$row['Surname']}\n";
 	}
 	echo "                  </select>\n";
 	echo "               </td>\n";
@@ -117,8 +117,8 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
 	if (DB::isError($res))
 		die($res->getDebugInfo()); // Check for errors in query
 	if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-		echo "                     <option value='{$row['Username']}'>{$row['FirstName']} " .
-			 "{$row['Surname']} ({$row['Username']})\n";
+		echo "                     <option value='{$row['Username']}'>{$row['Username']} - {$row['FirstName']} " .
+			 "{$row['Surname']}\n";
 	}
 	echo "                  </select>\n";
 	echo "               </td>\n";
@@ -138,8 +138,8 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
 		die($res->getDebugInfo()); // Check for errors in query
 	
 	while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-		echo "                     <option value='{$row['Username']}'>{$row['FirstName']} " .
-			 "{$row['Surname']} ({$row['Username']})\n";
+		echo "                     <option value='{$row['Username']}'>{$row['Username']} - {$row['FirstName']} " .
+			 "{$row['Surname']}\n";
 	}
 	echo "                  </select><br>\n";
 	echo "               </td>\n";
