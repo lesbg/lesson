@@ -125,17 +125,21 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 	if(!$show_all) {
 		$query .=	"	 WHERE (user2.ActiveStudent=1 OR familylist2.FamilyCode IS NULL) ";
 	}
-	$query .=	"    GROUP BY family.FamilyCode) AS familyinfo " .
-				"   LEFT OUTER JOIN (familylist INNER JOIN user USING (Username) " .
-				"          LEFT OUTER JOIN phone USING (Username) " .
-				"          LEFT OUTER JOIN (class INNER JOIN classterm " .
-				"               ON (class.YearIndex=$yearindex AND classterm.ClassIndex=class.ClassIndex) " .
-				"          INNER JOIN currentterm ON classterm.TermIndex=currentterm.TermIndex " .
-				"          INNER JOIN classlist USING (ClassTermIndex)) ON classlist.Username=user.Username) " .
-				"   USING (FamilyCode) " .
-				"GROUP by user.Username " .
-				"ORDER BY $sortorder, Guardian DESC, IF(Guardian=1, user.Gender, Guardian) DESC, " .
-				"         class.Grade DESC, user.Username";
+	$query .=		"    GROUP BY family.FamilyCode) AS familyinfo " .
+					"   LEFT OUTER JOIN (familylist INNER JOIN user USING (Username) " .
+					"          LEFT OUTER JOIN phone USING (Username) " .
+					"          LEFT OUTER JOIN (class INNER JOIN classterm " .
+					"               ON (class.YearIndex=$yearindex AND classterm.ClassIndex=class.ClassIndex) ";
+	if($yearindex == $currentyear) {
+		$query .=	"          INNER JOIN currentterm ON classterm.TermIndex=currentterm.TermIndex ";
+	} else {
+		$query .=	"          INNER JOIN term ON classterm.TermIndex=term.TermIndex AND term.TermNumber=1 ";
+	}
+	$query .=		"          INNER JOIN classlist USING (ClassTermIndex)) ON classlist.Username=user.Username) " .
+					"   USING (FamilyCode) " .
+					"GROUP by familyinfo.FamilyCode, user.Username " .
+					"ORDER BY $sortorder, Guardian DESC, IF(Guardian=1, user.Gender, Guardian) DESC, " .
+					"         class.Grade DESC, user.Username";
 	$res = &  $db->query($query);
 	if (DB::isError($res))
 		die($res->getDebugInfo()); // Check for errors in query
@@ -155,7 +159,7 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 		$alt_count = 0;
 		$row = NULL;
 		$prev_family = NULL;
-		$prev_guardian = NULL;
+		$prev_guardian = 2;
 		
 		while ( true ) {
 			if($next_row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
@@ -196,76 +200,84 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 				echo "            <td>$fcode</td>\n";
 				echo "            <td>$fname</td>\n";
 			}
-			if($row['Guardian'] != $prev_guardian) {
+			if($row['Guardian'] != $prev_guardian && !is_null($row['Guardian'])) {
 				$prev_guardian = $row['Guardian'];
 				echo "            <td>\n";
 			}
 			
-			if($row['Guardian'] == 1) {
-				$who = "guardian";
-			} else {
-				$who = "student";
+			if(!is_null($row['Guardian'])) {
+				if($row['Guardian'] == 1) {
+					$who = "guardian";
+				} else {
+					$who = "student";
+				}
+				
+				$viewlink = "index.php?location=" .
+						dbfuncString2Int("admin/subject/list_student.php") .
+						"&amp;key=" . dbfuncString2Int($row['Username']) .
+						"&amp;keyname=" .
+						dbfuncString2Int(
+							"{$row['FirstName']} {$row['Surname']} ({$row['Username']})");
+				$editlink = "index.php?location=" .
+						dbfuncString2Int("admin/user/modify.php") . "&amp;key=" .
+						dbfuncString2Int($row['Username']) . "&amp;keyname=" .
+						dbfuncString2Int(
+							"{$row['FirstName']} {$row['Surname']} ({$row['Username']})");
+				$cnlink = "index.php?location=" .
+						dbfuncString2Int("teacher/casenote/list.php") . "&amp;key=" .
+						dbfuncString2Int($row['Username']) . "&amp;keyname=" .
+						dbfuncString2Int(
+							"{$row['FirstName']} {$row['Surname']} ({$row['Username']})") .
+				 		"&amp;keyname2=" . dbfuncSTring2Int($row['FirstName']);
+				if($row['ActiveStudent'] == 1 && $row['Guardian'] == 0) {
+					$viewbutton = dbfuncGetButton($viewlink, "V", "small", "view",
+							"View $who's subjects");
+				} else {
+					$viewbutton = "";
+				}
+				$editbutton = dbfuncGetButton($editlink, "E", "small", "edit",
+						"Edit $who");
+	
+				echo "$viewbutton $editbutton";
+				if($row['ActiveStudent'] == 1) {
+					echo "<strong>";
+				}
+				if($row['ActiveTeacher'] == 1 || $row['Guardian'] == 1) {
+					echo "<em>";
+					if(isset($row['Title']) and $row['Title'] != "") {
+						echo "{$row['Title']} ";
+					}
+				}
+				echo "{$row['FirstName']} {$row['Surname']} ({$row['Username']})";
+				if($row['ActiveStudent'] == 1) {
+					echo " - {$row['ClassName']}";
+				}
+				if($row['ActiveTeacher'] == 1 || $row['Guardian'] == 1) {
+					if($row['Number'] != "") {
+						echo " - {$row['Number']}";
+					}
+					echo "</em>";
+				}
+				if($row['ActiveStudent'] == 1) {
+					echo "</strong>";
+				}
+				echo "<br />\n";
 			}
 			
-			$viewlink = "index.php?location=" .
-					dbfuncString2Int("admin/subject/list_student.php") .
-					"&amp;key=" . dbfuncString2Int($row['Username']) .
-					"&amp;keyname=" .
-					dbfuncString2Int(
-						"{$row['FirstName']} {$row['Surname']} ({$row['Username']})");
-			$editlink = "index.php?location=" .
-					dbfuncString2Int("admin/user/modify.php") . "&amp;key=" .
-					dbfuncString2Int($row['Username']) . "&amp;keyname=" .
-					dbfuncString2Int(
-						"{$row['FirstName']} {$row['Surname']} ({$row['Username']})");
-			$cnlink = "index.php?location=" .
-					dbfuncString2Int("teacher/casenote/list.php") . "&amp;key=" .
-					dbfuncString2Int($row['Username']) . "&amp;keyname=" .
-					dbfuncString2Int(
-						"{$row['FirstName']} {$row['Surname']} ({$row['Username']})") .
-			 		"&amp;keyname2=" . dbfuncSTring2Int($row['FirstName']);
-			if($row['ActiveStudent'] == 1 && $row['Guardian'] == 0) {
-				$viewbutton = dbfuncGetButton($viewlink, "V", "small", "view",
-						"View $who's subjects");
-			} else {
-				$viewbutton = "";
-			}
-			$editbutton = dbfuncGetButton($editlink, "E", "small", "edit",
-					"Edit $who");
-
-			echo "$viewbutton $editbutton";
-			if($row['ActiveStudent'] == 1) {
-				echo "<strong>";
-			}
-			if($row['ActiveTeacher'] == 1 || $row['Guardian'] == 1) {
-				echo "<em>";
-				if(isset($row['Title']) and $row['Title'] != "") {
-					echo "{$row['Title']} ";
-				}
-			}
-			echo "{$row['FirstName']} {$row['Surname']} ({$row['Username']})";
-			if($row['ActiveStudent'] == 1) {
-				echo " - {$row['ClassName']}";
-			}
-			if($row['ActiveTeacher'] == 1 || $row['Guardian'] == 1) {
-				if($row['Number'] != "") {
-					echo " - {$row['Number']}";
-				}
-				echo "</em>";
-			}
-			if($row['ActiveStudent'] == 1) {
-				echo "</strong>";
-			}
-			echo "<br />\n";
-
 			if($next_row['FamilyCode'] != $prev_family) {
-				if($prev_guardian != 0) {
-					echo "<td>&nbsp;</td>\n";
+				if($prev_guardian < 2) { // Last thing we showed was either a student or guardian
+					echo "            </td>";
+				} else {
+					echo "            <td>&nbsp;</td>";
 				}
-				$prev_guardian = NULL;
+				if($prev_guardian > 0) { // Last thing we showed wasn't a student
+					echo "<td>&nbsp;</td>\n";
+				} else {
+					echo "\n";
+				}
+				$prev_guardian = 2;
 				echo "         </tr>\n";
-			}
-			if($next_row['Guardian'] != $prev_guardian) {
+			} elseif($next_row['Guardian'] != $prev_guardian) {
 				echo "            </td>\n";
 			}
 				

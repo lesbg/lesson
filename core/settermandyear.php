@@ -13,8 +13,6 @@ if (isset($_GET['year'])) { // Check whether we're looking at a different year
 	$_SESSION['yearindex'] = $yearindex;
 }
 
-$currentyear = $yearindex;
-
 if (isset($_GET['dept'])) { // Check whether we're looking at a different term
 	$depindex = safe(dbfuncInt2String($_GET['dept']));
 }
@@ -33,6 +31,14 @@ if (! isset($showalldeps)) {
 	} else {
 		$showalldeps = false;
 	}
+}
+
+$query = "SELECT YearIndex FROM currentinfo ORDER BY InputDate DESC LIMIT 1";
+$tty_res = &  $db->query($query);
+if (DB::isError($tty_res))
+	die($tty_res->getDebugInfo()); // Check for errors in query
+if ($tty_row = & $tty_res->fetchRow(DB_FETCHMODE_ASSOC)) {
+	$currentyear = $tty_row['YearIndex'];
 }
 
 if (! isset($depindex)) {
