@@ -228,8 +228,7 @@ if ($comment_type == $COMMENT_TYPE_MANDATORY or
 	
 	$count = 0;
 	if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-		$comment = str_replace("'", "\'", $row['Comment']);
-		$comment = str_replace("\"", "\\\"", $comment);
+		$comment = htmlspecialchars($row['Comment'], ENT_QUOTES);
 		if ($row['CommentIndex'] == $count) {
 			$comment_array = "'$comment'";
 			$cval_array = "'{$row['Strength']}'";
@@ -386,7 +385,9 @@ while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
 	echo "            <tr$alt id='row_{$row['Username']}'>\n";
 	echo "               <td>$order</td>\n";
 	$order += 1;
-	echo "               <td>{$row['FirstName']} {$row['Surname']} ({$row['Username']})<input type='hidden' name='firstname_{$row['Username']}' id='firstname_{$row['Username']}' value='{$row['FirstName']}'><input type='hidden' name='fullname_{$row['Username']}' id='fullname_{$row['Username']}' value='{$row['FirstName']} {$row['Surname']}'><input type='hidden' name='gender_{$row['Username']}' id='gender_{$row['Username']}' value='{$row['Gender']}'></td>\n";
+	$firstname = htmlspecialchars($row['FirstName'], ENT_QUOTES);
+	$surname = htmlspecialchars($row['Surname'], ENT_QUOTES);
+	echo "               <td>$firstname $surname ({$row['Username']})<input type='hidden' name='firstname_{$row['Username']}' id='firstname_{$row['Username']}' value='$firstname'><input type='hidden' name='fullname_{$row['Username']}' id='fullname_{$row['Username']}' value='$firstname $surname'><input type='hidden' name='gender_{$row['Username']}' id='gender_{$row['Username']}' value='{$row['Gender']}'></td>\n";
 	
 	if ($is_st or $is_ct or $is_hod or $is_principal or $is_admin) {
 		/* Check for type of average and put in appropriate information */

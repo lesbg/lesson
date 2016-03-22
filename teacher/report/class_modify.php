@@ -318,8 +318,7 @@ if ($ct_comment_type == $COMMENT_TYPE_MANDATORY or
 	
 	$count = 0;
 	if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-		$comment = str_replace("'", "\'", $row['Comment']);
-		$comment = str_replace("\"", "\\\"", $comment);
+		$comment = htmlspecialchars($row['Comment'], ENT_QUOTES);
 		if ($row['CommentIndex'] == $count) {
 			$comment_array = "'$comment'";
 			$cval_array = "'{$row['Strength']}'";
@@ -575,9 +574,11 @@ if ($can_do_report and ! $show_only) {
 		 $pr_comment_type == $COMMENT_TYPE_OPTIONAL) {
 		echo "         var comment_array          = new Array($comment_array);\n";
 	}
+	$firstname = htmlspecialchars($student_info['FirstName'], ENT_QUOTES);
+	$surname = htmlspecialchars($student_info['Surname'], ENT_QUOTES);
 	echo "         var gender                  = '{$student_info['Gender']}';\n";
-	echo "         var firstname               = '{$student_info['FirstName']}';\n";
-	echo "         var fullname                = '{$student_info['FirstName']} {$student_info['Surname']}';\n";
+	echo "         var firstname               = '$firstname';\n";
+	echo "         var fullname                = '$firstname $surname';\n";
 	echo "         var grade                   = '$grade';\n";
 	echo "      </script>\n";
 	
