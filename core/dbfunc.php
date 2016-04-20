@@ -25,8 +25,38 @@ function &dbfuncConnect() {
 	$db = & DB::connect($DSN); // Initiate connection
 	if (DB::isError($db))
 		die($db->getDebugInfo()); // Check for errors in connection
+	
+	$query = "SET NAMES 'utf8'";
+	$res = &  $db->query($query);
+	
+	if (DB::isError($res))
+		die($res->getDebugInfo()); // Check for errors in query
+	
 	return $db;
 }
+
+/* Connect to database specified by global variable $MASTER_DSN */
+function &dbfuncConnectMaster() {
+	/* Set global parameters */
+	global $MASTER_DSN; // DSN to connect to database, stored in globals.php
+	
+	if(!isset($MASTER_DSN))
+		$MASTER_DSN = $DSN;
+	
+	/* Connection to database */
+	$db = & DB::connect($MASTER_DSN); // Initiate connection
+	if (DB::isError($db))
+		die($db->getDebugInfo()); // Check for errors in connection
+	
+	$query = "SET NAMES 'utf8'";
+	$res = &  $db->query($query);
+	
+	if (DB::isError($res))
+		die($res->getDebugInfo()); // Check for errors in query
+	
+	return $db;
+}
+
 
 /* Get code to generate a button-looking hyperlink to $link with ID of $type and tooltip of $tooltip around $text */
 function &dbfuncGetButton($link = "", $text, $size = "medium", $type = "", $tooltip = "", 

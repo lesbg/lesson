@@ -17,10 +17,6 @@ require_once "DB.php"; // Get DB class
 include "core/dbfunc.php"; // Get database connection functions
 
 $db = & dbfuncConnect(); // Connect to database and store in $db
-$query = "SET NAMES 'utf8'";
-$res = &  $db->query($query);
-if (DB::isError($res))
-	die($res->getDebugInfo()); // Check for errors in query
 
 session_name("LESSONSESSION");
 session_start();
