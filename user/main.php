@@ -85,7 +85,7 @@ if (DB::isError($res))
 
 while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) and
 		 ($row['CanDoReport'] or $row['ReportDone']) ) {
-			$clLink = "index.php?location=" .
+	$clLink = "index.php?location=" .
 			 dbfuncString2Int("teacher/report/class_list.php") . "&amp;key=" .
 			 dbfuncString2Int($row['ClassIndex']) . "&amp;keyname=" .
 			 dbfuncString2Int($row['ClassName']);
@@ -174,14 +174,14 @@ if ($nrs->numRows() > 0) {
 	if ($perm >= $PUN_PERM_MASS or
 		 dbfuncGetPermission($permissions, $PERM_ADMIN)) {
 		$punLink = "index.php?location=" .
-		 dbfuncString2Int("admin/punishment/tools.php");
-	echo "      <p><a href='$punLink'>Punishment Tools</a></p>\n";
-}
-$disclink = "index.php?location=" .
+			 dbfuncString2Int("admin/punishment/tools.php");
+		echo "      <p><a href='$punLink'>Punishment Tools</a></p>\n";
+	}
+	$disclink = "index.php?location=" .
 			 dbfuncString2Int("teacher/punishment/list.php") . "&amp;key=" .
 			 dbfuncString2Int($username) . "&amp;keyname=" .
 			 dbfuncString2Int($fullname);
-echo "      <p><a href='$disclink'>Issued Punishments</a></p>\n";
+	echo "      <p><a href='$disclink'>Issued Punishments</a></p>\n";
 }
 
 /* Check whether teacher is taking attendance for a punishment */
@@ -195,14 +195,14 @@ if (DB::isError($res))
 die($res->getDebugInfo()); // Check for errors in query
 
 while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-$link = "index.php?location=" .
-		 dbfuncString2Int("teacher/punishment/date/modify.php") . "&amp;type=" .
-		 dbfuncString2Int($row['DisciplineTypeIndex']) . "&amp;next=" .
-		 dbfuncString2Int(
-						"index.php?location=" .
-						 dbfuncString2Int("user/main.php"));
-$pun_type = strtolower($row['DisciplineType']);
-echo "<p><a href='$link'>Punishment attendance for next $pun_type</a></p>\n";
+	$link = "index.php?location=" .
+			 dbfuncString2Int("teacher/punishment/date/modify.php") . "&amp;type=" .
+			 dbfuncString2Int($row['DisciplineTypeIndex']) . "&amp;next=" .
+			 dbfuncString2Int(
+							"index.php?location=" .
+							 dbfuncString2Int("user/main.php"));
+	$pun_type = strtolower($row['DisciplineType']);
+	echo "<p><a href='$link'>Punishment attendance for next $pun_type</a></p>\n";
 }
 
 $date = date("Y-m-d");
@@ -225,34 +225,39 @@ die($res->getDebugInfo()); // Check for errors in query
 
 $count = $res->numRows();
 while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-$boldst = "";
-$boldend = "";
-
-$query = "SELECT AttendanceDoneIndex FROM attendancedone " .
-		 "WHERE SubjectIndex={$row['SubjectIndex']} " .
-		 "AND   PeriodIndex={$row['PeriodIndex']} " . "AND   Date=\"$date\"";
-$nres = &  $db->query($query);
-if (DB::isError($nres))
-	die($nres->getDebugInfo()); // Check for errors in query
-
-if ($nres->numRows() == 0) {
-	$boldst = "<strong>";
-	$boldend = "</strong>";
+	$boldst = "";
+	$boldend = "";
+	
+	$query = "SELECT AttendanceDoneIndex FROM attendancedone " .
+			 "WHERE SubjectIndex={$row['SubjectIndex']} " .
+			 "AND   PeriodIndex={$row['PeriodIndex']} " . "AND   Date=\"$date\"";
+	$nres = &  $db->query($query);
+	if (DB::isError($nres))
+		die($nres->getDebugInfo()); // Check for errors in query
+	
+	if ($nres->numRows() == 0) {
+		$boldst = "<strong>";
+		$boldend = "</strong>";
+	}
+	$link = "index.php?location=" .
+			 dbfuncString2Int("teacher/attendance/modify.php") . "&amp;key=" .
+			 dbfuncString2Int($row['SubjectIndex']) . "&amp;key2=" .
+			 dbfuncString2Int($row['PeriodIndex']) . "&amp;key3=" .
+			 dbfuncString2Int($date) . "&amp;keyname= " .
+			 dbfuncString2Int($row['Name']) . "&amp;next=" .
+			 dbfuncString2Int(
+							"index.php?location=" .
+							 dbfuncString2Int("user/main.php"));
+	if ($count != 1) {
+		$extra = " for {$row['Name']}";
+	}
+	echo "$boldst<p><a href='$link'>Attendance$extra</a></p>$boldend\n";
 }
+
+/* Telegram Token */
 $link = "index.php?location=" .
-		 dbfuncString2Int("teacher/attendance/modify.php") . "&amp;key=" .
-		 dbfuncString2Int($row['SubjectIndex']) . "&amp;key2=" .
-		 dbfuncString2Int($row['PeriodIndex']) . "&amp;key3=" .
-		 dbfuncString2Int($date) . "&amp;keyname= " .
-		 dbfuncString2Int($row['Name']) . "&amp;next=" .
-		 dbfuncString2Int(
-						"index.php?location=" .
-						 dbfuncString2Int("user/main.php"));
-if ($count != 1) {
-	$extra = " for {$row['Name']}";
-}
-echo "$boldst<p><a href='$link'>Attendance$extra</a></p>$boldend\n";
-}
+		dbfuncString2Int("user/telegram.php");
+echo "         <p><a href='$link'>Connect to Telegram</a></p>\n";
 echo "      </div>\n";
 
 /* Get classes */
