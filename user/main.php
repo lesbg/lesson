@@ -274,129 +274,129 @@ $query = "SELECT subject.Name, subject.SubjectIndex, subject.Period, " .
 $res = & $db->query($query);
 
 if (DB::isError($res))
-die($res->getDebugInfo()); // Check for errors in query
+	die($res->getDebugInfo()); // Check for errors in query
 	
 /* If user is a student in at least one subject, print out class table */
 if ($res->numRows() > 0) {
-include "student/lateinfo.php";
-
-/* First give option to show all assignments */
-$alllink = "index.php?location=" . dbfuncString2Int("student/allinfo.php") .
-		 "&amp;key=" . dbfuncString2Int($username) . "&amp;keyname=" .
-		 dbfuncString2Int($fullname) . "&amp;show=" . dbfuncString2Int("a");
-$hwlink = "index.php?location=" . dbfuncString2Int("student/allinfo.php") .
-		 "&amp;key=" . dbfuncString2Int($username) . "&amp;keyname=" .
-		 dbfuncString2Int($fullname) . "&amp;show=" . dbfuncString2Int("u");
-$thwlink = "index.php?location=" . dbfuncString2Int("student/allinfo.php") .
-		 "&amp;key=" . dbfuncString2Int($username) . "&amp;keyname=" .
-		 dbfuncString2Int($fullname) . "&amp;show=" . dbfuncString2Int("t");
-
-$allbutton = dbfuncGetButton($alllink, "View all assignments", "medium", "", "");
-$hwbutton = dbfuncGetButton($hwlink, "View homework", "medium", "", "");
-$thwbutton = dbfuncGetButton($thwlink, "View today's homework", "medium", "", 
-							"");
-echo "      <p align='center'>$hwbutton $thwbutton $allbutton</p>";
-
-echo "      <table align='center' border='1'>\n"; // Table headers
-echo "         <tr>\n";
-echo "            <th>Subject</th>\n";
-echo "            <th>Teacher(s)</th>\n";
-echo "            <th>Average</th>\n";
-echo "         </tr>\n";
-
-/* For each subject, print a row with the subject name and teacher(s) */
-$alt_count = 0;
-while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-	$alt_count += 1;
-	if ($alt_count % 2 == 0) {
-		$alt = " class='alt'";
-	} else {
-		$alt = " class='std'";
-	}
-	$namelink = "index.php?location=" .
-				 dbfuncString2Int("student/subjectinfo.php") . "&amp;key=" .
-				 dbfuncString2Int($row['SubjectIndex']) . "&amp;key2=" .
-				 dbfuncString2Int($username) . "&amp;keyname=" .
-				 dbfuncString2Int($row['Name']) . "&amp;key2name=" .
-				 dbfuncString2Int($fullname); // Get link to class
-	echo "         <tr$alt>\n";
-	echo "            <td><a href='$namelink'>{$row['Name']}</a></td>\n";
-	echo "            <td>";
+	include "student/lateinfo.php";
 	
-	/* Get information about teacher(s) */
-	$teacherRes = & $db->query(
-							"SELECT user.Title, user.FirstName, user.Surname FROM user, subjectteacher " .
-							 "WHERE subjectteacher.SubjectIndex = {$row['SubjectIndex']} " .
-									  /*"AND   subjectteacher.Show         = '1' " .*/
-									  "AND   user.Username               = subjectteacher.Username");
-	if (DB::isError($teacherRes))
-		die($teacherRes->getDebugInfo()); // Check for errors in query
-	if ($teacherRow = & $teacherRes->fetchRow(DB_FETCHMODE_ASSOC)) {
-		echo "{$teacherRow['Title']} {$teacherRow['FirstName']} {$teacherRow['Surname']}";
-		
-		/* If there's more than one teacher, separate with commas */
-		while ( $teacherRow = & $teacherRes->fetchRow(DB_FETCHMODE_ASSOC) ) {
-			echo ", {$teacherRow['Title']} {$teacherRow['FirstName']} {$teacherRow['Surname']}";
-		}
-	}
-	echo "            </td>\n"; // Table footers
-	$average_type = $row['AverageType'];
-	$average_type_index = $row['AverageTypeIndex'];
-	
-	if ($average_type != $AVG_TYPE_NONE) {
-		if ($row['ShowAverage'] == "1") {
-			if ($row['Average'] == "-1") {
-				echo "            <td><i>N/A</i></td>\n";
-			} else {
-				if ($average_type == $AVG_TYPE_PERCENT) {
-					$average = round($row['Average']);
-					echo "            <td>$average%</td>\n";
-				} elseif ($average_type == $AVG_TYPE_INDEX or
-						 $average_type == $AVG_TYPE_GRADE) {
-					$query = "SELECT Input, Display FROM nonmark_index " .
-					 "WHERE NonmarkTypeIndex = $average_type_index " .
-					 "AND   NonmarkIndex     = {$row['Average']}";
-			$sres = & $db->query($query);
-			if (DB::isError($sres))
-				die($sres->getDebugInfo()); // Check for errors in query
-			if ($srow = & $sres->fetchRow(DB_FETCHMODE_ASSOC)) {
-				$average = $srow['Display'];
-			} else {
-				$average = "?";
-			}
-			echo "            <td>$average</td>\n";
-		}
-	}
-} else {
-	echo "            <td>&nbsp;</td>\n";
-}
-} else {
-echo "            <td><i>N/A</i></td>\n";
-}
-
-echo "         </tr>\n";
-}
-echo "      </table>\n"; // End of table
-/* Calculate conduct mark */
-$disclink = "index.php?location=" . dbfuncString2Int("student/discipline.php") .
+	/* First give option to show all assignments */
+	$alllink = "index.php?location=" . dbfuncString2Int("student/allinfo.php") .
 			 "&amp;key=" . dbfuncString2Int($username) . "&amp;keyname=" .
-			 dbfuncString2Int($fullname);
-$query = "SELECT classlist.Conduct FROM classlist, classterm, class " .
-		 "WHERE  classlist.Username = '$username' " .
-		 "AND    classlist.ClassTermIndex = classterm.ClassTermindex " .
-		 "AND    classterm.TermIndex = $termindex " .
-		 "AND    classterm.ClassIndex = class.ClassIndex " .
-		 "AND    class.YearIndex = $yearindex ";
-$conductRes = &   $db->query($query);
-if (DB::isError($conductRes))
-die($conductRes->getDebugInfo()); // Check for errors in query
-if ($conductRow = & $conductRes->fetchrow(DB_FETCHMODE_ASSOC) and
-	 $conductRow['Conduct'] != "") {
-if ($conductRow['Conduct'] < 0)
-$conductRow['Conduct'] = 0;
-echo "      <p class='subtitle' align='center'><a href='$disclink'>Conduct: {$conductRow['Conduct']}%</a></p>\n";
-}
-echo "      <p></p>\n";
+			 dbfuncString2Int($fullname) . "&amp;show=" . dbfuncString2Int("a");
+	$hwlink = "index.php?location=" . dbfuncString2Int("student/allinfo.php") .
+			 "&amp;key=" . dbfuncString2Int($username) . "&amp;keyname=" .
+			 dbfuncString2Int($fullname) . "&amp;show=" . dbfuncString2Int("u");
+	$thwlink = "index.php?location=" . dbfuncString2Int("student/allinfo.php") .
+			 "&amp;key=" . dbfuncString2Int($username) . "&amp;keyname=" .
+			 dbfuncString2Int($fullname) . "&amp;show=" . dbfuncString2Int("t");
+	
+	$allbutton = dbfuncGetButton($alllink, "View all assignments", "medium", "", "");
+	$hwbutton = dbfuncGetButton($hwlink, "View homework", "medium", "", "");
+	$thwbutton = dbfuncGetButton($thwlink, "View today's homework", "medium", "", 
+								"");
+	echo "      <p align='center'>$hwbutton $thwbutton $allbutton</p>";
+	
+	echo "      <table align='center' border='1'>\n"; // Table headers
+	echo "         <tr>\n";
+	echo "            <th>Subject</th>\n";
+	echo "            <th>Teacher(s)</th>\n";
+	echo "            <th>Average</th>\n";
+	echo "         </tr>\n";
+	
+	/* For each subject, print a row with the subject name and teacher(s) */
+	$alt_count = 0;
+	while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+		$alt_count += 1;
+		if ($alt_count % 2 == 0) {
+			$alt = " class='alt'";
+		} else {
+			$alt = " class='std'";
+		}
+		$namelink = "index.php?location=" .
+					 dbfuncString2Int("student/subjectinfo.php") . "&amp;key=" .
+					 dbfuncString2Int($row['SubjectIndex']) . "&amp;key2=" .
+					 dbfuncString2Int($username) . "&amp;keyname=" .
+					 dbfuncString2Int($row['Name']) . "&amp;key2name=" .
+					 dbfuncString2Int($fullname); // Get link to class
+		echo "         <tr$alt>\n";
+		echo "            <td><a href='$namelink'>{$row['Name']}</a></td>\n";
+		echo "            <td>";
+		
+		/* Get information about teacher(s) */
+		$teacherRes = & $db->query(
+								"SELECT user.Title, user.FirstName, user.Surname FROM user, subjectteacher " .
+								 "WHERE subjectteacher.SubjectIndex = {$row['SubjectIndex']} " .
+										  /*"AND   subjectteacher.Show         = '1' " .*/
+										  "AND   user.Username               = subjectteacher.Username");
+		if (DB::isError($teacherRes))
+			die($teacherRes->getDebugInfo()); // Check for errors in query
+		if ($teacherRow = & $teacherRes->fetchRow(DB_FETCHMODE_ASSOC)) {
+			echo "{$teacherRow['Title']} {$teacherRow['FirstName']} {$teacherRow['Surname']}";
+			
+			/* If there's more than one teacher, separate with commas */
+			while ( $teacherRow = & $teacherRes->fetchRow(DB_FETCHMODE_ASSOC) ) {
+				echo ", {$teacherRow['Title']} {$teacherRow['FirstName']} {$teacherRow['Surname']}";
+			}
+		}
+		echo "            </td>\n"; // Table footers
+		$average_type = $row['AverageType'];
+		$average_type_index = $row['AverageTypeIndex'];
+		
+		if ($average_type != $AVG_TYPE_NONE) {
+			if ($row['ShowAverage'] == "1") {
+				if ($row['Average'] == "-1") {
+					echo "            <td><i>N/A</i></td>\n";
+				} else {
+					if ($average_type == $AVG_TYPE_PERCENT) {
+						$average = round($row['Average']);
+						echo "            <td>$average%</td>\n";
+					} elseif ($average_type == $AVG_TYPE_INDEX or
+							 $average_type == $AVG_TYPE_GRADE) {
+						$query = "SELECT Input, Display FROM nonmark_index " .
+						 "WHERE NonmarkTypeIndex = $average_type_index " .
+						 "AND   NonmarkIndex     = {$row['Average']}";
+						$sres = & $db->query($query);
+						if (DB::isError($sres))
+							die($sres->getDebugInfo()); // Check for errors in query
+						if ($srow = & $sres->fetchRow(DB_FETCHMODE_ASSOC)) {
+							$average = $srow['Display'];
+						} else {
+							$average = "?";
+						}
+						echo "            <td>$average</td>\n";
+					}
+				}
+			} else {
+				echo "            <td>&nbsp;</td>\n";
+			}
+		} else {
+			echo "            <td><i>N/A</i></td>\n";
+		}
+		
+		echo "         </tr>\n";
+	}
+	echo "      </table>\n"; // End of table
+	/* Calculate conduct mark */
+	$disclink = "index.php?location=" . dbfuncString2Int("student/discipline.php") .
+				 "&amp;key=" . dbfuncString2Int($username) . "&amp;keyname=" .
+				 dbfuncString2Int($fullname);
+	$query = "SELECT classlist.Conduct FROM classlist, classterm, class " .
+			 "WHERE  classlist.Username = '$username' " .
+			 "AND    classlist.ClassTermIndex = classterm.ClassTermindex " .
+			 "AND    classterm.TermIndex = $termindex " .
+			 "AND    classterm.ClassIndex = class.ClassIndex " .
+			 "AND    class.YearIndex = $yearindex ";
+	$conductRes = &   $db->query($query);
+	if (DB::isError($conductRes))
+		die($conductRes->getDebugInfo()); // Check for errors in query
+	if ($conductRow = & $conductRes->fetchrow(DB_FETCHMODE_ASSOC) and
+		 $conductRow['Conduct'] != "") {
+		if ($conductRow['Conduct'] < 0)
+			$conductRow['Conduct'] = 0;
+		echo "      <p class='subtitle' align='center'><a href='$disclink'>Conduct: {$conductRow['Conduct']}%</a></p>\n";
+	}
+	echo "      <p></p>\n";
 }
 
 /* Get subject information for current teacher */
@@ -425,79 +425,79 @@ $query = "SELECT Name, SubjectIndex, Average, MAX(StudentCount) AS StudentCount,
 		 "GROUP BY SubjectIndex " . "ORDER BY Name, SubjectIndex ";
 $nrs = &  $db->query($query);
 if (DB::isError($nrs))
-die($nrs->getDebugInfo()); // Check for errors in query
+	die($nrs->getDebugInfo()); // Check for errors in query
 	
 /* If user teaches at least one subject, print out teacher table */
 if ($nrs->numRows() > 0) {
-echo "      <table align='center' border='1'>\n"; // Table headers
-echo "         <tr>\n";
-echo "            <th>Subject</th>\n";
-echo "            <th>Students</th>\n";
-echo "            <th>Average</th>\n";
-echo "         </tr>\n";
-
-/* For each class, print a row with the subject name and number of students */
-$alt_count = 0;
-while ( $row = & $nrs->fetchRow(DB_FETCHMODE_ASSOC) ) {
-$alt_count += 1;
-if ($alt_count % 2 == 0) {
-$alt = " class='alt'";
-} else {
-$alt = " class='std'";
-}
-echo "         <tr$alt>\n";
-$row['Name'] = htmlspecialchars($row['Name']);
-
-echo "            <td>";
-if ($row['CanDoReport'] == 1) {
-$reportlink = "index.php?location=" .
-		 dbfuncString2Int("teacher/report/modify.php") . "&amp;key=" .
-		 dbfuncString2Int($row['SubjectIndex']) . "&amp;keyname=" .
-		 dbfuncString2Int($row['Name']); // Get link to report
-if ($row['ReportDone'] == 0) {
-	$reportbutton = dbfuncGetButton($reportlink, "R", "small", "report", 
-									"Edit report information");
-} else {
-	$reportbutton = dbfuncGetButton($reportlink, "V", "small", "report", 
-									"View report information");
-}
-echo "$reportbutton&nbsp;";
-}
-if ($row['ClassIndex'] != NULL) {
-$query = "SELECT ClassName FROM class WHERE ClassIndex={$row['ClassIndex']}";
-$trs = &  $db->query($query);
-if (DB::isError($trs))
-	die($trs->getDebugInfo()); // Check for errors in query
-
-if ($trow = & $trs->fetchRow(DB_FETCHMODE_ASSOC)) {
-	$ttlink = "index.php?location=" . dbfuncString2Int("user/timetable.php") .
-			 "&amp;key=" . dbfuncString2Int($row['ClassIndex']) . "&amp;keyname=" .
-			 dbfuncString2Int($trow['ClassName']) . "&amp;key2=" .
-			 dbfuncString2Int("c"); // Get link to report
-	$ttbutton = dbfuncGetButton($ttlink, "T", "small", "edit", "Class timetable");
-	echo "$ttbutton&nbsp;";
-}
-}
-if ($row['StudentCount'] != NULL and $row['StudentCount'] > 0) {
-$namelink = "index.php?location=" .
-		 dbfuncString2Int("teacher/assignment/list.php") . "&amp;key=" .
-		 dbfuncString2Int($row['SubjectIndex']) . "&amp;keyname=" .
-		 dbfuncString2Int($row['Name']); // Get link to subject
-
-echo "<a href='$namelink'>{$row['Name']}</a></td>\n";
-} else {
-echo "{$row['Name']}</td>\n";
-}
-echo "            <td>{$row['StudentCount']}</td>\n"; // Print student count
-if ($row['Average'] == "-1") {
-echo "            <td><i>N/A</i></td>\n";
-} else {
-$average = round($row['Average']);
-echo "            <td>$average%</td>\n";
-}
-echo "         </tr>\n";
-}
-echo "      </table>\n"; // End of table
+	echo "      <table align='center' border='1'>\n"; // Table headers
+	echo "         <tr>\n";
+	echo "            <th>Subject</th>\n";
+	echo "            <th>Students</th>\n";
+	echo "            <th>Average</th>\n";
+	echo "         </tr>\n";
+	
+	/* For each class, print a row with the subject name and number of students */
+	$alt_count = 0;
+	while ( $row = & $nrs->fetchRow(DB_FETCHMODE_ASSOC) ) {
+		$alt_count += 1;
+		if ($alt_count % 2 == 0) {
+			$alt = " class='alt'";
+		} else {
+			$alt = " class='std'";
+		}
+		echo "         <tr$alt>\n";
+		$row['Name'] = htmlspecialchars($row['Name']);
+		
+		echo "            <td>";
+		if ($row['CanDoReport'] == 1) {
+			$reportlink = "index.php?location=" .
+					 dbfuncString2Int("teacher/report/modify.php") . "&amp;key=" .
+					 dbfuncString2Int($row['SubjectIndex']) . "&amp;keyname=" .
+					 dbfuncString2Int($row['Name']); // Get link to report
+			if ($row['ReportDone'] == 0) {
+				$reportbutton = dbfuncGetButton($reportlink, "R", "small", "report", 
+												"Edit report information");
+			} else {
+				$reportbutton = dbfuncGetButton($reportlink, "V", "small", "report", 
+												"View report information");
+			}
+			echo "$reportbutton&nbsp;";
+		}
+		if ($row['ClassIndex'] != NULL) {
+			$query = "SELECT ClassName FROM class WHERE ClassIndex={$row['ClassIndex']}";
+			$trs = &  $db->query($query);
+			if (DB::isError($trs))
+				die($trs->getDebugInfo()); // Check for errors in query
+			
+			if ($trow = & $trs->fetchRow(DB_FETCHMODE_ASSOC)) {
+				$ttlink = "index.php?location=" . dbfuncString2Int("user/timetable.php") .
+						 "&amp;key=" . dbfuncString2Int($row['ClassIndex']) . "&amp;keyname=" .
+						 dbfuncString2Int($trow['ClassName']) . "&amp;key2=" .
+						 dbfuncString2Int("c"); // Get link to report
+				$ttbutton = dbfuncGetButton($ttlink, "T", "small", "edit", "Class timetable");
+				echo "$ttbutton&nbsp;";
+			}
+		}
+		if ($row['StudentCount'] != NULL and $row['StudentCount'] > 0) {
+			$namelink = "index.php?location=" .
+					 dbfuncString2Int("teacher/assignment/list.php") . "&amp;key=" .
+					 dbfuncString2Int($row['SubjectIndex']) . "&amp;keyname=" .
+					 dbfuncString2Int($row['Name']); // Get link to subject
+			
+			echo "<a href='$namelink'>{$row['Name']}</a></td>\n";
+		} else {
+			echo "{$row['Name']}</td>\n";
+		}
+		echo "            <td>{$row['StudentCount']}</td>\n"; // Print student count
+		if ($row['Average'] == "-1") {
+			echo "            <td><i>N/A</i></td>\n";
+		} else {
+			$average = round($row['Average']);
+			echo "            <td>$average%</td>\n";
+		}
+		echo "         </tr>\n";
+	}
+	echo "      </table>\n"; // End of table
 }
 
 /* Get subject information for support teacher */
@@ -517,36 +517,36 @@ $query = "SELECT class.ClassName, class.ClassIndex, COUNT(support.StudentUsernam
 $nrs = &  $db->query($query);
 
 if (DB::isError($nrs))
-die($nrs->getDebugInfo()); // Check for errors in query
+	die($nrs->getDebugInfo()); // Check for errors in query
 	/* If user is a support teacher for at least one student, show student information */
 if ($nrs->numRows() > 0) {
-echo "      <table align='center' border='1'>\n"; // Table headers
-echo "         <tr>\n";
-echo "            <th>Class</th>\n";
-echo "            <th>Students</th>\n";
-echo "         </tr>\n";
-
-/* For each class, print a row with the subject name and number of students */
-$alt_count = 0;
-while ( $row = & $nrs->fetchRow(DB_FETCHMODE_ASSOC) ) {
-$alt_count += 1;
-if ($alt_count % 2 == 0) {
-$alt = " class='alt'";
-} else {
-$alt = " class='std'";
-}
-$row['Name'] = htmlspecialchars($row['Name']);
-
-$namelink = "index.php?location=" .
-			 dbfuncString2Int("teacher/support/list.php") . "&amp;key=" .
-			 dbfuncString2Int($row['ClassIndex']) . "&amp;keyname=" .
-			 dbfuncString2Int($row['ClassName']); // Get link to subject
-echo "         <tr$alt>\n";
-echo "            <td><a href='$namelink'>{$row['ClassName']}</a></td>\n";
-echo "            <td>{$row['StudentCount']}</td>\n"; // Print student count
-echo "         </tr>\n";
-}
-echo "      </table>\n"; // End of table
+	echo "      <table align='center' border='1'>\n"; // Table headers
+	echo "         <tr>\n";
+	echo "            <th>Class</th>\n";
+	echo "            <th>Students</th>\n";
+	echo "         </tr>\n";
+	
+	/* For each class, print a row with the subject name and number of students */
+	$alt_count = 0;
+	while ( $row = & $nrs->fetchRow(DB_FETCHMODE_ASSOC) ) {
+		$alt_count += 1;
+		if ($alt_count % 2 == 0) {
+			$alt = " class='alt'";
+		} else {
+			$alt = " class='std'";
+		}
+		$row['Name'] = htmlspecialchars($row['Name']);
+		
+		$namelink = "index.php?location=" .
+					 dbfuncString2Int("teacher/support/list.php") . "&amp;key=" .
+					 dbfuncString2Int($row['ClassIndex']) . "&amp;keyname=" .
+					 dbfuncString2Int($row['ClassName']); // Get link to subject
+		echo "         <tr$alt>\n";
+		echo "            <td><a href='$namelink'>{$row['ClassName']}</a></td>\n";
+		echo "            <td>{$row['StudentCount']}</td>\n"; // Print student count
+		echo "         </tr>\n";
+	}
+	echo "      </table>\n"; // End of table
 }
 
 /* Closing tags */
