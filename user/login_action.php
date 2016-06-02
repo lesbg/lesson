@@ -36,6 +36,9 @@ if (! $row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 	exit(0);
 }
 
+/* Set username to canonical username */
+$_POST['username'] = $row['Username'];
+
 $good_pw = False;
 if(password_verify($_POST['password'], $row['Password'])) {
 	$good_pw = True;
@@ -91,5 +94,5 @@ if($_POST['password'] == "p{$_POST['username']}") {
 	$change_pw = True;
 }
 
-$_SESSION['username'] = $username;
+$_SESSION['username'] = safe($_POST['username']);
 unset($_POST['password']);
