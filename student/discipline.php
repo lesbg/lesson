@@ -68,8 +68,24 @@ if ($res->numRows() > 0) {
 	$is_hod = false;
 }
 
+/* Check whether current user is student's guardian */
+$query =	"SELECT familylist.Username FROM " .
+		"    familylist INNER JOIN familylist AS familylist2 ON (familylist.FamilyCode=familylist2.FamilyCode) " .
+		"WHERE familylist.Username         = '$studentusername' " .
+		"AND   familylist2.Username        = '$username' " .
+		"AND   familylist2.Guardian        = 1 ";
+$res = &  $db->query($query);
+if (DB::isError($res))
+	die($res->getDebugInfo()); // Check for errors in query
+
+if ($res->numRows() > 0) {
+	$is_guardian = true;
+} else {
+	$is_guardian = false;
+}
+	
 /* Make sure user has permission to view student's marks for subject */
-if ($is_admin or $is_hod or $is_principal or $is_counselor or
+if ($is_admin or $is_hod or $is_principal or $is_counselor or $is_guardian or
 	 $studentusername == $username) {
 	include "core/settermandyear.php";
 	
@@ -273,4 +289,3 @@ if ($is_admin or $is_hod or $is_principal or $is_counselor or
 }
 
 include "footer.php";
-?>

@@ -14,7 +14,6 @@ if (isset($_GET['key2']))
 	$type = dbfuncInt2String($_GET['key2']);
 else
 	$type = NULL;
-
 $title = "Timetable for $ttname";
 
 if ($type == "c")
@@ -59,11 +58,27 @@ if (! is_null($row['TimetableVersion']) and $row['TimetableVersion'] != "") {
 	$subtitle = $row['TimetableVersion'];
 }
 
+/* Check whether current user is student's guardian */
+$query =	"SELECT familylist.Username FROM " .
+		"    familylist INNER JOIN familylist AS familylist2 ON (familylist.FamilyCode=familylist2.FamilyCode) " .
+		"WHERE familylist.Username         = '$ttusername' " .
+		"AND   familylist2.Username        = '$username' " .
+		"AND   familylist2.Guardian        = 1 ";
+$res = &  $db->query($query);
+if (DB::isError($res))
+	die($res->getDebugInfo()); // Check for errors in query
+
+if ($res->numRows() > 0) {
+	$is_guardian = true;
+} else {
+	$is_guardian = false;
+}
+	
 include "header.php"; // Show header
 include "core/settermandyear.php";
 
 /* Check whether user is authorized to access this timetable */
-if (($username = $ttusername or $is_admin) and $type != "c") {
+if (($username == $ttusername or $is_admin or $is_guardian) and $type != "c") {
 	/* Get student list */
 	include "core/titletermyear.php";
 	

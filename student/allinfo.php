@@ -78,7 +78,23 @@ if ($res->numRows() > 0) {
 	$is_hod = false;
 }
 
-if ($is_admin or $is_hod or $is_counselor or $is_principal or
+/* Check whether current user is student's guardian */
+$query =	"SELECT familylist.Username FROM " .
+		"    familylist INNER JOIN familylist AS familylist2 ON (familylist.FamilyCode=familylist2.FamilyCode) " .
+		"WHERE familylist.Username         = '$studentusername' " .
+		"AND   familylist2.Username        = '$username' " .
+		"AND   familylist2.Guardian        = 1 ";
+$res = &  $db->query($query);
+if (DB::isError($res))
+	die($res->getDebugInfo()); // Check for errors in query
+
+if ($res->numRows() > 0) {
+	$is_guardian = true;
+} else {
+	$is_guardian = false;
+}
+	
+if ($is_admin or $is_hod or $is_counselor or $is_principal or $is_guardian or
 	 $studentusername == $username) {
 	include "core/settermandyear.php";
 	include "core/titletermyear.php";
@@ -200,162 +216,161 @@ if ($is_admin or $is_hod or $is_counselor or $is_principal or
 					 dbfuncString2Int($name) . "&amp;key2=" .
 					 dbfuncString2Int($studentusername) . "&amp;key2name=" .
 					 dbfuncString2Int($subject);
-				$uploadbutton = dbfuncGetButton($uploadlink, "U", "small", "", 
-												"Upload homework onto server");
-				echo "            <td>$uploadbutton</td>\n";
-			} else {
-				echo "            <td>&nbsp;</td>\n";
+					$uploadbutton = dbfuncGetButton($uploadlink, "U", "small", "", 
+													"Upload homework onto server");
+					echo "            <td>$uploadbutton</td>\n";
+				} else {
+					echo "            <td>&nbsp;</td>\n";
+				}
 			}
-		}
-		
-		if (is_null($row['DescriptionFileType'])) {
-			if (is_null($row['Description'])) {
-				echo "            <td>{$row['Title']}</td>\n";
+			
+			if (is_null($row['DescriptionFileType'])) {
+				if (is_null($row['Description'])) {
+					echo "            <td>{$row['Title']}</td>\n";
+				} else {
+					$newwin = "index.php?location=" .
+							 dbfuncString2Int("student/descr.php") . "&amp;key=" .
+							 dbfuncString2Int($row['AssignmentIndex']);
+					echo "          <td><a$aclass href='javascript:popup(&quot;$newwin&quot;)'>{$row['Title']}</a></td>\n";
+				}
 			} else {
 				$newwin = "index.php?location=" .
-						 dbfuncString2Int("student/descr.php") . "&amp;key=" .
+						 dbfuncString2Int("student/open_descr.php") . "&amp;key=" .
 						 dbfuncString2Int($row['AssignmentIndex']);
-				echo "          <td><a$aclass href='javascript:popup(&quot;$newwin&quot;)'>{$row['Title']}</a></td>\n";
+				echo "          <td><a$aclass href='$newwin'>{$row['Title']}</a></td>\n";
 			}
-		} else {
-			$newwin = "index.php?location=" .
-					 dbfuncString2Int("student/open_descr.php") . "&amp;key=" .
-					 dbfuncString2Int($row['AssignmentIndex']);
-			echo "          <td><a$aclass href='$newwin'>{$row['Title']}</a></td>\n";
-		}
-		
-		echo "            <td>{$row['SubjectName']}</td>\n"; // Name of class
-		
-		/* Print name(s) of teacher(s) */
-		echo "            <td>";
-		$query = "SELECT user.Title, user.FirstName, user.Surname FROM user, subjectteacher " .
-				 "WHERE subjectteacher.SubjectIndex = {$row['SubjectIndex']} " .
-/*							"AND   subjectteacher.ShowTeacher  = '1' " .*/
-							"AND   user.Username               = subjectteacher.Username";
-		$teacherRes = & $db->query($query);
-		if (DB::isError($teacherRes))
-			die($teacherRes->getDebugInfo()); // Check for errors in query
-		if ($teacherRow = & $teacherRes->fetchRow(DB_FETCHMODE_ASSOC)) {
-			$teacherRow['Title'] = htmlspecialchars($teacherRow['Title']);
-			$teacherRow['FirstName'] = htmlspecialchars(
-														$teacherRow['FirstName']);
-			$teacherRow['Surname'] = htmlspecialchars($teacherRow['Surname']);
-			$teacherp = "{$teacherRow['Title']} {$teacherRow['FirstName']} {$teacherRow['Surname']}";
 			
-			/* If there's more than one teacher, separate with commas */
-			while ( $teacherRow = & $teacherRes->fetchRow(DB_FETCHMODE_ASSOC) ) {
+			echo "            <td>{$row['SubjectName']}</td>\n"; // Name of class
+			
+			/* Print name(s) of teacher(s) */
+			echo "            <td>";
+			$query = "SELECT user.Title, user.FirstName, user.Surname FROM user, subjectteacher " .
+					 "WHERE subjectteacher.SubjectIndex = {$row['SubjectIndex']} " .
+	/*							"AND   subjectteacher.ShowTeacher  = '1' " .*/
+								"AND   user.Username               = subjectteacher.Username";
+			$teacherRes = & $db->query($query);
+			if (DB::isError($teacherRes))
+				die($teacherRes->getDebugInfo()); // Check for errors in query
+			if ($teacherRow = & $teacherRes->fetchRow(DB_FETCHMODE_ASSOC)) {
 				$teacherRow['Title'] = htmlspecialchars($teacherRow['Title']);
 				$teacherRow['FirstName'] = htmlspecialchars(
 															$teacherRow['FirstName']);
-				$teacherRow['Surname'] = htmlspecialchars(
-														$teacherRow['Surname']);
-				$teacherp .= ", {$teacherRow['Title']} {$teacherRow['FirstName']} {$teacherRow['Surname']}";
-			}
-		}
-		if (strlen($teacherp) > 30) {
-			echo substr($teacherp, 0, 27) . "...</td>\n";
-		} else {
-			echo "$teacherp</td>\n";
-		}
-		
-		if ($has_categories) {
-			if (is_null($row['CategoryName'])) {
-				echo "<td><i>None</i></td>\n";
-			} else {
-				echo "<td>{$row['CategoryName']}</td>\n";
-			}
-		}
-		$dateinfo = date($dateformat, strtotime($row['Date']));
-		if (isset($row['DueDate'])) {
-			$duedateinfo = "<b>" . date($dateformat, strtotime($row['DueDate'])) .
-						 "</b>";
-		} else {
-			$duedateinfo = "";
-		}
-		echo "            <td>$dateinfo</td>\n";
-		echo "            <td>$duedateinfo</td>\n";
-		
-		if ($row['Agenda'] == 1) {
-			echo "            <td colspan='2' align='center'><i>N/A</i></td>\n";
-		} else {
-			if ($row['AverageType'] == $AVG_TYPE_PERCENT) {
-				if ($row['Score'] == $MARK_LATE) {
-					if ($can_modify == 1) {
-						echo "            <td>&nbsp;</td>\n";
-					} else {
-						echo "            <td>0%</td>\n";
-					}
-				} elseif ($row['Score'] == $MARK_ABSENT) {
-					echo "            <td align='center'><i>Absent</i></td>\n";
-				} elseif ($row['Score'] == $MARK_EXEMPT) {
-					echo "            <td align='center'><i>Exempt</i></td>\n";
-				} elseif (is_null($row['Score'])) {
-					if ($can_modify == 1) {
-						echo "            <td>&nbsp;</td>\n";
-					} else {
-						echo "            <td align='center'><i>Exempt</i></td>\n";
-					}
-				} else {
-					$score = round($row['Percentage']);
-					echo "            <td>$score%</td>\n";
+				$teacherRow['Surname'] = htmlspecialchars($teacherRow['Surname']);
+				$teacherp = "{$teacherRow['Title']} {$teacherRow['FirstName']} {$teacherRow['Surname']}";
+				
+				/* If there's more than one teacher, separate with commas */
+				while ( $teacherRow = & $teacherRes->fetchRow(DB_FETCHMODE_ASSOC) ) {
+					$teacherRow['Title'] = htmlspecialchars($teacherRow['Title']);
+					$teacherRow['FirstName'] = htmlspecialchars(
+																$teacherRow['FirstName']);
+					$teacherRow['Surname'] = htmlspecialchars(
+															$teacherRow['Surname']);
+					$teacherp .= ", {$teacherRow['Title']} {$teacherRow['FirstName']} {$teacherRow['Surname']}";
 				}
-				if ($row['Score'] == $MARK_LATE) {
-					if ($row['Comment'] == "" or is_null($row['Comment'])) {
-						echo "            <td>Late</td>\n";
+			}
+			if (strlen($teacherp) > 30) {
+				echo substr($teacherp, 0, 27) . "...</td>\n";
+			} else {
+				echo "$teacherp</td>\n";
+			}
+			
+			if ($has_categories) {
+				if (is_null($row['CategoryName'])) {
+					echo "<td><i>None</i></td>\n";
+				} else {
+					echo "<td>{$row['CategoryName']}</td>\n";
+				}
+			}
+			$dateinfo = date($dateformat, strtotime($row['Date']));
+			if (isset($row['DueDate'])) {
+				$duedateinfo = "<b>" . date($dateformat, strtotime($row['DueDate'])) .
+							 "</b>";
+			} else {
+				$duedateinfo = "";
+			}
+			echo "            <td>$dateinfo</td>\n";
+			echo "            <td>$duedateinfo</td>\n";
+			
+			if ($row['Agenda'] == 1) {
+				echo "            <td colspan='2' align='center'><i>N/A</i></td>\n";
+			} else {
+				if ($row['AverageType'] == $AVG_TYPE_PERCENT) {
+					if ($row['Score'] == $MARK_LATE) {
+						if ($can_modify == 1) {
+							echo "            <td>&nbsp;</td>\n";
+						} else {
+							echo "            <td>0%</td>\n";
+						}
+					} elseif ($row['Score'] == $MARK_ABSENT) {
+						echo "            <td align='center'><i>Absent</i></td>\n";
+					} elseif ($row['Score'] == $MARK_EXEMPT) {
+						echo "            <td align='center'><i>Exempt</i></td>\n";
+					} elseif (is_null($row['Score'])) {
+						if ($can_modify == 1) {
+							echo "            <td>&nbsp;</td>\n";
+						} else {
+							echo "            <td align='center'><i>Exempt</i></td>\n";
+						}
+					} else {
+						$score = round($row['Percentage']);
+						echo "            <td>$score%</td>\n";
+					}
+					if ($row['Score'] == $MARK_LATE) {
+						if ($row['Comment'] == "" or is_null($row['Comment'])) {
+							echo "            <td>Late</td>\n";
+						} else {
+							echo "            <td>{$row['Comment']}</td>\n";
+						}
 					} else {
 						echo "            <td>{$row['Comment']}</td>\n";
 					}
+				} elseif ($row['AverageType'] == $AVG_TYPE_INDEX) {
+					if (! isset($row['AverageTypeIndex']) or
+							 $row['AverageTypeIndex'] == "" or ! isset(
+																	$row['Score']) or
+							 $row['Score'] == "") {
+						$score = "N/A";
+					} else {
+						$query = "SELECT Input, Display FROM nonmark_index " .
+								 "WHERE NonmarkTypeIndex = {$row['AverageTypeIndex']} " .
+								 "AND   NonmarkIndex     = {$row['Score']}";
+						$sres = & $db->query($query);
+						if (DB::isError($sres))
+							die($sres->getDebugInfo()); // Check for errors in query
+						if ($srow = & $sres->fetchRow(DB_FETCHMODE_ASSOC)) {
+							$score = $srow['Display'];
+						} else {
+							$score = "N/A";
+						}
+					}
+					echo "            <td>$score</td>\n";
+					echo "            <td>{$row['Comment']}</td>\n";
 				} else {
+					echo "            <td>N/A</td>\n";
 					echo "            <td>{$row['Comment']}</td>\n";
 				}
-			} elseif ($row['AverageType'] == $AVG_TYPE_INDEX) {
-				if (! isset($row['AverageTypeIndex']) or
-						 $row['AverageTypeIndex'] == "" or ! isset(
-																$row['Score']) or
-						 $row['Score'] == "") {
-					$score = "N/A";
-				} else {
-					$query = "SELECT Input, Display FROM nonmark_index " .
-							 "WHERE NonmarkTypeIndex = {$row['AverageTypeIndex']} " .
-							 "AND   NonmarkIndex     = {$row['Score']}";
-					$sres = & $db->query($query);
-					if (DB::isError($sres))
-						die($sres->getDebugInfo()); // Check for errors in query
-					if ($srow = & $sres->fetchRow(DB_FETCHMODE_ASSOC)) {
-						$score = $srow['Display'];
-					} else {
-						$score = "N/A";
-					}
-				}
-				echo "            <td>$score</td>\n";
-				echo "            <td>{$row['Comment']}</td>\n";
-			} else {
-				echo "            <td>N/A</td>\n";
-				echo "            <td>{$row['Comment']}</td>\n";
 			}
+			echo "         </tr>\n";
 		}
-		echo "         </tr>\n";
-	}
-	echo "      </table>\n"; // End of table
-} else {
-	if ($showtype == "u") {
-		echo "      <p>No homework.</p>\n";
-	} elseif ($showtype == "l") {
-		echo "      <p>No late assignments.</p>\n";
+		echo "      </table>\n"; // End of table
 	} else {
-		echo "      <p>No assignments.</p>\n";
+		if ($showtype == "u") {
+			echo "      <p>No homework.</p>\n";
+		} elseif ($showtype == "l") {
+			echo "      <p>No late assignments.</p>\n";
+		} else {
+			echo "      <p>No assignments.</p>\n";
+		}
 	}
-}
-log_event($LOG_LEVEL_EVERYTHING, "student/allinfo.php", $LOG_STUDENT, 
-		"Viewed all of $studentname's assignments.");
+	log_event($LOG_LEVEL_EVERYTHING, "student/allinfo.php", $LOG_STUDENT, 
+			"Viewed all of $studentname's assignments.");
 } else {
-/* Log unauthorized access attempt */
-log_event($LOG_LEVEL_ERROR, "student/allinfo.php", $LOG_DENIED_ACCESS, 
-		"Tried to access $studentname ($studentusername)'s marks.");
-
-echo "      <p>You do not have permission to access this page</p>\n";
-echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";
+	/* Log unauthorized access attempt */
+	log_event($LOG_LEVEL_ERROR, "student/allinfo.php", $LOG_DENIED_ACCESS, 
+			"Tried to access $studentname ($studentusername)'s marks.");
+	
+	echo "      <p>You do not have permission to access this page</p>\n";
+	echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";
 }
 
 include "footer.php";
-?>
