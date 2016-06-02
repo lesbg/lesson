@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * user/main.php (c) 2004-2009 Jonathan Dieter
+ * user/main.php (c) 2004-2016 Jonathan Dieter
  *
  * Initial page that shows what classes the user is in, if they
  * are a student or what classes they teach if they are a teacher
