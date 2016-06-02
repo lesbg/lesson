@@ -1,17 +1,19 @@
 <?php
 /**
  * ***************************************************************
- * admin/class/list_students.php (c) 2004-2007 Jonathan Dieter
+ * admin/class/list_students.php (c) 2004-2016 Jonathan Dieter
  *
  * List all students in a particular class
  * ***************************************************************
  */
 $classindex = dbfuncInt2String($_GET["key"]);
 $classname = dbfuncInt2String($_GET["keyname"]);
+if(isset($_GET['key2'])) {
+	$type = dbfuncInt2String($_GET["key2"]);
+}
 
-$title = "Student List for $classname";
-
-include "header.php"; // Show header
+if($type != "csv")
+	$type = "html";
 
 /* Check whether current user is principal */
 $res = &  $db->query(
@@ -55,17 +57,32 @@ if ($res->numRows() > 0) {
 }
 
 if ($is_admin or $is_counselor or $is_hod or $is_principal) {
-	/* Get student list */
-	/* Calculate conduct mark */
-	$nochangeyear = true;
-	$showdeps = false;
-	if ($is_admin or $is_counselor or $is_principal) {
-		$showalldeps = true;
-	} else {
-		$admin_page = true;
-	}
 	include "core/settermandyear.php";
-	include "core/titletermyear.php";
+	
+	if($type == "csv") {
+		header('Content-Type: text/csv; charset=utf-8');
+		header('Content-Disposition: attachment; filename=students.csv');
+	} else {
+		$title = "Student List for $classname";	
+		include "header.php"; // Show header
+		$nochangeyear = true;
+		$showdeps = false;
+		if ($is_admin or $is_counselor or $is_principal) {
+			$showalldeps = true;
+		} else {
+			$admin_page = true;
+		}
+		include "core/titletermyear.php";
+		
+		$csvlink = "index.php?location=" .
+				dbfuncString2Int("admin/class/list_students.php") .
+				"&key="     . $_GET['key'] .
+				"&keyname=" . $_GET['keyname'] .
+				"&key2="    . dbfuncString2Int("csv");
+				
+		$csvbutton = dbfuncGetButton($csvlink, "Download csv", "medium", "", "Download csv of class that can be used as a spreadsheet");
+		echo "      <p align='center'>$csvbutton</p>\n";
+	}
 	
 	$query = "SELECT user.FirstName, user.Surname, user.Username, user.User1, user.User2, " .
 			 "       classlist.Conduct, classlist.Average, classlist.Rank, " .
@@ -88,50 +105,69 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
 	/* Print students and their class */
 	if ($res->numRows() > 0) {
 		$orderNum = 0;
-		echo "      <table align=\"center\" border=\"1\">\n"; // Table headers
-		echo "         <tr>\n";
-		echo "            <th>&nbsp;</th>\n";
-		echo "            <th>Order</th>\n";
-		echo "            <th>Student</th>\n";
-		if ($is_admin or $is_principal) {
-			echo "            <th>New</th>\n";
-			echo "            <th>Special</th>\n";
-			echo "            <th>Subjects</th>\n";
+		if($type == "csv") {			
+			echo "\"Username\",\"First Name\",\"Surname\",";
+			if ($is_admin or $is_principal) {
+				echo "\"New\",\"Special\",\"Subjects\",";
+			}
+			if ($is_admin or $is_hod or $is_counselor or $is_principal) {
+				echo "\"Average\",\"Rank\",";
+			}
+			echo "\"Conduct\",\"Absent\",\"Late\",\"Suspended\"\n";
+		} else {
+			echo "      <table align=\"center\" border=\"1\">\n"; // Table headers
+			echo "         <tr>\n";
+			echo "            <th>&nbsp;</th>\n";
+			echo "            <th>Order</th>\n";
+			echo "            <th>Student</th>\n";
+			if ($is_admin or $is_principal) {
+				echo "            <th>New</th>\n";
+				echo "            <th>Special</th>\n";
+				echo "            <th>Subjects</th>\n";
+			}
+			if ($is_admin or $is_hod or $is_counselor or $is_principal) {
+				echo "            <th>Average</th>\n";
+				echo "            <th>Rank</th>\n";
+			}
+			echo "            <th>Conduct</th>\n";
+			echo "            <th>Absent</th>\n";
+			echo "            <th>Late</th>\n";
+			echo "            <th>Suspended</th>\n";
+			echo "         </tr>\n";
 		}
-		if ($is_admin or $is_hod or $is_counselor or $is_principal) {
-			echo "            <th>Average</th>\n";
-			echo "            <th>Rank</th>\n";
-		}
-		echo "            <th>Conduct</th>\n";
-		echo "            <th>Absent</th>\n";
-		echo "            <th>Late</th>\n";
-		echo "            <th>Suspended</th>\n";
-		echo "         </tr>\n";
-		
 		/* For each student, print a row with the student's name and class information */
 		$alt_count = 0;
 		
 		while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
 			if (! is_null($row['Conduct']) and ($row['Conduct'] != - 1)) {
 				$conduct = "{$row['Conduct']}%";
+				$conduct_val = "{$row['Conduct']}";
 			} else {
 				$conduct = "N/A";
+				$conduct_val = "";
 			}
 			if ($row['Average'] == - 1) {
 				$average = "N/A";
+				$average_val = "";
 			} else {
-				$average = round($row['Average']);
-				$average = "$average%";
+				$average_val = round($row['Average']);
+				$average_val = "$average_val";
+				$average = "{$average_val}%";
 			}
 			if ($row['Rank'] == - 1) {
 				$rank = "N/A";
+				$rank_val = "";
 			} else {
 				$rank = $row['Rank'];
+				$rank_val = "$rank";
 			}
 			
 			$absent = "-";
+			$absent_val = "0";
 			$late = "-";
+			$late_val = "0";
 			$suspended = "-";
+			$suspended_val = "0";
 			// TODO: Clean this up for speed improvement
 			$query = "SELECT AttendanceTypeIndex, COUNT(AttendanceIndex) AS Count " .
 					 "       FROM attendance INNER JOIN subject USING (SubjectIndex) " .
@@ -145,12 +181,18 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
 			if (DB::isError($cRes))
 				die($cRes->getDebugInfo()); // Check for errors in query
 			while ( $cRow = & $cRes->fetchrow(DB_FETCHMODE_ASSOC) ) {
-				if ($cRow['AttendanceTypeIndex'] == $ATT_ABSENT)
+				if ($cRow['AttendanceTypeIndex'] == $ATT_ABSENT) {
 					$absent = $cRow['Count'];
-				if ($cRow['AttendanceTypeIndex'] == $ATT_LATE)
+					$absent_val = "$absent";
+				}
+				if ($cRow['AttendanceTypeIndex'] == $ATT_LATE) {
 					$late = $cRow['Count'];
-				if ($cRow['AttendanceTypeIndex'] == $ATT_SUSPENDED)
+					$late_val = "$late";
+				}
+				if ($cRow['AttendanceTypeIndex'] == $ATT_SUSPENDED) {
 					$suspended = $cRow['Count'];
+					$suspended_val = "$suspended";
+				}
 			}
 			
 			$alt_count += 1;
@@ -207,7 +249,6 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
 					 dbfuncString2Int("report/show.php") . "&amp;key=" .
 					 dbfuncString2Int($row['Username']);
 			
-			echo "         <tr$alt>\n";
 			/* Generate view and edit buttons */
 			if ($is_admin) {
 				$viewbutton = dbfuncGetButton($viewlink, "V", "small", "view", 
@@ -243,39 +284,69 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
 			
 			$cnbutton = dbfuncGetButton($cnlink, "C", "small", "cn", 
 										"Casenotes for student");
-			echo "            <td>$cnbutton$viewbutton$ttbutton$abutton$subbutton$mbutton$hbutton$repbutton$editbutton</td>\n";
-			echo "            <td>$orderNum</td>\n";
-			echo "            <td>{$row['FirstName']} {$row['Surname']} ({$row['Username']})</td>\n";
-			if ($is_admin or $is_principal) {
-				if ($row['User1'] == 1) {
-					echo "            <td>X</td>\n";
-				} else {
-					echo "            <td>&nbsp;</td>\n";
+			if($type == "csv") {
+				echo "\"{$row['Username']}\",\"{$row['FirstName']}\",\"{$row['Surname']}\",";
+				if ($is_admin or $is_principal) {
+					if ($row['User1'] == 1) {
+						echo "1,";
+					} else {
+						echo "0,";
+					}
+					if ($row['User2'] == 1) {
+						echo "1,";
+					} else {
+						echo "0,";
+					}
+					echo "{$row['SubjectCount']},";
 				}
-				if ($row['User2'] == 1) {
-					echo "            <td>X</td>\n";
-				} else {
-					echo "            <td>&nbsp;</td>\n";
+				if ($is_admin or $is_principal or $is_hod or $is_counselor) {
+					echo "$average_val,$rank_val,";
 				}
-				echo "            <td>{$row['SubjectCount']}</td>\n";
+				echo "$conduct_val,$absent_val,$late_val,$suspended_val\n";
+			} else {
+				echo "         <tr$alt>\n";
+				echo "            <td>$cnbutton$viewbutton$ttbutton$abutton$subbutton$mbutton$hbutton$repbutton$editbutton</td>\n";
+				echo "            <td>$orderNum</td>\n";
+				echo "            <td>{$row['FirstName']} {$row['Surname']} ({$row['Username']})</td>\n";
+				if ($is_admin or $is_principal) {
+					if ($row['User1'] == 1) {
+						echo "            <td>X</td>\n";
+					} else {
+						echo "            <td>&nbsp;</td>\n";
+					}
+					if ($row['User2'] == 1) {
+						echo "            <td>X</td>\n";
+					} else {
+						echo "            <td>&nbsp;</td>\n";
+					}
+					echo "            <td>{$row['SubjectCount']}</td>\n";
+				}
+				if ($is_admin or $is_principal or $is_hod or $is_counselor) {
+					echo "             <td>$average</td>\n";
+					echo "             <td>$rank</td>\n";
+				}
+				echo "             <td>$conduct</td>\n";
+				echo "             <td>$absent</td>\n";
+				echo "             <td>$late</td>\n";
+				echo "             <td>$suspended</td>\n";
+				echo "         </tr>\n";
 			}
-			if ($is_admin or $is_principal or $is_hod or $is_counselor) {
-				echo "             <td>$average</td>\n";
-				echo "             <td>$rank</td>\n";
-			}
-			echo "             <td>$conduct</td>\n";
-			echo "             <td>$absent</td>\n";
-			echo "             <td>$late</td>\n";
-			echo "             <td>$suspended</td>\n";
-			echo "         </tr>\n";
 		}
-		echo "      </table>\n"; // End of table
+		if($type == "html") {
+			echo "      </table>\n"; // End of table
+		}
 	} else {
-		echo "      <p>There are no students in this class</p>\n";
+		if($type == "html") {
+			echo "      <p>There are no students in this class</p>\n";
+		}
 	}
 	log_event($LOG_LEVEL_EVERYTHING, "admin/class/list_students.php", 
 			$LOG_ADMIN, "Viewed student list for class $classname.");
 } else {
+	$title = "Student List for $classname";
+	
+	include "header.php"; // Show header
+	
 	/* Log unauthorized access attempt */
 	log_event($LOG_LEVEL_ERROR, "admin/class/list_students.php", 
 			$LOG_DENIED_ACCESS, 
@@ -285,5 +356,5 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
 	echo "      <p><a href=\"$backLink\">Click here to go back</a></p>\n";
 }
 
-include "footer.php";
-?>
+if($type == "html")
+	include "footer.php";
