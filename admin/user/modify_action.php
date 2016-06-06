@@ -23,11 +23,7 @@ if ($is_admin) {
 			 "Permissions = {$_POST['perms']}, " . "Title = {$_POST['title']}, " .
 			 "DateType = {$_POST['datetype']}, " .
 			 "DateSeparator = {$_POST['datesep']}, " .
-			 "ActiveStudent = {$_POST['activestudent']}, " .
-			 "ActiveTeacher = {$_POST['activeteacher']}, " .
-			 "SupportTeacher = {$_POST['supportteacher']}, " .
-			 "DepartmentIndex = {$_POST['department']}, " .
-			 "User1 = {$_POST['user1']}, " . "User2 = {$_POST['user2']}";
+			 "DepartmentIndex = {$_POST['department']}";
 	if (isset($_POST['password']) && $_POST['password'] != "") {
 		$phash = password_hash($_POST['password'], PASSWORD_DEFAULT, ['cost' => "15"]);
 		$query .= ", Password = '$phash'";

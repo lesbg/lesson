@@ -187,37 +187,7 @@ if ($_POST["action"] == "Save" || $_POST["action"] == "Update") { // If update o
 			$_POST['datesep'] = "NULL";
 		} else {
 			$_POST['datesep'] = "'" . $_POST['datesep'] . "'";
-		}
-		
-		if ($_POST['activestudent'] == "on") { // Make sure ActiveStudent is right type.
-			$_POST['activestudent'] = "1";
-		} else {
-			$_POST['activestudent'] = "0";
-		}
-		
-		if ($_POST['activeteacher'] == "on") { // Make sure ActiveTeacher is right type.
-			$_POST['activeteacher'] = "1";
-		} else {
-			$_POST['activeteacher'] = "0";
-		}
-		
-		if ($_POST['supportteacher'] == "on") { // Make sure ActiveTeacher is right type.
-			$_POST['supportteacher'] = "1";
-		} else {
-			$_POST['supportteacher'] = "0";
-		}
-		
-		if ($_POST['user1'] == "on") { // Make sure User1 is right type.
-			$_POST['user1'] = "1";
-		} else {
-			$_POST['user1'] = "0";
-		}
-		
-		if ($_POST['user2'] == "on") { // Make sure User2 is right type.
-			$_POST['user2'] = "1";
-		} else {
-			$_POST['user2'] = "0";
-		}
+		}		
 		
 		if ($_POST["action"] == "Save") { // Create new user if "Save" was pressed
 			include "admin/user/new_action.php";

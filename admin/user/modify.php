@@ -332,32 +332,26 @@ if ($is_admin) {
 	echo "                   <input type='radio' name='datesep' value='/' $chcslash>/ (ex. 1/1/2000)<br>\n";
 	echo "                   <input type='radio' name='datesep' value='-' $chcdash>- (ex. 1-1-2000)<br>\n";
 	echo "                   <input type='radio' name='datesep' value='.' $chcperiod>. (ex. 1.1.2000)<br>&nbsp;</td>\n";
-	echo "               <td colspan='1'><b>User Status:</b><br>\n";
-	$chc = "";
-	if(isset($_SESSION['post']['activestudent']) && ($_SESSION['post']['activestudent'] == '1' || $_SESSION['post']['activestudent'] == "on")) {
-		$chc = "checked";
+	echo "               <td colspan='1'><b>Groups:</b><br>\n";
+	$query =	"SELECT groups.GroupID, groups.GroupName FROM " .
+			"       groups, groupmem " .
+			"WHERE groupmem.Member=CONCAT('@', groups.GroupTypeID) " .
+			"AND   groupmem.GroupID='userinfo' " .
+			"AND   groups.YearIndex=$yearindex " .
+			"ORDER BY groups.GroupName, groups.YearIndex";
+	$res = &  $db->query($query);
+	if (DB::isError($res))
+		die($res->getDebugInfo()); // Check for errors in query
+	
+	while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+		$chc = "";
+		if(isset($_SESSION['post']['groups']) && in_array($row['GroupID'], $_SESSION['post']['groups'])) {
+			$chc = 'checked';
+		}
+
+		echo "					<label><input type='checkbox' name='groups[]' value='{$row['GroupID']}' $chc>{$row['GroupName']}</label><br>\n";
 	}
-	echo "                   <input type='checkbox' name='activestudent' $chc>Active student<br>\n";
-	$chc = "";
-	if(isset($_SESSION['post']['activeteacher']) && ($_SESSION['post']['activeteacher'] == '1' || $_SESSION['post']['activeteacher'] == "on")) {
-		$chc = "checked";
-	}
-	echo "                   <input type='checkbox' name='activeteacher' $chc>Active teacher<br>\n";
-	$chc = "";
-	if(isset($_SESSION['post']['supportteacher']) && ($_SESSION['post']['supportteacher'] == '1' || $_SESSION['post']['supportteacher'] == "on")) {
-		$chc = "checked";
-	}
-	echo "                   <input type='checkbox' name='supportteacher' $chc>Support teacher<br>\n";
-	$chc = "";
-	if(isset($_SESSION['post']['user1']) && ($_SESSION['post']['user1'] == '1' || $_SESSION['post']['user1'] == "on")) {
-		$chc = "checked";
-	}
-	echo "                   <input type='checkbox' name='user1' $chc>New student<br>\n";
-	$chc = "";
-	if(isset($_SESSION['post']['user2']) && ($_SESSION['post']['user2'] == '1' || $_SESSION['post']['user2'] == "on")) {
-		$chc = "checked";
-	}
-	echo "                   <input type='checkbox' name='user2' $chc>Special student<br></td>\n";
+	echo "               </td>\n";
 	echo "            </tr>\n";
 
 	if($show_family) {
@@ -424,27 +418,6 @@ if ($is_admin) {
 		echo "            </tr>\n";
 	}
 	
-	$res = &  $db->query(
-			"SELECT groups.GroupID, groups.GroupName FROM groups " .
-			"ORDER BY GroupName");
-	if (DB::isError($res))
-		die($res->getDebugInfo()); // Check for errors in query
-	
-	if ($res->numRows() > 0) {
-		echo "            <tr>\n";
-		echo "               <td><b>Groups</b></td>\n";
-		echo "               <td colspan='2'>\n";
-		while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-			$chc = "";
-			if(isset($_SESSION['post']['groups']) && in_array($row['GroupID'], $_SESSION['post']['groups'])) {
-				$chc = 'checked';
-			}
-				
-			echo "					<label><input type='checkbox' name='groups[]' value='{$row['GroupID']}' $chc>{$row['GroupName']}</label><br>\n";
-		}
-		echo "                  </td>\n";
-		echo "            </tr>\n";
-	}
 	echo "            <tr>\n";
 	if(!$modify) {
 		echo "               <td colspan='3'><i>Note: if you leave the primary password blank, it will default to the user's username.</i></td>\n";

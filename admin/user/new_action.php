@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/user/new_action.php (c) 2005 Jonathan Dieter
+ * admin/user/new_action.php (c) 2005, 2016 Jonathan Dieter
  *
  * Run query to insert a new user into the database.
  * ***************************************************************
@@ -62,8 +62,7 @@ if ($is_admin) {
 		
 		$query = "INSERT INTO user (Username, FirstName, Surname, Gender, DOB, Password, Password2, " .
 				 "                  Permissions, Title, PhoneNumber, DateType, DateSeparator, " .
-				 "                  ActiveStudent, ActiveTeacher, SupportTeacher, DepartmentIndex, " .
-				 "                  User1, User2) " .
+				 "                  DepartmentIndex, " .
 				 "VALUES ('{$_POST['uname']}', '{$_POST['fname']}', '{$_POST['sname']}', " .
 				 "        '{$_POST['gender']}', {$_POST['DOB']}, '$phash', " .
 				 "        '$phash2', " .

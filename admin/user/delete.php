@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/user/delete.php (c) 2005 Jonathan Dieter
+ * admin/user/delete.php (c) 2005, 2016 Jonathan Dieter
  *
  * Delete user from database
  * ***************************************************************
@@ -81,6 +81,12 @@ if ($_POST['action'] == "Yes, delete user") {
 		if ($iserror) { // Check whether there have been any errors during the
 			echo $errorname; // sanity checks
 		} else {
+			$res = &  $db->query(
+					"DELETE FROM groupmem " . // Remove user from user table
+					"WHERE Username  = '$delusername'");
+			if (DB::isError($res))
+				die($res->getDebugInfo()); // Check for errors in query
+			
 			$res = &  $db->query(
 					"DELETE FROM groupgenmem " . // Remove user from user table
 					"WHERE Username  = '$delusername'");
