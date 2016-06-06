@@ -137,7 +137,7 @@ if ($_POST["action"] == "Save" || $_POST["action"] == "Update") { // If update o
 	if (isset($_POST['groups']) && count($_POST['groups']) > 0) {
 		foreach($_POST['groups'] as $i => $fcode) {
 			$_POST['groups'][$i] = safe($fcode);
-			$query = "SELECT GroupIndex FROM groups WHERE GroupIndex='{$_POST['groups'][$i]}'";
+			$query = "SELECT GroupID FROM groups WHERE GroupID='{$_POST['groups'][$i]}'";
 			$res = & $db->query($query);
 			if (DB::isError($res))
 				die($res->getDebugInfo()); // Check for errors in query

@@ -126,15 +126,15 @@ if ($is_admin) {
 			if(!isset($_SESSION['post']['groups'])) {
 				$_SESSION['post']['groups'] = array();
 				
-				$query =	"SELECT GroupIndex FROM groupgenmem " .
+				$query =	"SELECT GroupID FROM groupgenmem " .
 							"WHERE Username='$uname' " .
-							"ORDER BY GroupIndex";
+							"ORDER BY GroupID";
 				$res = &  $db->query($query);
 				if (DB::isError($res))
 					die($res->getDebugInfo()); // Check for errors in query
 					
 				while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-					$_SESSION['post']['groups'][] = $row['GroupIndex'];
+					$_SESSION['post']['groups'][] = $row['GroupID'];
 				}
 			}
 			if(!isset($_SESSION['post']['phone'])) {
@@ -425,7 +425,7 @@ if ($is_admin) {
 	}
 	
 	$res = &  $db->query(
-			"SELECT groups.GroupIndex, groups.GroupName FROM groups " .
+			"SELECT groups.GroupID, groups.GroupName FROM groups " .
 			"ORDER BY GroupName");
 	if (DB::isError($res))
 		die($res->getDebugInfo()); // Check for errors in query
@@ -436,11 +436,11 @@ if ($is_admin) {
 		echo "               <td colspan='2'>\n";
 		while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
 			$chc = "";
-			if(isset($_SESSION['post']['groups']) && in_array($row['GroupIndex'], $_SESSION['post']['groups'])) {
+			if(isset($_SESSION['post']['groups']) && in_array($row['GroupID'], $_SESSION['post']['groups'])) {
 				$chc = 'checked';
 			}
 				
-			echo "					<label><input type='checkbox' name='groups[]' value='{$row['GroupIndex']}' $chc>{$row['GroupName']}</label><br>\n";
+			echo "					<label><input type='checkbox' name='groups[]' value='{$row['GroupID']}' $chc>{$row['GroupName']}</label><br>\n";
 		}
 		echo "                  </td>\n";
 		echo "            </tr>\n";

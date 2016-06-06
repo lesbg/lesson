@@ -1380,7 +1380,7 @@ function gen_members($group_id, &$members, &$group_ids) {
 	
 	$group_ids[] = $group_id;
 	
-	$query = "SELECT Member FROM groupmem WHERE GroupIndex=$group_id";
+	$query = "SELECT Member FROM groupmem WHERE GroupID='$group_id'";
 	$res = & $db->query($query);
 	if (DB::isError($res))
 		die($res->getDebugInfo());
@@ -1407,13 +1407,15 @@ function gen_group_members($group_id) {
 	
 	gen_members($group_id, $members, $group_ids);
 	
-	$query = "SELECT GroupGenMemberIndex, Username FROM groupgenmem WHERE GroupIndex=$group_id";
+	print_r($members);
+	$query = "SELECT GroupGenMemberIndex, Username FROM groupgenmem WHERE GroupID='$group_id'";
 	$res = & $db->query($query);
 	if (DB::isError($res))
 		die($res->getDebugInfo());
 	
 	/* Remove members who have been removed from group */
 	while ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+		echo "<p>$username</p>\n";
 		if(!in_array($row['Username'], $members)) {
 			$query = "DELETE FROM groupgenmem WHERE GroupGenMemberIndex={$row['GroupGenMemberIndex']}";
 			$nres = & $db->query($query);
@@ -1424,13 +1426,13 @@ function gen_group_members($group_id) {
 	
 	/* Add new members into group */
 	foreach($members as $uname) {
-		$query = "SELECT GroupGenMemberIndex, Username FROM groupgenmem WHERE GroupIndex=$group_id AND Username='$uname'";
+		$query = "SELECT GroupGenMemberIndex, Username FROM groupgenmem WHERE GroupID='$group_id' AND Username='$uname'";
 		$res = & $db->query($query);
 		if (DB::isError($res))
 			die($res->getDebugInfo());
 		
 		if($res->numRows() == 0) {
-			$query = "INSERT INTO groupgenmem (Username, GroupIndex) VALUES ('$uname', $group_id)";
+			$query = "INSERT INTO groupgenmem (Username, GroupID) VALUES ('$uname', '$group_id')";
 			$nres = & $db->query($query);
 			if (DB::isError($nres))
 				die($nres->getDebugInfo());

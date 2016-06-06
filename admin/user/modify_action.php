@@ -97,27 +97,28 @@ if ($is_admin) {
 	}
 	
 	/* Remove any groups we've been removed from */
-	$query = "SELECT GroupMemberIndex, GroupIndex FROM groupmem WHERE Member='$uname'";
+	$query = "SELECT GroupMemberIndex, GroupID FROM groupmem WHERE Member='$uname'";
 	$aRes = & $db->query($query);
 	if (DB::isError($aRes))
 		die($aRes->getDebugInfo()); // Check for errors in query
 	while ( $arow = & $aRes->fetchRow(DB_FETCHMODE_ASSOC) ) {
-		if(!in_array($aRow['GroupIndex'], $_POST['groups'])) {
+		if(!in_array($arow['GroupID'], $_POST['groups'])) {
 			$query = "DELETE FROM groupmem WHERE GroupMemberIndex={$arow['GroupMemberIndex']}";
 			$bRes = & $db->query($query);
 			if (DB::isError($bRes))
 				die($bRes->getDebugInfo()); // Check for errors in query
+			gen_group_members($arow['GroupID']);	
 		}
 	}
 	
 	/* Add any groups we've been added to */
 	foreach($_POST['groups'] as $group) {
-		$query = "SELECT GroupMemberIndex, GroupIndex FROM groupmem WHERE Member='$uname' AND GroupIndex='$group'";
+		$query = "SELECT GroupMemberIndex, GroupID FROM groupmem WHERE Member='$uname' AND GroupID='$group'";
 		$aRes = & $db->query($query);
 		if (DB::isError($aRes))
 			die($aRes->getDebugInfo()); // Check for errors in query
 		if ($aRes->numRows() == 0) {
-			$query = "INSERT INTO groupmem (Member, GroupIndex) VALUES ('$uname', '$group')";
+			$query = "INSERT INTO groupmem (Member, GroupID) VALUES ('$uname', '$group')";
 			$aRes = & $db->query($query);
 			if (DB::isError($aRes))
 				die($aRes->getDebugInfo()); // Check for errors in query
