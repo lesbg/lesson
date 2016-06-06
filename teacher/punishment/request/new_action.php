@@ -12,11 +12,18 @@ $studentusername = safe(dbfuncInt2String($_GET['key']));
 $student = dbfuncInt2String($_GET['keyname']);
 $link = dbfuncInt2String($_GET['next']);
 
-$query = "SELECT ActiveTeacher FROM user WHERE Username='$username' AND ActiveTeacher=1";
+/* Check whether current user is a teacher for this student */
+$query = "SELECT user.FirstName, user.Surname, user.Username FROM " .
+		 "       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
+		 "            INNER JOIN groups USING (GroupID) " .
+		 "WHERE user.Username='$username' " .
+		 "AND   groups.GroupTypeID='activeteacher' " .
+		 "AND   groups.YearIndex=$yearindex " .
+		 "ORDER BY user.Username";
 $res = &  $db->query($query);
 if (DB::isError($res))
 	die($res->getDebugInfo()); // Check for errors in query
-if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+if ($res->numRows() > 0) {
 	$is_teacher = true;
 } else {
 	$is_teacher = false;

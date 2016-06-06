@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * index.php (c) 2004, 2005, 2015 Jonathan Dieter
+ * index.php (c) 2004-2005, 2015-2016 Jonathan Dieter
  *
  * Central script that runs by default. This script includes
  * any child scripts that need to be run. Thus, as far as the

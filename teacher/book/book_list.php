@@ -45,7 +45,7 @@ if (isset($_GET['key5']) and intval(dbfuncInt2String($_GET['key5'])) == 1) {
 }
 
 $query = "SELECT class.ClassIndex, class.ClassName, class.Grade " .
-		 "  FROM class " . "WHERE class.ClassTeacherUsername = '$checkuser' " .
+		 "  FROM class " . "WHERE class.ClassTeacherUsername = '$username' " .
 		 "AND   class.YearIndex = $yearindex ";
 $res = & $db->query($query);
 if (DB::isError($res))
@@ -57,12 +57,16 @@ if ($res->numRows() > 0) {
 	$is_class_teacher = false;
 }
 
-$query = "SELECT ActiveTeacher " . "  FROM user " .
-		 "WHERE Username = '$checkuser' " . "AND   ActiveTeacher = 1 ";
-$res = & $db->query($query);
+$query = "SELECT user.FirstName, user.Surname, user.Username FROM " .
+		 "       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
+		 "            INNER JOIN groups USING (GroupID) " .
+		 "WHERE user.Username='$username' " .
+		 "AND   groups.GroupTypeID='activeteacher' " .
+		 "AND   groups.YearIndex=$yearindex " .
+		 "ORDER BY user.Username";
+$res = &  $db->query($query);
 if (DB::isError($res))
-	die($res->getDebugInfo());
-
+	die($res->getDebugInfo()); // Check for errors in query
 if ($res->numRows() > 0) {
 	$is_teacher = true;
 } else {
@@ -199,7 +203,7 @@ if ($is_admin or $username == $checkuser) {
 			}
 		}
 		if (! is_null($classindex) and is_null($student_username)) {
-			$query = "SELECT user.FirstName, user.Surname, user.Username, user.User1, user.User2, " .
+			$query = "SELECT user.FirstName, user.Surname, user.Username, newmem.Username AS New, specialmem.Username AS Special, " .
 				 "       COUNT(subjectstudent.SubjectIndex) AS SubjectCount, class.ClassIndex, class.ClassName " .
 				 "       FROM class INNER JOIN classterm USING (ClassIndex) " .
 				 "            INNER JOIN classlist USING (ClassTermIndex) " .
@@ -212,6 +216,14 @@ if ($is_admin or $username == $checkuser) {
 				 "               (subjectstudent.Username = user.Username " .
 				 "                AND subject.YearIndex = class.YearIndex " .
 				 "                AND subject.TermIndex = classterm.TermIndex) " .
+				 "            LEFT OUTER JOIN (groupgenmem AS newmem INNER JOIN " .
+				 "		                       groups AS newgroups ON (newgroups.GroupID=newmem.GroupID " .
+				 "		                                               AND newgroups.GroupTypeID='new' " .
+				 "                                                     AND newgroups.YearIndex=$yearindex)) ON (user.Username=newmem.Username) " .
+				 "            LEFT OUTER JOIN (groupgenmem AS specialmem INNER JOIN " .
+				 "		                       groups AS specgroups ON (specgroups.GroupID=specialmem.GroupID " .
+				 "		                                               AND specgroups.GroupTypeID='special' " .
+				 "                                                     AND specgroups.YearIndex=$yearindex)) ON (user.Username=specialmem.Username) " .
 				 "WHERE classterm.ClassIndex = $classindex " .
 				 "AND   class.YearIndex = $yearindex " .
 				 "GROUP BY user.Username " .
@@ -261,12 +273,12 @@ if ($is_admin or $username == $checkuser) {
 					echo "         <tr$alt>\n";
 					echo "            <td>$orderNum</td>\n";
 					echo "            <td><a href='$link'>{$row['FirstName']} {$row['Surname']} ({$row['Username']})</a></td>\n";
-					if ($row['User1'] == 1) {
+					if (!is_null($row['New'])) {
 						echo "            <td>X</td>\n";
 					} else {
 						echo "            <td>&nbsp;</td>\n";
 					}
-					if ($row['User2'] == 1) {
+					if (!is_null($row['Special'])) {
 						echo "            <td>X</td>\n";
 					} else {
 						echo "            <td>&nbsp;</td>\n";

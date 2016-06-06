@@ -45,10 +45,10 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
 if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 	include "core/settermandyear.php"; // edit students
 	
-	if($show_all == 0) {
+	/*if($show_all == 0) {*/
 		$showalldeps = true;
 		include "core/titletermyear.php";
-	} else {
+	/*} else {
 		if($yearindex != $currentyear) {
 			$yearindex = $currentyear;
 			include "core/settermandyear.php";
@@ -58,41 +58,40 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 		$showterm = false;
 		$showdeps = false;
 		include "core/titletermyear.php";
-	}
+	}*/
 	
-	if($yearindex == $currentyear) {
-		if(isset($_GET['sort'])) {
-			$sort = "&amp;sort={$_GET['sort']}";
-		} else {
-			$sort = "";
-		}
-		$showlink1 = "index.php?location=" .
-				dbfuncString2Int("admin/studentlist.php") .
-				"$sort&amp;key2=" .
-				dbfuncString2Int("0");
-		$showlink2 = "index.php?location=" .
-				dbfuncString2Int("admin/studentlist.php") .
-				"$sort&amp;key2=" .
-				dbfuncString2Int("1");
-		$showlink3 = "index.php?location=" .
-				dbfuncString2Int("admin/studentlist.php") .
-				"$sort&amp;key2=" .
-				dbfuncString2Int("2");
-		$showbutton1 = dbfuncGetButton($showlink1, "Show students in department", "medium", "", "Show students who are in the current department");
-		$showbutton2 = dbfuncGetButton($showlink2, "Show active students", "medium", "", "Show all active students");
-		$showbutton3 = dbfuncGetButton($showlink3, "Show all users", "medium", "", "Show all users");
-				
-		echo "<p align='center'>\n";
-		if($show_all == 0) {
-			$showbutton1 = dbfuncGetDisabledButton("Show students in department", "medium", "");
-		} elseif($show_all == 1) {
-			$showbutton2 = dbfuncGetDisabledButton("Show active students", "medium", "");
-		} else {
-			$showbutton3 = dbfuncGetDisabledButton("Show all users", "medium", "");
-		}
-		echo "$showbutton1 $showbutton2 $showbutton3\n";
-		echo "</p>\n";
+	if(isset($_GET['sort'])) {
+		$sort = "&amp;sort={$_GET['sort']}";
+	} else {
+		$sort = "";
 	}
+	$showlink1 = "index.php?location=" .
+			dbfuncString2Int("admin/studentlist.php") .
+			"$sort&amp;key2=" .
+			dbfuncString2Int("0");
+	$showlink2 = "index.php?location=" .
+			dbfuncString2Int("admin/studentlist.php") .
+			"$sort&amp;key2=" .
+			dbfuncString2Int("1");
+	$showlink3 = "index.php?location=" .
+			dbfuncString2Int("admin/studentlist.php") .
+			"$sort&amp;key2=" .
+			dbfuncString2Int("2");
+	$showbutton1 = dbfuncGetButton($showlink1, "Show students in department", "medium", "", "Show students who are in the current department");
+	$showbutton2 = dbfuncGetButton($showlink2, "Show active students", "medium", "", "Show all active students");
+	$showbutton3 = dbfuncGetButton($showlink3, "Show all users", "medium", "", "Show all users");
+			
+	echo "<p align='center'>\n";
+	if($show_all == 0) {
+		$showbutton1 = dbfuncGetDisabledButton("Show students in department", "medium", "");
+	} elseif($show_all == 1) {
+		$showbutton2 = dbfuncGetDisabledButton("Show active students", "medium", "");
+	} else {
+		$showbutton3 = dbfuncGetDisabledButton("Show all users", "medium", "");
+	}
+	echo "$showbutton1 $showbutton2 $showbutton3\n";
+	echo "</p>\n";
+
 	if ($_GET['sort'] == '1') {
 		$sortorder = "user.Username DESC";
 	} elseif ($_GET['sort'] == '2') {
@@ -168,24 +167,37 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 	
 	/* Get student list */
 	if ($show_all == 1 || $show_all == 2) {
-		$query =	"SELECT user.FirstName, user.Surname, user.Username, user.User1, user.User2, " .
+		$query =	"SELECT user.FirstName, user.Surname, user.Username, newmem.Username AS New, specialmem.Username AS Special, " .
 			 		"       user.House, class.ClassName, class.Grade FROM " .
 			 		"       user LEFT OUTER JOIN " .
 					"        (class INNER JOIN classterm ON " .
 					"           (class.YearIndex = $yearindex AND classterm.ClassIndex = class.ClassIndex) " .
 					"          INNER JOIN currentterm USING (TermIndex) " .
 					"          INNER JOIN classlist USING (ClassTermIndex)) " .
-					"        USING (Username) ";
+					"        USING (Username) " .
+					"       LEFT OUTER JOIN (groupgenmem AS newmem INNER JOIN " .
+					"		                  groups AS newgroups ON (newgroups.GroupID=newmem.GroupID " .
+					"		                                          AND newgroups.GroupTypeID='new' " .
+					"                                                AND newgroups.YearIndex=$yearindex)) ON (user.Username=newmem.Username) " .
+					"       LEFT OUTER JOIN (groupgenmem AS specialmem INNER JOIN " .
+					"		                  groups AS specgroups ON (specgroups.GroupID=specialmem.GroupID " .
+					"		                                           AND specgroups.GroupTypeID='special' " .
+					"                                                 AND specgroups.YearIndex=$yearindex)) ON (user.Username=specialmem.Username) ";
 		if($show_all == 1) {
-			$query .=	"WHERE user.ActiveStudent = '1' ";
+			$query .=	"        INNER JOIN (groupgenmem INNER JOIN groups " .
+						"                     ON (groups.GroupTypeID='activestudent' " .
+						"                         AND groupgenmem.GroupID=groups.GroupID " .
+						"                         AND groups.YearIndex=$yearindex)) " .
+						"                   USING (Username) ";
 		}
 		$query .=	"GROUP BY user.Username " .
 					"ORDER BY $sortorder";
+		echo "$query";
 		$res = &  $db->query($query);
 		if (DB::isError($res))
 			die($res->getDebugInfo()); // Check for errors in query
 	} else {
-		$query =	"SELECT user.FirstName, user.Surname, user.Username, user.User1, user.User2, " .
+		$query =	"SELECT user.FirstName, user.Surname, user.Username, newmem.Username AS New, specialmem.Username AS Special, " .
 			 		"       user.House, class.ClassName, class.Grade FROM " .
 			 		"       user INNER JOIN " .
 					"        (class INNER JOIN classterm ON " .
@@ -194,6 +206,14 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 					"            AND classterm.TermIndex = $termindex) " .
 					"          INNER JOIN classlist USING (ClassTermIndex)) " .
 					"        USING (Username) " .
+					"       LEFT OUTER JOIN (groupgenmem AS newmem INNER JOIN " .
+					"		                  groups AS newgroups ON (newgroups.GroupID=newmem.GroupID " .
+					"		                                          AND newgroups.GroupTypeID='new' " .
+					"                                                AND newgroups.YearIndex=$yearindex)) ON (user.Username=newmem.Username) " .
+					"       LEFT OUTER JOIN (groupgenmem AS specialmem INNER JOIN " .
+					"		                  groups AS specgroups ON (specgroups.GroupID=specialmem.GroupID " .
+					"		                                           AND specgroups.GroupTypeID='special' " .
+					"                                                 AND specgroups.YearIndex=$yearindex)) ON (user.Username=specialmem.Username) " .
 					"GROUP BY user.Username " .
 					"ORDER BY $sortorder";
 		$res = &  $db->query($query);
@@ -321,12 +341,12 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 			} else {
 				echo "            <td><i>None</i></td>\n";
 			}
-			if ($row['User1'] == 1) {
+			if (!is_null($row['New'])) {
 				echo "            <td>X</td>\n";
 			} else {
 				echo "            <td>&nbsp;</td>\n";
 			}
-			if ($row['User2'] == 1) {
+			if (!is_null($row['Special'])) {
 				echo "            <td>X</td>\n";
 			} else {
 				echo "            <td>&nbsp;</td>\n";

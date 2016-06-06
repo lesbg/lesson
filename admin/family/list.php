@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/family/list.php (c) 2015 Jonathan Dieter
+ * admin/family/list.php (c) 2015-2016 Jonathan Dieter
  *
  * List all family codes
  * ***************************************************************
@@ -117,17 +117,33 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 	echo "      <p align=\"center\">$newbutton $showbutton</p>\n";
 
 	/* Get student list */
-	$query =		"SELECT user.FirstName, user.Surname, user.Title, user.Username, user.ActiveStudent, " .
-					"       familylist.Guardian, familyinfo.*, class.ClassName, phone.Number, phone.Type, phone.Comment FROM " .
+	$query =		"SELECT user.FirstName, user.Surname, user.Title, user.Username, activestudentinfo.Username AS ActiveStudent, " .
+					"       activeteacherinfo.Username AS ActiveTeacher, familylist.Guardian, familyinfo.*, class.ClassName, " .
+					"       phone.Number, phone.Type, phone.Comment FROM " .
 					"	(SELECT family.FamilyCode, family.FamilyName FROM " .
 					"       family LEFT OUTER JOIN " .
-					"            (familylist AS familylist2 INNER JOIN user AS user2 USING (Username)) USING (FamilyCode) ";
+					"            (familylist AS familylist2 INNER JOIN user AS user2 USING (Username)) USING (FamilyCode) ";	
 	if(!$show_all) {
-		$query .=	"	 WHERE (user2.ActiveStudent=1 OR familylist2.FamilyCode IS NULL) ";
+		$query .=	"        LEFT OUTER JOIN (groupgenmem INNER JOIN groups " .
+					"                     ON (groups.GroupTypeID='activestudent' " .
+					"                         AND groupgenmem.GroupID=groups.GroupID " .
+					"                         AND groups.YearIndex=$yearindex)) " .
+					"                   USING (Username) " .
+					"	 WHERE (groupgenmem.Username IS NOT NULL OR familylist2.FamilyCode IS NULL) ";
 	}
 	$query .=		"    GROUP BY family.FamilyCode) AS familyinfo " .
 					"   LEFT OUTER JOIN (familylist INNER JOIN user USING (Username) " .
 					"          LEFT OUTER JOIN phone USING (Username) " .
+					"          LEFT OUTER JOIN (groupgenmem AS activestudentinfo INNER JOIN groups AS asgroups " .
+					"                     ON (asgroups.GroupTypeID='activestudent' " .
+					"                         AND activestudentinfo.GroupID=asgroups.GroupID " .
+					"                         AND asgroups.YearIndex=$yearindex)) " .
+					"                   USING (Username) " .
+					"          LEFT OUTER JOIN (groupgenmem AS activeteacherinfo INNER JOIN groups AS atgroups " .
+					"                     ON (atgroups.GroupTypeID='activeteacher' " .
+					"                         AND activeteacherinfo.GroupID=atgroups.GroupID " .
+					"                         AND atgroups.YearIndex=$yearindex)) " .
+					"                   USING (Username) " .
 					"          LEFT OUTER JOIN (class INNER JOIN classterm " .
 					"               ON (class.YearIndex=$yearindex AND classterm.ClassIndex=class.ClassIndex) ";
 	if($yearindex == $currentyear) {
@@ -229,7 +245,7 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 						dbfuncString2Int(
 							"{$row['FirstName']} {$row['Surname']} ({$row['Username']})") .
 				 		"&amp;keyname2=" . dbfuncSTring2Int($row['FirstName']);
-				if($row['ActiveStudent'] == 1 && $row['Guardian'] == 0) {
+				if(!is_null($row['ActiveStudent']) && $row['Guardian'] == 0) {
 					$viewbutton = dbfuncGetButton($viewlink, "V", "small", "view",
 							"View $who's subjects");
 				} else {
@@ -239,26 +255,26 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 						"Edit $who");
 	
 				echo "$viewbutton $editbutton";
-				if($row['ActiveStudent'] == 1) {
+				if(!is_null($row['ActiveStudent'])) {
 					echo "<strong>";
 				}
-				if($row['ActiveTeacher'] == 1 || $row['Guardian'] == 1) {
+				if(!is_null($row['ActiveTeacher']) || $row['Guardian'] == 1) {
 					echo "<em>";
 					if(isset($row['Title']) and $row['Title'] != "") {
 						echo "{$row['Title']} ";
 					}
 				}
 				echo "{$row['FirstName']} {$row['Surname']} ({$row['Username']})";
-				if($row['ActiveStudent'] == 1) {
+				if(!is_null($row['ActiveStudent'])) {
 					echo " - {$row['ClassName']}";
 				}
-				if($row['ActiveTeacher'] == 1 || $row['Guardian'] == 1) {
+				if(!is_null($row['ActiveTeacher']) || $row['Guardian'] == 1) {
 					if($row['Number'] != "") {
 						echo " - {$row['Number']}";
 					}
 					echo "</em>";
 				}
-				if($row['ActiveStudent'] == 1) {
+				if(!is_null($row['ActiveStudent'])) {
 					echo "</strong>";
 				}
 				echo "<br />\n";
@@ -295,4 +311,3 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
 }
 
 include "footer.php";
-?>

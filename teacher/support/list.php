@@ -18,11 +18,13 @@ $showterm = false;
 
 /* Get subject information for current teacher */
 $query = "SELECT suser.Username, suser.FirstName, suser.Surname " .
-		 "       FROM user, support, classlist, classterm, user AS suser " .
+		 "       FROM user, support, classlist, classterm, user AS suser, groupgenmem, groups " .
 		 "WHERE support.WorkerUsername   = '$username' " .
 		 "AND   user.Username            = support.WorkerUsername " .
-		 "AND   user.ActiveTeacher       = 1 " .
-		 "AND   user.SupportTeacher      = 1 " .
+		 "AND   groupgenmem.Username     = user.Username " .
+		 "AND   groups.GroupID           = groupgenmem.GroupID " .
+		 "AND   groups.GroupTypeID       = 'supportteacher' " .
+		 "AND   groups.YearIndex         = $yearindex " .
 		 "AND   support.StudentUsername  = classlist.Username " .
 		 "AND   suser.Username           = support.StudentUsername " .
 		 "AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .

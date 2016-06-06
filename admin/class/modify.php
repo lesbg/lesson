@@ -83,7 +83,10 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
 					 "             INNER JOIN class ON" .
 					 "                classterm.ClassIndex = class.ClassIndex AND class.YearIndex = $yearindex)" .
 					 "            ON user.Username = classlist.Username " .
-					 "WHERE user.ActiveStudent = '1' " .
+					 "            INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
+					 "            INNER JOIN groups USING (GroupID) " .
+					 "WHERE groups.GroupTypeID='activestudent' " .
+					 "AND   groups.YearIndex=$yearindex " .
 					 "AND   classlist.ClassTermIndex IS NULL " .
 					 "ORDER BY user.Username");
 	if (DB::isError($res))
@@ -128,9 +131,12 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
 	echo "                  <select name='addtoteacherlist' style='width: 200px;' size=10>\n";
 	
 	$query = "SELECT user.FirstName, user.Surname, user.Username FROM " .
-			 "       user LEFT JOIN class ON user.Username=class.ClassTeacherUsername AND class.ClassIndex=$classindex " .
-			 "WHERE user.ActiveTeacher = 1 " .
-			 "AND   user.DepartmentIndex = $depindex " .
+			 "       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
+			 "            INNER JOIN groups USING (GroupID) " .
+			 "            LEFT OUTER JOIN class ON user.Username=class.ClassTeacherUsername AND class.ClassIndex=$classindex " .
+			 "WHERE user.DepartmentIndex = $depindex " .
+			 "AND   groups.GroupTypeID='activeteacher' " .
+			 "AND   groups.YearIndex=$yearindex " .
 			 "AND   class.ClassTeacherUsername IS NULL " .
 			 "ORDER BY user.Username";
 	$res = &  $db->query($query);

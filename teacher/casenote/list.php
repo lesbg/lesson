@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * teacher/casenote/list.php (c) 2006 Jonathan Dieter
+ * teacher/casenote/list.php (c) 2006, 2016 Jonathan Dieter
  *
  * Show list of casenotes for student
  * ***************************************************************
@@ -95,27 +95,33 @@ if ($res->numRows() > 0) {
 }
 
 /* Check whether current user is a support teacher for this student */
-$res = &  $db->query(
-				"SELECT user.Username FROM support, user " .
-				 "WHERE support.StudentUsername = '$studentusername' " .
-				 "AND   support.WorkerUsername = '$username' " .
-				 "AND   user.Username = support.WorkerUsername " .
-				 "AND   user.ActiveTeacher = 1 " .
-				 "AND   user.SupportTeacher = 1");
+$query = "SELECT user.FirstName, user.Surname, user.Username FROM " .
+		 "       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
+		 "            INNER JOIN groups USING (GroupID) " .
+		 "WHERE user.Username='$username' " .
+		 "AND   groups.GroupTypeID='supportteacher' " .
+		 "AND   groups.YearIndex=$yearindex " .
+		 "ORDER BY user.Username";
+$res = &  $db->query($query);
 if (DB::isError($res))
 	die($res->getDebugInfo()); // Check for errors in query
-
 if ($res->numRows() > 0) {
 	$is_supportteacher = true;
 } else {
 	$is_supportteacher = false;
 }
 
-/* Check whether current user is a teacher */
-$res = &  $db->query("SELECT Username FROM user WHERE ActiveTeacher=1");
+/* Check whether current user is a teacher for this student */
+$query = "SELECT user.FirstName, user.Surname, user.Username FROM " .
+		 "       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
+		 "            INNER JOIN groups USING (GroupID) " .
+		 "WHERE user.Username='$username' " .
+		 "AND   groups.GroupTypeID='activeteacher' " .
+		 "AND   groups.YearIndex=$yearindex " .
+		 "ORDER BY user.Username";
+$res = &  $db->query($query);
 if (DB::isError($res))
 	die($res->getDebugInfo()); // Check for errors in query
-
 if ($res->numRows() > 0) {
 	$is_teacher = true;
 } else {

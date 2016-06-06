@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/punishment/low.php (c) 2007-2013 Jonathan Dieter
+ * admin/punishment/low.php (c) 2007-2016 Jonathan Dieter
  *
  * Print students whose conduct mark is below a certain criteria
  * ***************************************************************
@@ -61,11 +61,17 @@ if ($_POST['action'] == "Reset") {
 	$_GET['fdata'] = $fdata;
 }
 
-$query = "SELECT ActiveTeacher FROM user WHERE Username='$username' AND ActiveTeacher=1";
+$query = "SELECT user.FirstName, user.Surname, user.Username FROM " .
+		 "       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
+		 "            INNER JOIN groups USING (GroupID) " .
+		 "WHERE user.Username='$username' " .
+		 "AND   groups.GroupTypeID='activeteacher' " .
+		 "AND   groups.YearIndex=$yearindex " .
+		 "ORDER BY user.Username";
 $res = &  $db->query($query);
 if (DB::isError($res))
 	die($res->getDebugInfo()); // Check for errors in query
-if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+if ($res->numRows() > 0) {
 	$is_teacher = true;
 } else {
 	$is_teacher = false;
@@ -297,4 +303,3 @@ if ($is_admin or ($perm >= $PUN_PERM_SEE and $is_teacher)) { // Make sure user h
 }
 
 include "footer.php";
-?>

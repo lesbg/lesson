@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * user/messages.php (c) 2006 Jonathan Dieter
+ * user/messages.php (c) 2006, 2016 Jonathan Dieter
  *
  * Show messages for user in folder
  * ***************************************************************
@@ -60,7 +60,7 @@ include "header.php";
 /* Get messages in current folder */
 $query = "SELECT message.MessageSubject, message.MessageDest, " .
 		 "       message.MessageTime, user.Title, user.FirstName, " .
-		 "       user.Surname, user.Username, user.ActiveTeacher, " .
+		 "       user.Surname, user.Username, " .
 		 "       messagestatus.NewStatus " .
 		 "       FROM message, user, messagestatus " .
 		 
@@ -93,11 +93,8 @@ if ($res->numRows() > 0) {
 		$date = date(dbfuncGetDateFormat(), strtotime($row['MessageTime']));
 		$time = date("g:iA", strtotime($row['MessageTime']));
 		
-		if ($row['ActiveTeacher'] == 1) {
-			$name = "{$row['Title']} {$row['FirstName']} {$row['Surname']}";
-		} else {
-			$name = "{$row['FirstName']} {$row['Surname']}";
-		}
+		$name = "{$row['FirstName']} {$row['Surname']}";
+
 		if ($row['NewStatus'] == 1) {
 			echo "            <td><b>$name</b></td>\n";
 			echo "            <td><b>{$row['MessageSubject']}</b></td>\n";

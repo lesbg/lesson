@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/teacherlist.php (c) 2004-2007 Jonathan Dieter
+ * admin/teacherlist.php (c) 2004-2007, 2016 Jonathan Dieter
  *
  * List all active teachers and what subjects they are currently
  * teaching
@@ -17,12 +17,19 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) { // Make sure user has perm
 	include "core/titletermyear.php";
 	
 	/* Get teacher list */
-	$query = "SELECT user.Title, user.FirstName, user.Surname, user.Username, " .
-			 "       user.PhoneNumber, COUNT(timetable.TimetableIndex) AS PeriodCount " .
-			 "       FROM user LEFT OUTER JOIN (subjectteacher INNER JOIN timetable USING (SubjectIndex) INNER JOIN subject ON timetable.SubjectIndex=subject.SubjectIndex AND subject.YearIndex=$yearindex INNER JOIN currentterm ON subject.TermIndex=currentterm.TermIndex) USING (Username) " .
-			 "WHERE user.ActiveTeacher = 1 " .
-			 "AND   user.DepartmentIndex = $depindex " .
-			 "GROUP BY user.Username " . "ORDER BY user.Username";
+	$query =	"SELECT user.Title, user.FirstName, user.Surname, user.Username, " .
+				"       user.PhoneNumber, COUNT(timetable.TimetableIndex) AS PeriodCount " .
+				"       FROM user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
+				"                 INNER JOIN groups USING (GroupID) " .
+				"                 LEFT OUTER JOIN " .
+				"                  (subjectteacher INNER JOIN timetable USING (SubjectIndex) " . 
+				"                                  INNER JOIN subject ON timetable.SubjectIndex=subject.SubjectIndex AND subject.YearIndex=$yearindex " . 
+				"                                  INNER JOIN currentterm ON subject.TermIndex=currentterm.TermIndex) ON (user.Username=subjectteacher.Username) " .
+				"WHERE groups.GroupTypeID='activeteacher' " .
+				"AND   groups.YearIndex=$yearindex " .
+				"AND   user.DepartmentIndex = $depindex " .
+				"GROUP BY user.Username " . 
+				"ORDER BY user.Username";
 	$res = &  $db->query($query);
 	if (DB::isError($res))
 		die($res->getDebugInfo()); // Check for errors in query

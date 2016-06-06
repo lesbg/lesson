@@ -12,7 +12,7 @@ $link = "index.php?location=" .
 		 dbfuncString2Int("admin/support/modify_action.php") . "&amp;next=" .
 		 $_GET['next'];
 
-$query = "SELECT Username FROM counselorlist WHERE Username=\"$username\"";
+$query = "SELECT Username FROM counselorlist WHERE Username='$username'";
 $res = &  $db->query($query);
 if (DB::isError($res))
 	die($res->getDebugInfo()); // Check for errors in query
@@ -124,11 +124,12 @@ if ($is_admin or $is_counselor) {
 	echo "               <td>\n";
 	echo "                  <select name=\"teacher\" style=\"width: 100%;\" size=16>\n";
 	
-	$query = "SELECT Title, FirstName, Surname, Username FROM " . "       user " .
-			 "WHERE  user.ActiveTeacher = 1 " . "AND    user.SupportTeacher = 1 " .
-			 
-			// "AND user.DepartmentIndex = $depindex " .
-			"ORDER BY user.Username";
+	$query = "SELECT user.FirstName, user.Surname, user.Username FROM " .
+			 "       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
+			 "            INNER JOIN groups USING (GroupID) " .
+			 "WHERE groups.GroupTypeID='supportteacher' " .
+			 "AND   groups.YearIndex=$yearindex " .
+			 "ORDER BY user.Username";
 	$res = &  $db->query($query);
 	if (DB::isError($res))
 		die($res->getDebugInfo()); // Check for errors in query

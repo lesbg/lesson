@@ -73,8 +73,7 @@ if ($is_admin) {
 	if($modify) {
 		$res = &  $db->query(
 				"SELECT Username, FirstName, Surname, Gender, DOB, Permissions, DepartmentIndex, " .
-				"       Title, DateType, DateSeparator, Password2, PhoneNumber, ActiveStudent, " .
-				"       ActiveTeacher, SupportTeacher, User1, User2 FROM user " .
+				"       Title, DateType, DateSeparator, Password2, PhoneNumber FROM user " .
 				"WHERE Username = '$uname'");
 		if (DB::isError($res))
 			die($res->getDebugInfo()); // Check for errors in query
@@ -101,11 +100,6 @@ if ($is_admin) {
 					$_SESSION['post']['datesep'] = 'D';
 			}
 			$pwd2 = $row['Password2'];
-			if(!isset($_SESSION['post']['activestudent'])) $_SESSION['post']['activestudent'] = $row['ActiveStudent'];
-			if(!isset($_SESSION['post']['activeteacher'])) $_SESSION['post']['activeteacher'] = $row['ActiveTeacher'];
-			if(!isset($_SESSION['post']['supportteacher'])) $_SESSION['post']['supportteacher'] = $row['SupportTeacher'];
-			if(!isset($_SESSION['post']['user1'])) $_SESSION['post']['user1'] = $row['User1'];
-			if(!isset($_SESSION['post']['user2'])) $_SESSION['post']['user2'] = $row['User2'];
 			
 			if($show_family) {
 				if(!isset($_SESSION['post']['fcode'])) {
@@ -170,7 +164,19 @@ if ($is_admin) {
 					$_SESSION['post']['gender'] = "F";
 				}
 			} elseif ($new_user_type == 's') {
-				if(!isset($_SESSION['post']['activestudent'])) $_SESSION['post']['activestudent'] = '1';
+				$query =	"SELECT groups.GroupID FROM " .
+							"       groups " .
+							"WHERE groups.GroupTypeID='activestudent' " .
+							"AND   groups.YearIndex=$yearindex ";
+				$res = &  $db->query($query);
+				if (DB::isError($res))
+					die($res->getDebugInfo()); // Check for errors in query
+				if ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+					if(!isset($_SESSION['post']['groups'])) {
+						$_SESSION['post']['groups'] = array();
+					}
+					$_SESSION['post']['groups'][] = $row['GroupID'];
+				}
 			}
 		}
 	}

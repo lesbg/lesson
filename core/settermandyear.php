@@ -64,11 +64,12 @@ if (! $showalldeps) {
 				 " AND   classterm.ClassIndex       = class.ClassIndex " .
 				 " AND   class.YearIndex            = $yearindex) " . "UNION " .
 				 "(SELECT class.DepartmentIndex  " .
-				 "         FROM user, support, class, classterm, classlist, currentterm " .
+				 "         FROM user, support, class, classterm, classlist, currentterm, groupgenmem, groups " .
 				 " WHERE support.WorkerUsername   = '$username' " .
 				 " AND   user.Username            = support.WorkerUsername " .
-				 " AND   user.ActiveTeacher       = 1 " .
-				 " AND   user.SupportTeacher      = 1 " .
+				 " AND   groupgenmem.Username     = user.Username " .
+				 " AND   groups.GroupID           = groupgenmem.GroupID " .
+				 " AND   groups.GroupTypeID       = 'supportteacher' " .
 				 " AND   support.StudentUsername  = classlist.Username " .
 				 " AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
 				 " AND   classterm.TermIndex      = currentterm.TermIndex " .

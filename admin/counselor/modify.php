@@ -52,11 +52,15 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
 	echo "               <td>\n";
 	echo "                  <select name=\"add[]\" style=\"width: 200px;\" multiple size=19>\n";
 	
-	$query = "SELECT user.FirstName, user.Surname, user.Username FROM " .
-			 "       user LEFT JOIN counselorlist ON " .
-			 "       user.Username=counselorlist.Username " .
-			 "WHERE  user.ActiveTeacher = 1 " .
-			 "AND    counselorlist.Username IS NULL " . "ORDER BY user.Username";
+	$query =	"SELECT user.FirstName, user.Surname, user.Username FROM " .
+				"       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
+				"            INNER JOIN groups USING (GroupID) " .
+				"            LEFT JOIN counselorlist ON " .
+				"                      user.Username=counselorlist.Username " .
+				"WHERE groups.GroupTypeID='activeteacher' " .
+				"AND   groups.YearIndex=$yearindex " .
+				"AND   counselorlist.Username IS NULL " .
+				"ORDER BY user.Username";
 	$res = &  $db->query($query);
 	if (DB::isError($res))
 		die($res->getDebugInfo()); // Check for errors in query

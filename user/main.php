@@ -143,11 +143,16 @@ if ($res->numRows() > 0) {
 }
 
 /* If user is an active teacher, show Casenotes and Punishments history hyperlinks */
-$nrs = &  $db->query(
-				"SELECT Username FROM user WHERE Username='$username' AND " .
-				 "ActiveTeacher=1");
-if (DB::isError($res))
-	die($res->getDebugInfo()); // Check for errors in query
+$query = "SELECT user.FirstName, user.Surname, user.Username FROM " .
+		"       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
+		"            INNER JOIN groups USING (GroupID) " .
+		"WHERE user.Username='$username' " .
+		"AND   groups.GroupTypeID='activeteacher' " .
+		"AND   groups.YearIndex=$yearindex " .
+		"ORDER BY user.Username";
+$nrs = &  $db->query($query);
+if (DB::isError($nrs))
+	die($nrs->getDebugInfo()); // Check for errors in query
 if ($nrs->numRows() > 0) {
 	$is_staff = True;
 	$nrs = &  $db->query(
@@ -554,11 +559,13 @@ if ($nrs->numRows() > 0) {
 
 /* Get subject information for support teacher */
 $query = "SELECT class.ClassName, class.ClassIndex, COUNT(support.StudentUsername) AS StudentCount " .
-		 "       FROM user, support, class, classterm, classlist " .
+		 "       FROM user, support, class, classterm, classlist, groupgenmem, groups " .
 		 "WHERE support.WorkerUsername   = '$username' " .
 		 "AND   user.Username            = support.WorkerUsername " .
-		 "AND   user.ActiveTeacher       = 1 " .
-		 "AND   user.SupportTeacher      = 1 " .
+		 "AND   groupgenmem.Username     = user.Username " .
+		 "AND   groups.GroupID           = groupgenmem.GroupID " .
+		 "AND   groups.GroupTypeID       = 'supportteacher' " .
+		 "AND   groups.YearIndex         = $yearindex " .
 		 "AND   support.StudentUsername  = classlist.Username " .
 		 "AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
 		 "AND   classterm.TermIndex      = $termindex " .

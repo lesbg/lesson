@@ -58,11 +58,15 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
 	echo "                  <label for=\"pt2\"><input id=\"pt2\" type=\"radio\" name=\"level\" value=\"2\" checked>Head of department</label><br>\n";
 	echo "                  <select name=\"add[]\" style=\"width: 200px;\" multiple size=17>\n";
 	
-	$query = "SELECT user.FirstName, user.Surname, user.Username FROM " .
-			 "       user LEFT JOIN principal ON " .
-			 "       user.Username=principal.Username " .
-			 "WHERE  user.ActiveTeacher = 1 " .
-			 "AND    principal.Username IS NULL " . "ORDER BY user.Username";
+	$query =	"SELECT user.FirstName, user.Surname, user.Username FROM " .
+				"       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
+				"            INNER JOIN groups USING (GroupID) " .
+				"       user LEFT JOIN principal ON " .
+				"       user.Username=principal.Username " .
+				"WHERE groups.GroupTypeID='activeteacher' " .
+				"AND   groups.YearIndex=$yearindex " .
+				"AND   principal.Username IS NULL " .
+				"ORDER BY user.Username";
 	$res = &  $db->query($query);
 	if (DB::isError($res))
 		die($res->getDebugInfo()); // Check for errors in query

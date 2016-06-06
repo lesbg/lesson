@@ -209,7 +209,6 @@ $orig_data = substr($orig_data, strlen($header),
 					 (strlen($header) + strlen($footer)));
 
 $query = "SELECT user.Username, user.Gender, user.FirstName, user.Surname, term.TermName, " .
-		 "       user.User1, user.User2, user.User3, " .
 		 "       huser.Title AS HODTitle, huser.FirstName AS HODFirstName, " .
 		 "       huser.Surname AS HODSurname, " .
 		 "       tuser.Title AS CTTitle, tuser.FirstName AS CTFirstName, " .
@@ -413,6 +412,20 @@ while ( $student_info = & $sres->fetchRow(DB_FETCHMODE_ASSOC) ) {
 									ENT_QUOTES);
 	}
 	
+	/* Get group information */
+	$groups = array();
+	$query =	"SELECT groups.GroupID, GroupName FROM groups, groupgenmem " .
+			"WHERE groupgenmem.Username = '{$student_info['Username']}' " .
+			"AND   groups.GroupID = groupgenmem.GroupID " .
+			"AND   groups.YearIndex = $yearindex ";
+	$cRes = &   $db->query($query);
+	if (DB::isError($cRes))
+		die($cRes->getDebugInfo()); // Check for errors in query
+	
+	while ( $cRow = & $cRes->fetchrow(DB_FETCHMODE_ASSOC) ) {
+		$groups[] = $crow['GroupID'];
+	}
+		
 	/* Get overall averages */
 	$query = "SELECT term.TermNumber, classlist.Rank, " .
 			 "       classlist.Average, classterm.Average AS ClassAverage, classterm.AverageType, " .
@@ -668,26 +681,10 @@ while ( $student_info = & $sres->fetchRow(DB_FETCHMODE_ASSOC) ) {
 	$data = str_replace("&lt;&lt;class&gt;&gt;", 
 						htmlspecialchars($class_name, ENT_QUOTES), $data);
 	
-	// Temporary class fix for LESL
-	if ($student_info['User2'] == 1) {
-		if ($student_info['User3'] == 1) {
-			$grade = $class_grade + 1;
-		} else {
-			$grade = $class_grade;
-		}
-		$query = "SELECT GradeName FROM grade WHERE Grade=$grade";
-		$nres = & $db->query($query);
-		if (DB::isError($nres))
-			die($nres->getDebugInfo());
-		
-		if ($nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-			$hacked_class = "Grade {$nrow['GradeName']}";
-		} else {
-			$hacked_class = "Unknown";
-		}
-	} else {
-		$hacked_class = $class_name;
-	}
+	// To remove
+	
+	$hacked_class = $class_name;
+
 	$data = str_replace("&lt;&lt;hacked_class&gt;&gt;", 
 						htmlspecialchars($hacked_class, ENT_QUOTES), $data);
 	// End Temporary fix

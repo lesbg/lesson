@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * user/timetable.php (c) 2007 Jonathan Dieter
+ * user/timetable.php (c) 2007, 2016 Jonathan Dieter
  *
  * Show user's timetable
  * ***************************************************************
@@ -82,9 +82,12 @@ if (($username == $ttusername or $is_admin or $is_guardian) and $type != "c") {
 	/* Get student list */
 	include "core/titletermyear.php";
 	
-	$nrs = &  $db->query(
-					"SELECT Username FROM user WHERE Username='$ttusername' AND " .
-					 "ActiveTeacher=1");
+	$query =	"SELECT Username FROM user INNER JOIN groupgenmem USING (Username) " .
+				"     INNER JOIN groups USING (GroupID) " .
+				"WHERE user.Username='$username' " .
+				"AND   groups.GroupTypeID='activeteacher' " .
+				"AND   groups.YearIndex=$yearindex ";
+	$nrs = &  $db->query($query);
 	if (DB::isError($res))
 		die($res->getDebugInfo()); // Check for errors in query
 	if ($nrs->numRows() > 0) {
@@ -94,9 +97,12 @@ if (($username == $ttusername or $is_admin or $is_guardian) and $type != "c") {
 			$type = dbfuncString2Int($type);
 		echo "   <center><embed src='svg/timetable.svg.php?key={$_GET['key']}&amp;key2=$type' type='image/svg+xml' width='800' height='400' pluginspage='http://www.adobe.com/svg/viewer/install/' /></center>\n";
 	}
-	$nrs = &  $db->query(
-					"SELECT Username FROM user WHERE Username='$ttusername' AND " .
-					 "ActiveStudent=1");
+	$query =	"SELECT Username FROM user INNER JOIN groupgenmem USING (Username) " .
+				"     INNER JOIN groups USING (GroupID) " .
+				"WHERE user.Username='$username' " .
+				"AND   groups.GroupTypeID='activestudent' " .
+				"AND   groups.YearIndex=$yearindex ";
+	$nrs = &  $db->query($query);
 	if (DB::isError($res))
 		die($res->getDebugInfo()); // Check for errors in query
 	if ($nrs->numRows() > 0) {

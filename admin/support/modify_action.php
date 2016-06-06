@@ -1,4 +1,5 @@
 <?php
+/// This doesn't actually work right now
 /**
  * ***************************************************************
  * admin/support/modify_action.php (c) 2005 Jonathan Dieter
@@ -6,6 +7,8 @@
  * Modify support teachers and students
  * ***************************************************************
  */
+
+exit(0);
 
 /* Get variables */
 $nextLink = dbfuncInt2String($_GET['next']); // Link to next page

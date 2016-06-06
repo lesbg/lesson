@@ -277,43 +277,54 @@ function dbfuncGetDepIndex() {
 		return $depindex;
 	}
 }
+
 function dbfuncIsActiveStudent() {
 	/* Set global parameters */
 	global $db;
 	global $username;
+	global $yearindex;
 	
 	/* Run query to extract information from "user" table */
-	$res = & $db->query(
-					"SELECT ActiveStudent FROM user WHERE Username = \"$username\"");
+	$query =	"SELECT Username FROM user INNER JOIN groupgenmem USING (Username) " .
+				"     INNER JOIN groups USING (GroupID) " .
+				"WHERE user.Username='$username' " .
+				"AND   groups.GroupTypeID='activestudent' " .
+				"AND   groups.YearIndex=$yearindex ";
+	$res = & $db->query($query);
 	if (DB::isError($res))
 		die($res->getDebugInfo());
 	
-	if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-		if ($row['ActiveStudent'] == 1) {
-			return true;
-		}
+		
+	if ($res->numRows() > 0) {
+		return true;
+	} else {
+		return false;
 	}
-	return false;
 }
+
 function dbfuncIsActiveTeacher() {
 	/* Set global parameters */
 	global $db;
 	global $username;
+	global $yearindex;
 	
 	/* Run query to extract information from "user" table */
-	$res = & $db->query(
-					"SELECT ActiveTeacher FROM user WHERE Username = \"$username\"");
+	$query =	"SELECT Username FROM user INNER JOIN groupgenmem USING (Username) " .
+				"     INNER JOIN groups USING (GroupID) " .
+				"WHERE user.Username='$username' " .
+				"AND   groups.GroupTypeID='activeteacher' " .
+				"AND   groups.YearIndex=$yearindex ";
+	$res = & $db->query($query);
 	if (DB::isError($res))
 		die($res->getDebugInfo());
 	
-	if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-		if ($row['ActiveTeacher'] == 1) {
-			return true;
-		}
+		
+	if ($res->numRows() > 0) {
+		return true;
+	} else {
+		return false;
 	}
-	return false;
 }
-
 /* Return integer representing permissions */
 function dbfuncGetPermissions() {
 	/* Set global parameters */
@@ -1407,7 +1418,6 @@ function gen_group_members($group_id) {
 	
 	gen_members($group_id, $members, $group_ids);
 	
-	print_r($members);
 	$query = "SELECT GroupGenMemberIndex, Username FROM groupgenmem WHERE GroupID='$group_id'";
 	$res = & $db->query($query);
 	if (DB::isError($res))

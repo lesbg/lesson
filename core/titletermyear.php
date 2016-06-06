@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * core/titletermyear.php (c) 2005-2009 Jonathan Dieter
+ * core/titletermyear.php (c) 2005-2009, 2016 Jonathan Dieter
  *
  * Print the term and year in <h2>. $termindex, $yearindex, and
  * $db must be set before invoking this page.
@@ -87,11 +87,12 @@ if ($nochangeyt == false and isset($depindex) and ! is_null($depindex) and
 			 " AND   class.YearIndex            = $yearindex " .
 			 " AND   department.DepartmentIndex = class.DepartmentIndex) " .
 			 "UNION " . "(SELECT department.Department, class.DepartmentIndex  " .
-			 "         FROM department, user, support, class, classterm, classlist, currentterm " .
+			 "         FROM department, user, support, class, classterm, classlist, currentterm, groupgenmem, groups " .
 			 " WHERE support.WorkerUsername   = '$username' " .
 			 " AND   user.Username            = support.WorkerUsername " .
-			 " AND   user.ActiveTeacher       = 1 " .
-			 " AND   user.SupportTeacher      = 1 " .
+			 " AND   groupgenmem.Username     = user.Username " .
+			 " AND   groups.GroupID           = groupgenmem.GroupID " .
+			 " AND   groups.GroupTypeID       = 'supportteacher' " .
 			 " AND   support.StudentUsername  = classlist.Username " .
 			 " AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
 			 " AND   classterm.TermIndex      = currentterm.TermIndex " .

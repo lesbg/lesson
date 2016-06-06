@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/punishment/date_student_action.php (c) 2006-2013 Jonathan Dieter
+ * admin/punishment/date_student_action.php (c) 2006-2016 Jonathan Dieter
  *
  * Add students to discipline date
  * ***************************************************************
@@ -13,11 +13,17 @@ $nextLink = dbfuncInt2String($_GET['next']); // Link to next page
 
 include "core/settermandyear.php";
 
-$query = "SELECT ActiveTeacher FROM user WHERE Username='$username' AND ActiveTeacher=1";
+$query = "SELECT user.FirstName, user.Surname, user.Username FROM " .
+		 "       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
+		 "            INNER JOIN groups USING (GroupID) " .
+		 "WHERE user.Username='$username' " .
+		 "AND   groups.GroupTypeID='activeteacher' " .
+		 "AND   groups.YearIndex=$yearindex " .
+		 "ORDER BY user.Username";
 $res = &  $db->query($query);
 if (DB::isError($res))
 	die($res->getDebugInfo()); // Check for errors in query
-if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+if ($res->numRows() > 0) {
 	$is_teacher = true;
 } else {
 	$is_teacher = false;

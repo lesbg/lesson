@@ -26,11 +26,14 @@ if ($is_admin or $is_principal) {
 	include "core/titletermyear.php";
 	
 	/* Get teacher list */
-	$res = &  $db->query(
-					"SELECT user.Title, user.FirstName, user.Surname, user.Username " .
-					 "       FROM user " . "WHERE user.ActiveTeacher = 1 " .
-					 "AND   user.DepartmentIndex = $depindex " .
-					 "ORDER BY user.Username");
+	$query =	"SELECT user.FirstName, user.Surname, user.Username FROM " .
+				"       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
+				"            INNER JOIN groups USING (GroupID) " .
+				"WHERE user.DepartmentIndex = $depindex " .
+				"AND   groups.GroupTypeID='activeteacher' " .
+				"AND   groups.YearIndex=$yearindex " .
+				"ORDER BY user.Username";
+	$res = &  $db->query($query);
 	if (DB::isError($res))
 		die($res->getDebugInfo()); // Check for errors in query
 		

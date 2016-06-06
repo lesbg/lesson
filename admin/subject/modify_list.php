@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/subject/modify_list.php (c) 2005, 2006 Jonathan Dieter
+ * admin/subject/modify_list.php (c) 2005, 2006, 2016 Jonathan Dieter
  *
  * Add or remove students from a subject.
  * ***************************************************************
@@ -151,8 +151,17 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
 		/* Get list of students who are in the active class */
 		echo "                  <select name=\"addtosubject[]\" style=\"width: 200px;\" multiple size=10>\n";
 		if ($_POST['class'] != "") {
-			$query = "SELECT user.FirstName, user.Surname, user.Username FROM " .
-				 "       user, classterm, classlist LEFT JOIN subjectstudent ON classlist.Username=subjectstudent.Username AND " .
+			$query = "SELECT user.FirstName, user.Surname, user.Username, newmem.Username AS New, specialmem.Username AS Special FROM " .
+				 "       user " .
+	 			 "       LEFT OUTER JOIN (groupgenmem AS newmem INNER JOIN " .
+				 "		                  groups AS newgroups ON (newgroups.GroupID=newmem.GroupID " .
+				 "		                                          AND newgroups.GroupTypeID='new' " .
+				 "                                                AND newgroups.YearIndex=$yearindex)) ON (user.Username=newmem.Username) " .
+				 "       LEFT OUTER JOIN (groupgenmem AS specialmem INNER JOIN " .
+				 "		                  groups AS specgroups ON (specgroups.GroupID=specialmem.GroupID " .
+				 "		                                           AND specgroups.GroupTypeID='special' " .
+				 "                                                 AND specgroups.YearIndex=$yearindex)) ON (user.Username=specialmem.Username), " .
+				 "       classterm, classlist LEFT JOIN subjectstudent ON classlist.Username=subjectstudent.Username AND " .
 				 "       subjectstudent.SubjectIndex = $subjectindex " .
 				 "WHERE  user.Username = classlist.Username " .
 				 "AND    subjectstudent.Username IS NULL " .
@@ -160,13 +169,13 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
 				 "AND    classterm.TermIndex = $termindex " .
 				 "AND    classterm.ClassIndex = {$_POST['class']} ";
 			if ($showNew == "checked") // Add appropriate filter according to radio button that has been selected
-				$query .= "AND user.User1 = 1 ";
+				$query .= "AND New IS NOT NULL ";
 			elseif ($showOld == "checked")
-				$query .= "AND (user.User1 IS NULL OR user.User1 = 0) ";
+				$query .= "AND New IS NULL ";
 			elseif ($showSpec == "checked")
-				$query .= "AND user.User2 = 1 ";
+				$query .= "AND Special IS NOT NULL ";
 			elseif ($showReg == "checked")
-				$query .= "AND (user.User2 IS NULL OR user.User2 = 0) ";
+				$query .= "AND Special IS NULL ";
 			$query .= "ORDER BY user.Username";
 			$res = &  $db->query($query);
 			if (DB::isError($res))
@@ -238,12 +247,15 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
 		echo "               <td>\n";
 		echo "                  <select name=\"addtoteacherlist[]\" style=\"width: 200px;\" multiple size=10>\n";
 		
-		$query = "SELECT user.FirstName, user.Surname, user.Username FROM " .
-				 "       user LEFT JOIN subjectteacher ON user.Username=subjectteacher.Username AND " .
-				 "       subjectteacher.SubjectIndex = $subjectindex " .
-				 "WHERE  user.ActiveTeacher = 1 " .
-				 "AND    subjectteacher.Username IS NULL " .
-				 "ORDER BY user.Username";
+		$query =	"SELECT user.FirstName, user.Surname, user.Username FROM " .
+					"       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
+					"            INNER JOIN groups USING (GroupID) " .
+					"            LEFT JOIN subjectteacher ON user.Username=subjectteacher.Username AND " .
+					"                      subjectteacher.SubjectIndex = $subjectindex " .
+					"WHERE groups.GroupTypeID='activeteacher' " .
+					"AND   groups.YearIndex=$yearindex " .
+					"AND    subjectteacher.Username IS NULL " .
+					"ORDER BY user.Username";
 		$res = &  $db->query($query);
 		if (DB::isError($res))
 			die($res->getDebugInfo()); // Check for errors in query

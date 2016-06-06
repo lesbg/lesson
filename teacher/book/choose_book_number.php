@@ -28,12 +28,16 @@ if ($res->numRows() > 0) {
 	$is_class_teacher = false;
 }
 
-$query = "SELECT ActiveTeacher " . "  FROM user " .
-		 "WHERE Username = '$username' " . "AND   ActiveTeacher = 1 ";
-$res = & $db->query($query);
+$query = "SELECT user.FirstName, user.Surname, user.Username FROM " .
+		 "       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
+		 "            INNER JOIN groups USING (GroupID) " .
+		 "WHERE user.Username='$username' " .
+		 "AND   groups.GroupTypeID='activeteacher' " .
+		 "AND   groups.YearIndex=$yearindex " .
+		 "ORDER BY user.Username";
+$res = &  $db->query($query);
 if (DB::isError($res))
-	die($res->getDebugInfo());
-
+	die($res->getDebugInfo()); // Check for errors in query
 if ($res->numRows() > 0) {
 	$is_teacher = true;
 } else {

@@ -57,11 +57,17 @@ $link = "index.php?location=" .
 		 $_GET['type'] . "&amp;key=" . dbfuncString2Int($pindex) . "&amp;next=" .
 		 $_GET['next'];
 
-$query = "SELECT ActiveTeacher FROM user WHERE Username='$username' AND ActiveTeacher=1";
+$query = "SELECT user.FirstName, user.Surname, user.Username FROM " .
+		 "       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
+		 "            INNER JOIN groups USING (GroupID) " .
+		 "WHERE user.Username='$username' " .
+		 "AND   groups.GroupTypeID='activeteacher' " .
+		 "AND   groups.YearIndex=$yearindex " .
+		 "ORDER BY user.Username";
 $res = &  $db->query($query);
 if (DB::isError($res))
 	die($res->getDebugInfo()); // Check for errors in query
-if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+if ($res->numRows() > 0) {
 	$is_teacher = true;
 } else {
 	$is_teacher = false;
@@ -83,7 +89,12 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN) or
 	 ($perm >= $PUN_PERM_ALL and $is_teacher)) {
 	echo "      <form action=\"$link\" method=\"post\" name=\"pundate\">\n"; // Form method
 	echo "         <table border=\"0\" class=\"transparent\" align=\"center\">\n";
-	$query = "SELECT Username, FirstName, Surname, Title FROM user WHERE ActiveTeacher=1 AND DepartmentIndex=$depindex ORDER BY Username";
+	$query =	"SELECT user.FirstName, user.Surname, user.Username FROM " .
+				"       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
+				"            INNER JOIN groups USING (GroupID) " .
+				"WHERE groups.GroupTypeID='activeteacher' " .
+				"AND   groups.YearIndex=$yearindex " .
+				"ORDER BY user.Username";
 	$nres = &  $db->query($query);
 	if (DB::isError($nres))
 		die($nres->getDebugInfo()); // Check for errors in query

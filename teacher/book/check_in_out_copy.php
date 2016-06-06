@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * teacher/book/check_in_out_copy.php (c) 2010-2013 Jonathan Dieter
+ * teacher/book/check_in_out_copy.php (c) 2010-2016 Jonathan Dieter
  *
  * Check in or out a copy of a book to a user
  * ***************************************************************
@@ -59,12 +59,16 @@ if ($res->numRows() > 0) {
 	$is_class_teacher = false;
 }
 
-$query = "SELECT ActiveTeacher " . "  FROM user " .
-		 "WHERE Username = '$username' " . "AND   ActiveTeacher = 1 ";
-$res = & $db->query($query);
+$query = "SELECT user.FirstName, user.Surname, user.Username FROM " .
+		 "       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
+		 "            INNER JOIN groups USING (GroupID) " .
+		 "WHERE user.Username='$username' " .
+		 "AND   groups.GroupTypeID='activeteacher' " .
+		 "AND   groups.YearIndex=$yearindex " .
+		 "ORDER BY user.Username";
+$res = &  $db->query($query);
 if (DB::isError($res))
-	die($res->getDebugInfo());
-
+	die($res->getDebugInfo()); // Check for errors in query
 if ($res->numRows() > 0) {
 	$is_teacher = true;
 } else {
@@ -169,9 +173,10 @@ if ($is_admin or $is_class_teacher or $res->numRows() > 0) {
 			 " AND   classterm.ClassIndex=class.ClassIndex " .
 			 " AND   class.YearIndex=$yearindex " .
 			 " AND   classterm.TermIndex=currentterm.TermIndex) " . "UNION " .
-			 "(SELECT 'teacher' AS ClassIndex FROM user " .
+			 "(SELECT 'teacher' AS ClassIndex FROM user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) INNER JOIN groups USING (GroupID)" .
 			 " WHERE user.Username = '{$_POST['student']}' " .
-			 " AND   user.ActiveTeacher=1 " . ") " . "LIMIT 1";
+			 " AND   groups.GroupTypeID='activeteacher' " .
+			 " AND   groups.YearIndex=$yearindex) LIMIT 1";
 		$res = & $db->query($query);
 		if (DB::isError($res))
 			die($res->getDebugInfo());
@@ -369,9 +374,12 @@ if ($is_admin or $is_class_teacher or $res->numRows() > 0) {
 	echo "                  <select name='student' style='width: 398px;' size=14>\n";
 	if ($_POST['class'] != "") {
 		if ($_POST['class'] == "teacher") {
-			$query = "SELECT user.Title, user.FirstName, user.Surname, user.Username " .
-				 "       FROM user " . "WHERE ActiveTeacher=1 " .
-				 "ORDER BY user.Username";
+			$query = "SELECT user.FirstName, user.Surname, user.Username FROM " .
+					 "       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
+					 "            INNER JOIN groups USING (GroupID) " .
+					 "WHERE groups.GroupTypeID='activeteacher' " .
+					 "AND   groups.YearIndex=$yearindex " .
+					 "ORDER BY user.Username";
 			$res = &  $db->query($query);
 			if (DB::isError($res))
 				die($res->getDebugInfo()); // Check for errors in query

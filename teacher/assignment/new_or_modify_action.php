@@ -146,14 +146,14 @@ if ($_POST["action"] == "Save" or $_POST["action"] == "Update" or
 	}
 	
 	/* Check whether this assignment should be hidden from students */
-	if ($_POST['hidden'] == "on") { // Make sure ActiveStudent is right type.
+	if ($_POST['hidden'] == "on") {
 		$_POST['hidden'] = "1";
 	} else {
 		$_POST['hidden'] = "0";
 	}
 	
 	/* Check whether this assignment is uploadable */
-	if ($_POST['uploadable'] == "on") { // Make sure ActiveStudent is right type.
+	if ($_POST['uploadable'] == "on") {
 		$_POST['uploadable'] = "1";
 		/* Set assignment's directory */
 		$remove_array = array(

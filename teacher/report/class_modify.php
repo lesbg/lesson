@@ -155,7 +155,7 @@ if (! $is_ct and ! $is_hod and ! $is_principal and ! $is_admin and
  */
 
 $query = "SELECT user.Gender, user.FirstName, user.Surname, user.Username, " .
-		 "       user.User1, user.User2, user.User3, " .
+		 "       newmem.Username AS New, specialmem.Username AS Special, " .
 		 "       classlist.Average, classlist.Conduct, classlist.Effort, " .
 		 "       classlist.Rank, classlist.CTComment, classlist.HODComment, " .
 		 "       classlist.CTCommentDone, classlist.HODCommentDone, " .
@@ -175,6 +175,14 @@ $query = "SELECT user.Gender, user.FirstName, user.Surname, user.Username, " .
 		 "            classlist.Effort = effort_index.NonmarkIndex " .
 		 "       LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
 		 "            classlist.Conduct = conduct_index.NonmarkIndex " .
+		 "       LEFT OUTER JOIN (groupgenmem AS newmem INNER JOIN " .
+		 "		                  groups AS newgroups ON (newgroups.GroupID=newmem.GroupID " .
+		 "		                                          AND newgroups.GroupTypeID='new' " .
+		 "                                                AND newgroups.YearIndex=$yearindex)) ON (user.Username=newmem.Username) " .
+		 "       LEFT OUTER JOIN (groupgenmem AS specialmem INNER JOIN " .
+		 "		                  groups AS specgroups ON (specgroups.GroupID=specialmem.GroupID " .
+		 "		                                           AND specgroups.GroupTypeID='special' " .
+		 "                                                 AND specgroups.YearIndex=$yearindex)) ON (user.Username=specialmem.Username) " .
 		 "WHERE user.Username            = classlist.Username " .
 		 "AND   classlist.ClassTermIndex = $classtermindex " .
 		 "AND   classterm.ClassTermIndex = classlist.ClassTermIndex " .
@@ -387,7 +395,7 @@ if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 }
 
 $new_sentence = "";
-if ($student_info['User1'] == 1) {
+if (!is_null($student_info['New'])) {
 	$new_sentence = "<p align='center'>{$student_info['FirstName']} is a new student.";
 }
 

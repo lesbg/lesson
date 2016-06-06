@@ -68,8 +68,11 @@ if ($is_admin) {
 	
 	echo "$yearname:\t";
 	echo "                <select name='teacher'>\n";
-	$query = "SELECT user.Username, user.Title, user.FirstName, user.Surname " .
-			 "FROM user WHERE ActiveTeacher = 1 " . "ORDER BY Username";
+	$query =	"SELECT user.Username, user.Title, user.FirstName, user.Surname " .
+				"FROM user INNER JOIN groupgenmem USING (Username) " .
+				"     INNER JOIN groups USING (GroupID) " .
+				"WHERE groups.GroupTypeID='activeteacher' " .
+				"AND   groups.YearIndex=$yearindex ";
 	$nres = &  $db->query($query);
 	if (DB::isError($nres))
 		die($nres->getDebugInfo()); // Check for errors in query
