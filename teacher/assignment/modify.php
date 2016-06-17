@@ -451,9 +451,8 @@ if ($res->numRows() > 0) {
 				}
 			}
 		}
-		$row['Comment'] = htmlspecialchars(
-										unhtmlize_comment($row['Comment']), 
-										ENT_QUOTES);
+		$row['Comment'] = htmlspecialchars($row['Comment'], 
+										   ENT_QUOTES);
 		
 		echo "            <tr$alt id='row_{$row['Username']}'>\n";
 		/* echo " <td>{$row['ClassOrder']}</td>\n"; */
