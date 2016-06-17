@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * teacher/report/class_modify.php (c) 2008 Jonathan Dieter
+ * teacher/report/class_modify.php (c) 2008, 2016 Jonathan Dieter
  *
  * Show subject conduct, effort, average and comment for report
  * Change class conduct, effort, average and commentsd
@@ -178,11 +178,11 @@ $query = "SELECT user.Gender, user.FirstName, user.Surname, user.Username, " .
 		 "       LEFT OUTER JOIN (groupgenmem AS newmem INNER JOIN " .
 		 "		                  groups AS newgroups ON (newgroups.GroupID=newmem.GroupID " .
 		 "		                                          AND newgroups.GroupTypeID='new' " .
-		 "                                                AND newgroups.YearIndex=$yearindex)) ON (user.Username=newmem.Username) " .
+		 "                                                AND newgroups.YearIndex=$yearindex)) ON (classlist.Username=newmem.Username) " .
 		 "       LEFT OUTER JOIN (groupgenmem AS specialmem INNER JOIN " .
 		 "		                  groups AS specgroups ON (specgroups.GroupID=specialmem.GroupID " .
 		 "		                                           AND specgroups.GroupTypeID='special' " .
-		 "                                                 AND specgroups.YearIndex=$yearindex)) ON (user.Username=specialmem.Username) " .
+		 "                                                 AND specgroups.YearIndex=$yearindex)) ON (classlist.Username=specialmem.Username) " .
 		 "WHERE user.Username            = classlist.Username " .
 		 "AND   classlist.ClassTermIndex = $classtermindex " .
 		 "AND   classterm.ClassTermIndex = classlist.ClassTermIndex " .

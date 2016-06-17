@@ -61,15 +61,14 @@ if ($is_admin) {
 		}
 		
 		$query = "INSERT INTO user (Username, FirstName, Surname, Gender, DOB, Password, Password2, " .
-				 "                  Permissions, Title, PhoneNumber, DateType, DateSeparator, " .
-				 "                  DepartmentIndex, " .
+				 "                  Permissions, Title, DateType, DateSeparator, " .
+				 "                  DepartmentIndex) " .
 				 "VALUES ('{$_POST['uname']}', '{$_POST['fname']}', '{$_POST['sname']}', " .
 				 "        '{$_POST['gender']}', {$_POST['DOB']}, '$phash', " .
 				 "        '$phash2', " .
-				 "        {$_POST['perms']}, {$_POST['title']}, '{$_POST['phone']}', " .
-				 "        {$_POST['datetype']}, {$_POST['datesep']}, {$_POST['activestudent']}, " .
-				 "        {$_POST['activeteacher']}, {$_POST['supportteacher']}, {$_POST['department']}, " .
-				 "        {$_POST['user1']}, {$_POST['user2']})";
+				 "        {$_POST['perms']}, {$_POST['title']}, " .
+				 "        {$_POST['datetype']}, {$_POST['datesep']}, " .
+				 "        {$_POST['department']})";
 		echo "$query";
 		$aRes = & $db->query($query);
 		if (DB::isError($aRes))
@@ -160,6 +159,34 @@ if ($is_admin) {
 			gen_group_members($group);
 		}
 		
+		/* Remove any phone numbers we've lost */
+		foreach($_POST['phone_remove'] as $phone_index) {
+			$query = "DELETE FROM phone WHERE PhoneIndex='$phone_index'";
+			$aRes = & $db->query($query);
+			if (DB::isError($aRes))
+				die($aRes->getDebugInfo()); // Check for errors in query
+		}
+		
+		/* Add any new phone numbers */
+		$count = 0;
+		foreach($_POST['phone'] as $phone) {
+			$count += 1;
+			if($phone[3] == "") {
+				$comment = "NULL";
+			} else {
+				$comment = "'${phone[3]}'";
+			}
+			if($phone[0] < 0) {
+				$query =	"INSERT INTO phone (SortOrder, Number, Username, Type, Comment) " .
+						"           VALUES ($count, '${phone[1]}', '$uname', ${phone[2]}, $comment)";
+			} else {
+				$query =	"UPDATE phone SET SortOrder=$count, Number='${phone[1]}', Username='$uname', " .
+				"                 Type=${phone[2]}, Comment=$comment WHERE PhoneIndex=${phone[0]}";
+			}
+			$aRes = & $db->query($query);
+			if (DB::isError($aRes))
+				die($aRes->getDebugInfo()); // Check for errors in query
+		}
 		log_event($LOG_LEVEL_ADMIN, "admin/user/new_action.php", $LOG_ADMIN, 
 			"Added {$_POST['fname']} {$_POST['sname']} ($uname).");
 	}
