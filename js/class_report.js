@@ -1,5 +1,5 @@
 /*****************************************************************
- * js/class_report.js  (c) 2008 Jonathan Dieter
+ * js/class_report.js  (c) 2008, 2016 Jonathan Dieter
  *
  * Javascript to deal with class reports
  *****************************************************************/
@@ -8,6 +8,70 @@
 function recalc_comment(reptype) {
 	var comment   = document.getElementById(reptype + '_comment');
 
+	if(gender.toLowerCase() == 'm') {
+		var heshe  = "he";
+		var himher = "him";
+		var hisher = "his";
+		var Heshe  = "He";
+		var Himher = "Him";
+		var Hisher = "His";
+	} else {
+		var heshe  = "she";
+		var himher = "her";
+		var hisher = "her";
+		var Heshe  = "She";
+		var Himher = "Her";
+		var Hisher = "Her";
+	}
+	
+	comment.value = comment.value.replace("{Name}", firstname);
+	comment.value = comment.value.replace("{NAME}", firstname);
+	comment.value = comment.value.replace("{name}", firstname);
+	comment.value = comment.value.replace("{FullName}", fullname);
+	comment.value = comment.value.replace("{FULLNAME}", fullname);
+	comment.value = comment.value.replace("{fullname}", fullname);
+	comment.value = comment.value.replace("{Fullname}", fullname);
+	comment.value = comment.value.replace("{him/her}", himher);
+	comment.value = comment.value.replace("{Him/her}", Himher);
+	comment.value = comment.value.replace("{Him/Her}", Himher);
+	comment.value = comment.value.replace("{he/she}", heshe);
+	comment.value = comment.value.replace("{He/she}", Heshe);
+	comment.value = comment.value.replace("{He/She}", Heshe);
+	comment.value = comment.value.replace("{his/her}", hisher);
+	comment.value = comment.value.replace("{His/her}", Hisher);
+	comment.value = comment.value.replace("{His/Her}", Hisher);
+	comment.value = comment.value.replace("{Grade}", grade);
+	comment.value = comment.value.replace("{grade}", grade);
+	comment.value = comment.value.replace("{GRADE}", grade);
+	comment.value = comment.value.replace("{NextGrade}", parseInt(grade)+1).toString();
+	comment.value = comment.value.replace("{Nextgrade}", parseInt(grade)+1).toString();
+	comment.value = comment.value.replace("{nextgrade}", parseInt(grade)+1).toString();
+	comment.value = comment.value.replace("{NEXTGRADE}", parseInt(grade)+1).toString();
+	
+	comment.value = comment.value.replace("[Name]", firstname);
+	comment.value = comment.value.replace("[NAME]", firstname);
+	comment.value = comment.value.replace("[name]", firstname);
+	comment.value = comment.value.replace("[FullName]", fullname);
+	comment.value = comment.value.replace("[FULLNAME]", fullname);
+	comment.value = comment.value.replace("[fullname]", fullname);
+	comment.value = comment.value.replace("[Fullname]", fullname);
+	comment.value = comment.value.replace("[him/her]", himher);
+	comment.value = comment.value.replace("[Him/her]", Himher);
+	comment.value = comment.value.replace("[Him/Her]", Himher);
+	comment.value = comment.value.replace("[he/she]", heshe);
+	comment.value = comment.value.replace("[He/she]", Heshe);
+	comment.value = comment.value.replace("[He/She]", Heshe);
+	comment.value = comment.value.replace("[his/her]", hisher);
+	comment.value = comment.value.replace("[His/her]", Hisher);
+	comment.value = comment.value.replace("[His/Her]", Hisher);
+	comment.value = comment.value.replace("[Grade]", grade);
+	comment.value = comment.value.replace("[grade]", grade);
+	comment.value = comment.value.replace("[GRADE]", grade);
+	comment.value = comment.value.replace("[NextGrade]", parseInt(grade)+1).toString();
+	comment.value = comment.value.replace("[Nextgrade]", parseInt(grade)+1).toString();
+	comment.value = comment.value.replace("[nextgrade]", parseInt(grade)+1).toString();
+	comment.value = comment.value.replace("[NEXTGRADE]", parseInt(grade)+1).toString();
+	
 	startloc = comment.value.indexOf('{');
 	while(startloc != -1) {
 		endloc = comment.value.indexOf('}');
@@ -39,51 +103,13 @@ function recalc_comment(reptype) {
 			continue;
 		}
 
-		if(gender.toLowerCase() == 'm') {
-			var heshe  = "he";
-			var himher = "him";
-			var hisher = "his";
-			var Heshe  = "He";
-			var Himher = "Him";
-			var Hisher = "His";
-		} else {
-			var heshe  = "she";
-			var himher = "her";
-			var hisher = "her";
-			var Heshe  = "She";
-			var Himher = "Her";
-			var Hisher = "Her";
-		}
-
 		var commentstr = comment_array[parseInt(replaceval)];
-		commentstr = commentstr.replace("[Name]", firstname);
-		commentstr = commentstr.replace("[NAME]", firstname);
-		commentstr = commentstr.replace("[name]", firstname);
-		commentstr = commentstr.replace("[FullName]", fullname);
-		commentstr = commentstr.replace("[FULLNAME]", fullname);
-		commentstr = commentstr.replace("[fullname]", fullname);
-		commentstr = commentstr.replace("[Fullname]", fullname);
-		commentstr = commentstr.replace("[him/her]", himher);
-		commentstr = commentstr.replace("[Him/her]", Himher);
-		commentstr = commentstr.replace("[Him/Her]", Himher);
-		commentstr = commentstr.replace("[he/she]", heshe);
-		commentstr = commentstr.replace("[He/she]", Heshe);
-		commentstr = commentstr.replace("[He/She]", Heshe);
-		commentstr = commentstr.replace("[his/her]", hisher);
-		commentstr = commentstr.replace("[His/her]", Hisher);
-		commentstr = commentstr.replace("[His/Her]", Hisher);
-		commentstr = commentstr.replace("[Grade]", grade);
-		commentstr = commentstr.replace("[grade]", grade);
-		commentstr = commentstr.replace("[GRADE]", grade);
-		commentstr = commentstr.replace("[NextGrade]", parseInt(grade)+1).toString();
-		commentstr = commentstr.replace("[Nextgrade]", parseInt(grade)+1).toString();
-		commentstr = commentstr.replace("[nextgrade]", parseInt(grade)+1).toString();
-		commentstr = commentstr.replace("[NEXTGRADE]", parseInt(grade)+1).toString();
 
 		comment.value = comment.value.replace('{' + replaceval + '}', commentstr);
 
 		startloc = comment.value.indexOf('{');
 	}
+
 	comment.value = comment.value.replace('}', ')');
 }
 
