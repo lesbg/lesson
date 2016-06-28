@@ -7,6 +7,7 @@
 /* Recalculate comments */
 function recalc_comment(reptype) {
 	var comment   = document.getElementById(reptype + '_comment');
+	var old_comment = comment.value;
 
 	if(gender.toLowerCase() == 'm') {
 		var heshe  = "he";
@@ -111,6 +112,9 @@ function recalc_comment(reptype) {
 	}
 
 	comment.value = comment.value.replace('}', ')');
+	if(comment.value != old_comment) {
+		recalc_comment(reptype);
+	}
 }
 
 /* Recalculate effort username */
