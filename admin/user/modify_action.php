@@ -93,7 +93,13 @@ if ($is_admin) {
     }
 
     /* Remove any groups we've been removed from */
-    $query = "SELECT GroupMemberIndex, GroupID FROM groupmem WHERE Member='$uname'";
+    $query =    "SELECT groups.GroupID, groups.GroupName FROM " .
+                "       groups, groupmem " .
+                "WHERE groupmem.Member=CONCAT('@', groups.GroupTypeID) " .
+                "AND   groupmem.GroupID='userinfo' " .
+                "AND   groupmem.Member='$uname' " .
+                "AND   groups.YearIndex=$yearindex " .
+                "ORDER BY groups.GroupName, groups.YearIndex";
     $aRes = & $db->query($query);
     if (DB::isError($aRes))
         die($aRes->getDebugInfo()); // Check for errors in query
