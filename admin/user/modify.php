@@ -166,12 +166,12 @@ if ($is_admin) {
 			} elseif ($new_user_type == 's') {
 				$query =	"SELECT groups.GroupID FROM " .
 							"       groups " .
-							"WHERE groups.GroupTypeID='activestudent' " .
+							"WHERE (groups.GroupTypeID='activestudent' OR groups.GroupTypeID='new') " .
 							"AND   groups.YearIndex=$yearindex ";
 				$res = &  $db->query($query);
 				if (DB::isError($res))
 					die($res->getDebugInfo()); // Check for errors in query
-				if ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+				while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
 					if(!isset($_SESSION['post']['groups'])) {
 						$_SESSION['post']['groups'] = array();
 					}

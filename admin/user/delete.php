@@ -83,7 +83,7 @@ if ($_POST['action'] == "Yes, delete user") {
 		} else {
 			$res = &  $db->query(
 					"DELETE FROM groupmem " . // Remove user from user table
-					"WHERE Username  = '$delusername'");
+					"WHERE Member  = '$delusername'");
 			if (DB::isError($res))
 				die($res->getDebugInfo()); // Check for errors in query
 			
