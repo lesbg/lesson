@@ -22,31 +22,31 @@ session_name("LESSONSESSION");
 session_start();
 
 if (isset($_SERVER['REMOTE_HOST'])) {
-	$remote_host = $_SERVER['REMOTE_HOST'];
+    $remote_host = $_SERVER['REMOTE_HOST'];
 } else {
-	$remote_host = $_SERVER['REMOTE_ADDR'];
+    $remote_host = $_SERVER['REMOTE_ADDR'];
 }
 if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-	if ($_SERVER['HTTP_X_FORWARDED_FOR'] != "unknown" and isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-		$remote_host = "{$_SERVER['HTTP_X_FORWARDED_FOR']} through $remote_host";
-	}
+    if ($_SERVER['HTTP_X_FORWARDED_FOR'] != "unknown" and isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $remote_host = "{$_SERVER['HTTP_X_FORWARDED_FOR']} through $remote_host";
+    }
 }
 
 if (isset($_SERVER['REMOTE_HOST']) and strtolower(substr($_SERVER['REMOTE_HOST'], - strlen($LOCAL_HOSTS))) == strtolower($LOCAL_HOSTS)) {
-	$is_local = TRUE;
+    $is_local = TRUE;
 } else {
-	$is_local = FALSE;
+    $is_local = FALSE;
 }
 
 $change_pw = False;
 
 if(!isset($_SESSION['username'])) {
-	if(!isset($_POST['username'])) {
-		include "user/login.php";
-		exit(0);
-	} else {
-		include "user/login_action.php";
-	}
+    if(!isset($_POST['username'])) {
+        include "user/login.php";
+        exit(0);
+    } else {
+        include "user/login_action.php";
+    }
 }
 /* Perform login */
 
@@ -65,11 +65,11 @@ $phone_prefix = dbfuncGetPhonePrefix();
 $phone_RLZ = dbfuncGetPhoneRLZ();
 
 if (isset($_SERVER['REMOTE_HOST']) and
-	 strtolower(substr($_SERVER['REMOTE_HOST'], - strlen($LOCAL_HOSTS))) ==
-	 strtolower($LOCAL_HOSTS)) {
-	$is_local = TRUE;
+     strtolower(substr($_SERVER['REMOTE_HOST'], - strlen($LOCAL_HOSTS))) ==
+     strtolower($LOCAL_HOSTS)) {
+    $is_local = TRUE;
 } else {
-	$is_local = FALSE;
+    $is_local = FALSE;
 }
 
 $password_number = $_SESSION['password_number'];
@@ -77,57 +77,57 @@ $password_number = $_SESSION['password_number'];
 start_log("index.php");
 
 if (isset($_SERVER['HTTP_REFERER'])) {
-	$backLink = htmlspecialchars($_SERVER['HTTP_REFERER']);
+    $backLink = htmlspecialchars($_SERVER['HTTP_REFERER']);
 } else {
-	$backLink = "index.php?location=" . dbfuncString2Int("user/main.php");
+    $backLink = "index.php?location=" . dbfuncString2Int("user/main.php");
 }
 
-$curLink = substr($_SERVER['REQUEST_URI'], 
-				strrpos($_SERVER['REQUEST_URI'], '/') + 1);
+$curLink = substr($_SERVER['REQUEST_URI'],
+                strrpos($_SERVER['REQUEST_URI'], '/') + 1);
 
 $location = "user/start.php";
 
 if (isset($_GET['location'])) { // Check whether we've been passed a location
-	$location = dbfuncInt2String($_GET['location']); // If so, switch to it.
+    $location = dbfuncInt2String($_GET['location']); // If so, switch to it.
 }
 
 if (isset($_SESSION['depindex'])) {
-	$depindex = $_SESSION['depindex'];
+    $depindex = $_SESSION['depindex'];
 }
 if (isset($_SESSION['yearindex'])) { // Set yearindex to session variable if set
-	$yearindex = $_SESSION['yearindex'];
+    $yearindex = $_SESSION['yearindex'];
 }
 if (isset($_SESSION['termindex'])) { // Set termindex to session variable if set
-	$termindex = $_SESSION['termindex'];
+    $termindex = $_SESSION['termindex'];
 }
 if (isset($_SESSION['samepass']) and $_SESSION['samepass']) {
-	$samepass = true;
-	if($location != "user/dochangepassword.php") {
-		log_event($LOG_LEVEL_ACCESS, "index.php", $LOG_USER, 
-				"Forcing user to change their password because it is the same as their username.");
-		$location = "user/changepassword.php";
-	}
+    $samepass = true;
+    if($location != "user/dochangepassword.php") {
+        log_event($LOG_LEVEL_ACCESS, "index.php", $LOG_USER,
+                  "Forcing user to change their password because it is the same as their username.");
+        $location = "user/changepassword.php";
+    }
 }
 
 if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
-	$is_admin = True;
+    $is_admin = True;
 } else {
-	$is_admin = False;
+    $is_admin = False;
 }
 
 // echo "$location - $password_number";
 include "$location"; // Switch to current page
-                     
+
 // update_conduct_year_term(1, 1);
                      // update_conduct_year_term(7, 1);
                      // update_year_term(9, 6);
-                     
+
 // $query = "SELECT SubjectIndex FROM subject WHERE YearIndex=9 AND TermIndex=6 AND AverageType=1 ";
                      // $res =& $db->query($query);
                      // if(DB::isError($res)) die($res->getDebugInfo()); // Check for errors in query
                      // while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
                      // update_subject($row["SubjectIndex"]);
                      // }
-                     
+
 // update_conduct_year_term(5, 7);
 $db->disconnect(); // Close connection to database
