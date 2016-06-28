@@ -313,7 +313,7 @@ while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
 /* Telegram Token */
 $link = "index.php?location=" .
         dbfuncString2Int("user/telegram.php");
-echo "         <p><a href='$link'>Connect to Telegram</a></p>\n";
+/*echo "         <p><a href='$link'>Connect to Telegram</a></p>\n";*/
 echo "      </div>\n";
 
 /* Get classes */
