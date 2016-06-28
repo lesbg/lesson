@@ -124,9 +124,9 @@ if ($res->numRows() > 0) {
 }
 
 /* If user is a counselor, show class list hyperlink and support teachers hyperlink */
-$res = &  $db->query(
-                "SELECT Username FROM counselorlist " .
-                 "WHERE Username='$username'");
+$query =    "SELECT Username FROM counselorlist " .
+            "WHERE Username='$username'";
+$res = &  $db->query($query);
 if (DB::isError($res))
     die($res->getDebugInfo()); // Check for errors in query
 
