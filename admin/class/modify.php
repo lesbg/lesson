@@ -11,40 +11,27 @@
 if (! isset($nextLink))
     $nextLink = $backLink;
 
-$title = "Modify " . dbfuncInt2String($_GET['keyname']);
+$title = "Students for " . dbfuncInt2String($_GET['keyname']);
 $classindex = dbfuncInt2String($_GET['key']);
-$link = "index.php?location=" . dbfuncString2Int(
-                                                "admin/class/modify_action.php") .
+$link = "index.php?location=" . dbfuncString2Int("admin/class/modify_action.php") .
          "&amp;key=" . $_GET['key'] . "&amp;keyname=" . $_GET['keyname'] .
          "&amp;next=" . dbfuncString2Int($nextLink);
 
 include "header.php"; // Show header
 
 /* Check whether user is authorized to change class */
-if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
+if ($is_admin) {
     echo "      <form action='$link' method='post'>\n"; // Form method
 
-    /* Find current year */
-    $res = &  $db->query(
-                    "SELECT YearIndex FROM class WHERE ClassIndex = $classindex");
-    if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
-    $row = & $res->fetchRow(DB_FETCHMODE_ASSOC);
-    $classyearindex = $row['YearIndex'];
+    $editlink = "index.php?location=" .
+                 dbfuncString2Int("admin/class/modify_class_info.php") . "&amp;key=" .
+                 $_GET['key'] . "&amp;keyname=" . $_GET['keyname'] .
+                 "&amp;next=" . dbfuncString2Int($nextLink);
 
-    /* Show list of years */
-    $res = &  $db->query("SELECT YearIndex, Year FROM year ");
-    if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
-    echo "         <p align='center'>Modify year: <select name='year'>\n";
-    while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-        echo "            <option value='{$row['YearIndex']}'";
-        if ($row['YearIndex'] == $classyearindex)
-            echo " selected";
-        echo ">{$row['Year']}\n";
-    }
-    echo "         </select>&nbsp; &nbsp;<input type='submit' name='action' value='Done' \></p>\n";
+    $editbutton = dbfuncGetButton($editlink, "Edit class", "medium", "",
+                                "Edit class information");
 
+    echo "         <p align='center'>$editbutton</p>\n";
     echo "         <table align='center' border='1'>\n"; // Table headers
     echo "            <tr>\n";
     echo "               <th>Students in class</th>\n";
@@ -151,11 +138,11 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
     echo "               </td>\n";
     echo "            </tr>\n";
     echo "            <tr class='alt'>\n";
-    echo "               <td align='center'><input type='submit' name='actiont' value='>>' \></td>\n";
-    echo "               <td align='center'><input type='submit' name='actiont' value='<<' \></td>\n";
+    echo "               <td align='center'><input type='submit' name='actiont' value='>>' /></td>\n";
+    echo "               <td align='center'><input type='submit' name='actiont' value='<<' /></td>\n";
     echo "            </tr>\n";
     echo "         </table>\n"; // End of table
-    echo "         <p></p>\n";
+    echo "         <p align='center'><input type='submit' name='action' value='Done' /></p>\n";
     echo "      </form>\n";
 } else { // User isn't authorized to view or change scores.
     echo "      <p>You do not have permission to access this page</p>\n";
