@@ -339,12 +339,13 @@ if ($is_admin) {
     echo "                   <input type='radio' name='datesep' value='-' $chcdash>- (ex. 1-1-2000)<br>\n";
     echo "                   <input type='radio' name='datesep' value='.' $chcperiod>. (ex. 1.1.2000)<br>&nbsp;</td>\n";
     echo "               <td colspan='1'><b>Groups:</b><br>\n";
-    $query =    "SELECT groups.GroupID, groups.GroupName FROM " .
-            "       groups, groupmem " .
+    $query =    "SELECT groups.GroupID, grouptype.GroupName FROM " .
+            "       groups, groupmem, grouptype " .
             "WHERE groupmem.Member=CONCAT('@', groups.GroupTypeID) " .
             "AND   groupmem.GroupID='userinfo' " .
             "AND   groups.YearIndex=$yearindex " .
-            "ORDER BY groups.GroupName, groups.YearIndex";
+            "AND   grouptype.GroupTypeID = groups.GroupTypeID " .
+            "ORDER BY grouptype.GroupName, groups.YearIndex";
     $res = &  $db->query($query);
     if (DB::isError($res))
         die($res->getDebugInfo()); // Check for errors in query
