@@ -1391,7 +1391,11 @@ function gen_members($group_id, &$members, &$group_ids) {
 
     $group_ids[] = $group_id;
 
-    $query = "SELECT Member FROM groupmem WHERE GroupID='$group_id'";
+    $query =    "SELECT Member FROM groupmem, groups, grouptype " .
+                "WHERE groups.GroupID='$group_id' " .
+                "AND   groupmem.GroupID=groups.GroupID " .
+                "AND   grouptype.GroupTypeID=groups.GroupTypeID " .
+                "AND   grouptype.PrimaryGroupType=0";
     $res = & $db->query($query);
     if (DB::isError($res))
         die($res->getDebugInfo());
@@ -1442,10 +1446,129 @@ function gen_group_members($group_id) {
             die($res->getDebugInfo());
 
         if($res->numRows() == 0) {
-            $query = "INSERT INTO groupgenmem (Username, GroupID) VALUES ('$uname', '$group_id')";
+            $query = "INSERT INTO groupgenmem (Username, GroupID, IDUsername) VALUES ('$uname', '$group_id', '{$group_id}:{$uname}')";
             $nres = & $db->query($query);
             if (DB::isError($nres))
                 die($nres->getDebugInfo());
         }
+    }
+}
+
+function update_parent_members($member, $group_id, $addyear, $addterm) {
+    global $db;
+
+    $query =    "SELECT groups.GroupID FROM groupmem, groups, grouptype " .
+                "WHERE groupmem.Member = CONCAT('@', '$group_id') " .
+                "AND   groups.GroupID = groupmem.GroupID " .
+                "AND   grouptype.GroupTypeID = groups.GroupTypeID " .
+                "AND   grouptype.PrimaryGroupType = 0 ";
+    $res = & $db->query($query);
+    if (DB::isError($res))
+        die($res->getDebugInfo());
+
+    while ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+        add_member_to_groupgen($member, safe($row['GroupID']), $addyear, $addterm);
+        $query =    "UPDATE groups, " .
+                    "(SELECT groups.GroupID, COUNT(groupgenmem.Username) AS RealUserCount FROM groups, groupgenmem " .
+                    " WHERE groupgenmem.GroupID = groups.GroupID " .
+                    " AND groups.GroupID = '{$row['GroupID']}' " .
+                    " GROUP BY groups.GroupID) AS oldgroup " .
+                    "SET groups.RealUserCount = oldgroup.RealUserCount " .
+                    "WHERE groups.GroupID = oldgroup.GroupID ";
+
+        $nres = & $db->query($query);
+        if (DB::isError($nres))
+            die($nres->getDebugInfo());
+
+        update_parent_members($member, safe($row['GroupID']), $addyear, $addterm);
+    }
+}
+
+function add_member_to_groupgen($member, $group_id, $addyear, $addterm) {
+    global $db;
+
+    /* If new group member is also a group, add all members of the new group to the parent */
+    if(substr($member, 0, 1) == "@") {
+        $query =    "SELECT groupmem.Member FROM groupmem " .
+                    "WHERE CONCAT('@', groupmem.GroupID) = '$member'";
+        $res = & $db->query($query);
+        if (DB::isError($res))
+            die($res->getDebugInfo());
+
+        while ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+            add_member_to_groupgen(safe($row['Member']), $group_id, $addyear, $addterm);
+        }
+    } else {
+        $query = "SELECT Username FROM groupgenmem WHERE GroupID='$group_id' AND Username='$member'";
+        $res = & $db->query($query);
+        if (DB::isError($res))
+            die($res->getDebugInfo());
+
+        if($res->numRows() == 0) {
+            $query = "INSERT INTO groupgenmem (Username, GroupID, IDUsername) VALUES ('$member', '$group_id', '{$group_id}:{$member}')";
+            $res = & $db->query($query);
+            if (DB::isError($res))
+                die($res->getDebugInfo());
+        }
+    }
+}
+
+function add_member_to_group($member, $group_id, $addyear, $addterm) {
+    global $db;
+
+    $query =    "SELECT PrimaryGroupType FROM groups, grouptype " .
+                "WHERE groups.GroupID = '$group_id' " .
+                "AND   grouptype.GroupTypeID = groups.GroupTypeID ";
+    $res = & $db->query($query);
+    if (DB::isError($res))
+        die($res->getDebugInfo());
+
+    if (!$row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+        die("Unable to find group $group_id");
+    }
+    $is_primary = false;
+    if($row['PrimaryGroupType'] == 1)
+        $is_primary = true;
+
+    if($is_primary and $member[0] != '@') {
+        die("Unable to add regular user to top-level group.  Only other groups can be added to top-level groups.  Please go back and fix the problem.");
+    }
+
+    $query = "SELECT Member FROM groupmem WHERE GroupID='$group_id' AND Member='$member'";
+    $res = & $db->query($query);
+    if (DB::isError($res))
+        die($res->getDebugInfo());
+
+    if($res->numRows() == 0) {
+        $query =    "INSERT INTO groupmem (Member, GroupID) VALUES ('$member', '$group_id')";
+        $res = & $db->query($query);
+        if (DB::isError($res))
+            die($res->getDebugInfo());
+
+        $query =    "UPDATE groups, " .
+                    "(SELECT groups.GroupID, COUNT(groupmem.Member) AS MemberCount FROM groups, groupmem " .
+                    " WHERE groupmem.GroupID = groups.GroupID " .
+                    " AND groups.GroupID = '$group_id' " .
+                    " GROUP BY groups.GroupID) AS oldgroup " .
+                    "SET groups.MemberCount = oldgroup.MemberCount " .
+                    "WHERE groups.GroupID = oldgroup.GroupID ";
+        $res = & $db->query($query);
+        if (DB::isError($res))
+            die($res->getDebugInfo());
+    }
+    if(!$is_primary) {
+        add_member_to_groupgen($member, $group_id, $addyear, $addterm);
+        $query =    "UPDATE groups, " .
+                    "(SELECT groups.GroupID, COUNT(groupgenmem.Username) AS RealUserCount FROM groups, groupgenmem " .
+                    " WHERE groupgenmem.GroupID = groups.GroupID " .
+                    " AND groups.GroupID = '$group_id' " .
+                    " GROUP BY groups.GroupID) AS oldgroup " .
+                    "SET groups.RealUserCount = oldgroup.RealUserCount " .
+                    "WHERE groups.GroupID = oldgroup.GroupID ";
+        $res = & $db->query($query);
+        if (DB::isError($res))
+            die($res->getDebugInfo());
+
+        update_parent_members($member, $group_id, $addyear, $addterm);
     }
 }

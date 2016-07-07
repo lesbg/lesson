@@ -10,9 +10,9 @@
 $title = "Groups";
 
 if(isset($_GET['key'])) {
-    $group_id = safe(dbfuncInt2String($_GET['key']));
+    $group_type_id = safe(dbfuncInt2String($_GET['key']));
 } else {
-    $group_id = NULL;
+    $group_type_id = NULL;
 }
 
 if(isset($_GET['keyname'])) {
@@ -73,39 +73,56 @@ if ($res->numRows() > 0) {
 if ($is_admin or $is_principal or $is_hod) {
     include "core/titletermyear.php";
 
-    if(is_null($group_id)) {
+    if(is_null($group_type_id)) {
         /* Get list of groups*/
-        $query =    "SELECT CONCAT('@', groups.GroupID) AS ID, grouptype.GroupName AS Name FROM groups INNER JOIN grouptype USING (GroupTypeID) " .
+        $query =    "SELECT CONCAT('@', groups.GroupID) AS ID, grouptype.GroupName AS Name, " .
+                    "       groups.GroupID AS LinkID, NULL AS MemberCount, NULL AS RealUserCount " .
+                    "       FROM groups INNER JOIN grouptype USING (GroupTypeID) " .
                     "WHERE grouptype.PrimaryGroupType=1 " .
                     "AND   (groups.YearIndex = $yearindex OR groups.YearIndex IS NULL) " .
                     "ORDER BY grouptype.GroupName";
     } else {
-        $query =    "SELECT groups.GroupID FROM groups " .
-                    "WHERE groups.GroupTypeID = '$group_id' " .
-                    "AND   (groups.YearIndex = $yearindex OR groups.YearIndex IS NULL) " .
-                    "AND   (groups.TermIndex = $termindex OR groups.TermIndex IS NULL) ";
+        $is_primary = false;
+
+        $query =    "SELECT groups.GroupID, grouptype.PrimaryGroupType FROM groups, grouptype " .
+                    "WHERE groups.GroupTypeID = '$group_type_id' " .
+                    "AND   grouptype.GroupTypeID = groups.GroupTypeID " .
+                    "AND   (groups.YearIndex=$yearindex OR groups.YearIndex IS NULL) " .
+                    "AND   (groups.TermIndex=$termindex OR groups.TermIndex IS NULL) ";
         $res = &  $db->query($query);
         if (DB::isError($res))
             die($res->getDebugInfo()); // Check for errors in query
         if ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
             $group_id = $row['GroupID'];
+            if($row['PrimaryGroupType'] == 1)
+                $is_primary = true;
         } else {
             echo "      <p>There are no groups this year.</p>\n";
             include "footer.php";
             exit(0);
         }
 
-        $query =    "SELECT 0 AS SortOrder, groupmem.Member AS ID, grouptype.GroupName AS Name FROM " .
-                    "    groupmem INNER JOIN (grouptype INNER JOIN groups " .
-                    "                               ON  (groups.YearIndex = $yearindex OR groups.YearIndex IS NULL) " .
-                    "                               AND grouptype.GroupTypeID = groups.GroupTypeID) " .
-                    "             ON groupmem.Member = CONCAT('@', grouptype.GroupTypeID) " .
-                    "WHERE groupmem.GroupID = '$group_id' " .
-                    "UNION " .
-                    "SELECT 1 AS SortOrder, user.Username AS ID, CONCAT(user.FirstName, ' ', user.Surname) AS Name FROM " .
-                    "    groupmem INNER JOIN user ON groupmem.Member = user.Username " .
-                    "WHERE groupmem.GroupID = '$group_id' " .
-                    "ORDER BY SortOrder, Name, ID";
+        if($is_primary) {
+            $query =    "SELECT 0 AS SortOrder, groups.GroupID AS ID, grouptype.GroupName AS Name, " .
+                        "       groups.GroupTypeID AS LinkID, groups.MemberCount, groups.RealUserCount FROM " .
+                        "    groupmem INNER JOIN (grouptype INNER JOIN groups " .
+                        "                               ON  (    (groups.YearIndex = $yearindex OR groups.YearIndex IS NULL) " .
+                        "                                    AND (groups.TermIndex = $termindex OR groups.TermIndex IS NULL) " .
+                        "                                    AND  grouptype.GroupTypeID = groups.GroupTypeID)) " .
+                        "             ON groupmem.Member = CONCAT('@', grouptype.GroupTypeID) " .
+                        "WHERE groupmem.GroupID = '$group_id' ";
+        } else {
+            $query =    "SELECT 0 AS SortOrder, groupmem.Member AS ID, grouptype.GroupName AS Name, " .
+                        "       groups.GroupTypeID AS LinkID, groups.MemberCount, groups.RealUserCount FROM " .
+                        "    groupmem INNER JOIN groups ON groupmem.Member = CONCAT('@', groups.GroupID) INNER JOIN grouptype USING (GroupTypeID) " .
+                        "WHERE groupmem.GroupID = '$group_id' " .
+                        "UNION " .
+                        "SELECT 1 AS SortOrder, user.Username AS ID, CONCAT(user.FirstName, ' ', user.Surname) AS Name, " .
+                        "       NULL AS LinkID, NULL AS MemberCount, NULL AS RealUserCount FROM " .
+                        "    groupmem INNER JOIN user ON groupmem.Member = user.Username " .
+                        "WHERE groupmem.GroupID = '$group_id' " .
+                        "ORDER BY SortOrder, Name, ID";
+        }
     }
     $res = &  $db->query($query);
     if (DB::isError($res))
@@ -125,6 +142,8 @@ if ($is_admin or $is_principal or $is_hod) {
         echo "                <th>&nbsp;</th>\n";
         echo "                <th>Name</th>\n";
         echo "                <th>ID</th>\n";
+        echo "                <th><a title='Direct members'>D</a></th>\n";
+        echo "                <th><a title='Total members'>T</a></th>\n";
         echo "            </tr>\n";
 
         /* For each subject, print a row with the subject's name, and # of students */
@@ -136,8 +155,8 @@ if ($is_admin or $is_principal or $is_hod) {
             } else {
                 $alt = " class='std'";
             }
-            if ($is_admin and $row['ID'][0] == '@') {
-                $row_id = substr($row['ID'], 1);
+            if ($is_admin and !is_null($row['LinkID'])) {
+                $row_id = htmlspecialchars($row['LinkID'], ENT_QUOTES);
                 $editlink = "index.php?location=" .
                              dbfuncString2Int("admin/group/list.php") .
                              "&amp;key=" . dbfuncString2Int($row_id) .
@@ -154,6 +173,16 @@ if ($is_admin or $is_principal or $is_hod) {
             echo "                <td>$editbutton</td>\n";
             echo "                <td>{$row['Name']}</td>\n"; // Print class name
             echo "                <td>{$row['ID']}</td>\n";
+            if(is_null($row['MemberCount'])) {
+                echo "                <td align='center'>-</td>\n";
+            } else {
+                echo "                <td>{$row['MemberCount']}</td>\n";
+            }
+            if(is_null($row['RealUserCount'])) {
+                echo "                <td align='center'>-</td>\n";
+            } else {
+                echo "                <td>{$row['RealUserCount']}</td>\n";
+            }
             echo "            </tr>\n";
         }
         echo "      </table>\n"; // End of table
