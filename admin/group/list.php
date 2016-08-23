@@ -9,6 +9,8 @@
 
 $title = "Groups";
 
+$show_indirect = "0";
+
 if(isset($_GET['key'])) {
     $group_type_id = safe(dbfuncInt2String($_GET['key']));
 } else {
@@ -22,7 +24,21 @@ if(isset($_GET['keyname'])) {
     $group_name = NULL;
 }
 
-include "header.php"; // Show header
+if(isset($_GET['key2']) and dbfuncInt2String($_GET['key2']) == "1")
+    $show_indirect = "1";
+
+$type = "html";
+if(isset($_GET['key3']))
+    $type = dbfuncInt2String($_GET["key3"]);
+if($type != "csv")
+    $type = "html";
+
+if($type == "csv") {
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename=students.csv');
+} else {
+    include "header.php"; // Show header
+}
 
 /* Check whether current user is a counselor */
 $res = &  $db->query(
@@ -71,7 +87,9 @@ if ($res->numRows() > 0) {
 }
 
 if ($is_admin or $is_principal or $is_hod) {
-    include "core/titletermyear.php";
+    if($type != "csv") {
+        include "core/titletermyear.php";
+    }
 
     if(is_null($group_type_id)) {
         /* Get list of groups*/
@@ -112,16 +130,24 @@ if ($is_admin or $is_principal or $is_hod) {
                         "             ON groupmem.Member = CONCAT('@', grouptype.GroupTypeID) " .
                         "WHERE groupmem.GroupID = '$group_id' ";
         } else {
-            $query =    "SELECT 0 AS SortOrder, groupmem.Member AS ID, grouptype.GroupName AS Name, " .
-                        "       groups.GroupTypeID AS LinkID, groups.MemberCount, groups.RealUserCount FROM " .
-                        "    groupmem INNER JOIN groups ON groupmem.Member = CONCAT('@', groups.GroupID) INNER JOIN grouptype USING (GroupTypeID) " .
-                        "WHERE groupmem.GroupID = '$group_id' " .
-                        "UNION " .
-                        "SELECT 1 AS SortOrder, user.Username AS ID, CONCAT(user.FirstName, ' ', user.Surname) AS Name, " .
-                        "       NULL AS LinkID, NULL AS MemberCount, NULL AS RealUserCount FROM " .
-                        "    groupmem INNER JOIN user ON groupmem.Member = user.Username " .
-                        "WHERE groupmem.GroupID = '$group_id' " .
-                        "ORDER BY SortOrder, Name, ID";
+            if($show_indirect == "1") {
+                $query =    "SELECT 0 AS SortOrder, user.Username AS ID, CONCAT(user.FirstName, ' ', user.Surname) AS Name, " .
+                            "       NULL AS LinkID, NULL AS MemberCount, NULL AS RealUserCount FROM " .
+                            "    groupgenmem INNER JOIN user ON groupgenmem.Username = user.Username " .
+                            "WHERE groupgenmem.GroupID = '$group_id' " .
+                            "ORDER BY SortOrder, Name, ID";
+            } else {
+                $query =    "SELECT 0 AS SortOrder, groupmem.Member AS ID, grouptype.GroupName AS Name, " .
+                            "       groups.GroupTypeID AS LinkID, groups.MemberCount, groups.RealUserCount FROM " .
+                            "    groupmem INNER JOIN groups ON groupmem.Member = CONCAT('@', groups.GroupID) INNER JOIN grouptype USING (GroupTypeID) " .
+                            "WHERE groupmem.GroupID = '$group_id' " .
+                            "UNION " .
+                            "SELECT 1 AS SortOrder, user.Username AS ID, CONCAT(user.FirstName, ' ', user.Surname) AS Name, " .
+                            "       NULL AS LinkID, NULL AS MemberCount, NULL AS RealUserCount FROM " .
+                            "    groupmem INNER JOIN user ON groupmem.Member = user.Username " .
+                            "WHERE groupmem.GroupID = '$group_id' " .
+                            "ORDER BY SortOrder, Name, ID";
+            }
         }
     }
     $res = &  $db->query($query);
@@ -131,66 +157,116 @@ if ($is_admin or $is_principal or $is_hod) {
     /* Print classes and the # of students in each class */
     if ($res->numRows() > 0) {
         $count = $res->numRows();
-        echo "       <p align='center'><em>Total count: $count</em></p>\n";
-        if($is_admin) {
-            $newlink = "index.php?location=" . dbfuncString2Int("admin/group/new.php");
-            $newbutton = dbfuncGetButton($newlink, "New group", "medium", "", "Create new group");
-            echo "        <p align='center'>$newbutton</p>\n";
+        if($type != "csv") {
+            echo "       <p align='center'><em>Total count: $count</em></p>\n";
+            if($show_indirect == "1") {
+                $showlink = "index.php?location=" .
+                            dbfuncString2Int("admin/group/list.php") .
+                            "&amp;key2=" . dbfuncString2Int("0");
+                if(!is_null($group_type_id)) {
+                    $showlink .=    "&amp;key=" . $_GET['key'] .
+                                    "&amp;keyname=" . $_GET['keyname'];
+                }
+                $showbutton = dbfuncGetButton($showlink, "Show direct members", "medium", "", "Show only direct members of the group");
+            } else {
+                $showlink = "index.php?location=" .
+                            dbfuncString2Int("admin/group/list.php") .
+                            "&amp;key2=" . dbfuncString2Int("1");
+                if(!is_null($group_type_id)) {
+                    $showlink .=    "&amp;key=" . $_GET['key'] .
+                                    "&amp;keyname=" . $_GET['keyname'];
+                }
+                $showbutton = dbfuncGetButton($showlink, "Show indirect members", "medium", "", "Show all members of the group, including indirect members");
+            }
+                $exportlink = "index.php?location=" .
+                            dbfuncString2Int("admin/group/list.php") .
+                            "&amp;key2=" . dbfuncString2Int($show_indirect) .
+                            "&amp;key3=" . dbfuncString2Int("csv");
+                if(!is_null($group_type_id)) {
+                    $exportlink .=  "&amp;key=" . $_GET['key'] .
+                                    "&amp;keyname=" . $_GET['keyname'];
+                }
+                $exportbutton = dbfuncGetButton($exportlink, "Export to CSV", "medium", "", "Export list of group members to CSV file");
+            $newbutton = "";
+            if($is_admin) {
+                $newlink = "index.php?location=" . dbfuncString2Int("admin/group/new.php");
+                $newbutton = dbfuncGetButton($newlink, "New group", "medium", "", "Create new group");
+            }
+            echo "        <p align='center'>$showbutton$exportbutton$newbutton</p>\n";
+            echo "        <table align='center' border='1'>\n"; // Table headers
+            echo "            <tr>\n";
+            echo "                <th>&nbsp;</th>\n";
+            echo "                <th>Name</th>\n";
+            echo "                <th>ID</th>\n";
+            if($show_indirect != "1") {
+                echo "                <th><a title='Direct members'>D</a></th>\n";
+                echo "                <th><a title='Total members'>T</a></th>\n";
+            }
+            echo "            </tr>\n";
+        } else {
+            echo "\"Name\",\"ID\"";
+            if($show_indirect != "1")
+                echo ",\"Direct members\",\"Indirect members\"";
+            echo "\n";
         }
-        echo "        <table align='center' border='1'>\n"; // Table headers
-        echo "            <tr>\n";
-        echo "                <th>&nbsp;</th>\n";
-        echo "                <th>Name</th>\n";
-        echo "                <th>ID</th>\n";
-        echo "                <th><a title='Direct members'>D</a></th>\n";
-        echo "                <th><a title='Total members'>T</a></th>\n";
-        echo "            </tr>\n";
 
         /* For each subject, print a row with the subject's name, and # of students */
         $alt_count = 0;
         while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-            $alt_count += 1;
-            if ($alt_count % 2 == 0) {
-                $alt = " class='alt'";
-            } else {
-                $alt = " class='std'";
-            }
-            if ($is_admin and !is_null($row['LinkID'])) {
-                $row_id = htmlspecialchars($row['LinkID'], ENT_QUOTES);
-                $editlink = "index.php?location=" .
-                             dbfuncString2Int("admin/group/list.php") .
-                             "&amp;key=" . dbfuncString2Int($row_id) .
-                             "&amp;keyname=" .
-                             dbfuncString2Int($row['Name']);
-                $editbutton = dbfuncGetButton($editlink, "E", "small", "edit",
-                                            "Edit group");
-            } else {
-                $editbutton = "";
-            }
+            if($type != "csv") {
+                $alt_count += 1;
+                if ($alt_count % 2 == 0) {
+                    $alt = " class='alt'";
+                } else {
+                    $alt = " class='std'";
+                }
+                if ($is_admin and !is_null($row['LinkID'])) {
+                    $row_id = htmlspecialchars($row['LinkID'], ENT_QUOTES);
+                    $editlink = "index.php?location=" .
+                                 dbfuncString2Int("admin/group/list.php") .
+                                 "&amp;key=" . dbfuncString2Int($row_id) .
+                                 "&amp;key2=" . dbfuncString2Int($show_indirect) .
+                                 "&amp;keyname=" . dbfuncString2Int($row['Name']);
+                    $editbutton = dbfuncGetButton($editlink, "E", "small", "edit",
+                                                "Edit group");
+                } else {
+                    $editbutton = "";
+                }
 
-            echo "            <tr$alt>\n";
-            /* Generate edit button */
-            echo "                <td>$editbutton</td>\n";
-            echo "                <td>{$row['Name']}</td>\n"; // Print class name
-            echo "                <td>{$row['ID']}</td>\n";
-            if(is_null($row['MemberCount'])) {
-                echo "                <td align='center'>-</td>\n";
+                echo "            <tr$alt>\n";
+                /* Generate edit button */
+                echo "                <td>$editbutton</td>\n";
+                echo "                <td>{$row['Name']}</td>\n"; // Print class name
+                echo "                <td>{$row['ID']}</td>\n";
+                if($show_indirect != "1") {
+                    if(is_null($row['MemberCount'])) {
+                        echo "                <td align='center'>-</td>\n";
+                    } else {
+                        echo "                <td>{$row['MemberCount']}</td>\n";
+                    }
+                    if(is_null($row['RealUserCount'])) {
+                        echo "                <td align='center'>-</td>\n";
+                    } else {
+                        echo "                <td>{$row['RealUserCount']}</td>\n";
+                    }
+                }
+                echo "            </tr>\n";
             } else {
-                echo "                <td>{$row['MemberCount']}</td>\n";
+                echo "\"{$row['Name']}\",\"{$row['ID']}\"";
+                if($show_indirect != "1")
+                    echo ",{$row['MemberCount']},{$row['RealUserCount']}";
+                echo "\n";
             }
-            if(is_null($row['RealUserCount'])) {
-                echo "                <td align='center'>-</td>\n";
-            } else {
-                echo "                <td>{$row['RealUserCount']}</td>\n";
-            }
-            echo "            </tr>\n";
         }
-        echo "      </table>\n"; // End of table
+        if($type != "csv")
+            echo "      </table>\n"; // End of table
     } else {
-        if(is_null($group_id)) {
-            echo "      <p>There are no groups.</p>\n";
-        } else {
-            echo "      <p>There are no members of this group.</p>\n";
+        if($type != "csv") {
+            if(is_null($group_id)) {
+                echo "      <p>There are no groups.</p>\n";
+            } else {
+                echo "      <p>There are no members of this group.</p>\n";
+            }
         }
     }
     log_event($LOG_LEVEL_EVERYTHING, "admin/group/list.php", $LOG_ADMIN,
@@ -204,5 +280,6 @@ if ($is_admin or $is_principal or $is_hod) {
     echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";
 }
 
-include "footer.php";
+if($type != "csv")
+    include "footer.php";
 ?>
