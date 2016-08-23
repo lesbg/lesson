@@ -155,6 +155,41 @@ if ($is_admin) {
         if (DB::isError($aRes))
             die($aRes->getDebugInfo()); // Check for errors in query
     }
+
+    /* Add and remove to/from classes */
+    $query =    "SELECT ClassTermIndex, DepartmentIndex FROM classlist INNER JOIN classterm USING (ClassTermIndex) " .
+                "                     INNER JOIN class USING (ClassIndex) " .
+                "WHERE  classlist.Username='$uname' " .
+                "AND    class.YearIndex=$yearindex " .
+                "ORDER BY classterm.TermIndex DESC " .
+                "LIMIT 1";
+    $aRes = &  $db->query($query);
+    if (DB::isError($aRes))
+        die($aRes->getDebugInfo()); // Check for errors in query
+    if ( $aRow = & $aRes->fetchRow(DB_FETCHMODE_ASSOC) ) {
+        $classdepindex = $aRow['DepartmentIndex'];
+        $currentclassterm = $aRow['ClassTermIndex'];
+    } else {
+        $classdepindex = NULL;
+        $currentclassterm = NULL;
+    }
+
+    echo "<p>{$_POST['classtermindex']} {$_SESSION['post']['oldclasstermindex']}</p>";
+    if($_POST['classtermindex'] != $_POST['oldclasstermindex']) {
+        if($_POST['oldclasstermindex'] != "NULL") {
+            $query = "DELETE FROM classlist WHERE Username='$uname' AND ClassTermIndex='{$_POST['oldclasstermindex']}'";
+            $aRes = & $db->query($query);
+            if (DB::isError($aRes))
+                die($aRes->getDebugInfo()); // Check for errors in query
+        }
+        if($_POST['classtermindex'] != "NULL") {
+            $query =    "INSERT INTO classlist (Username, ClassTermIndex) VALUES ('$uname', {$_POST['classtermindex']})";
+            $aRes = & $db->query($query);
+            if (DB::isError($aRes))
+                die($aRes->getDebugInfo()); // Check for errors in query
+        }
+    }
+
     log_event($LOG_LEVEL_ADMIN, "admin/user/modify_action.php", $LOG_ADMIN,
         "Modified {$_POST['fname']} {$_POST['sname']} ($uname).");
 } else { // User isn't authorized to view or change users.

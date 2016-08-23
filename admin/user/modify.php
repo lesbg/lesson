@@ -34,6 +34,8 @@ if(isset($_GET['key4']))
 else
     unset($fcode);
 
+include "core/settermandyear.php";
+
 include "header.php"; // Show header
 
 if ($is_admin) {
@@ -71,10 +73,11 @@ if ($is_admin) {
     $pwd2 = NULL;
 
     if($modify) {
-        $res = &  $db->query(
-                "SELECT Username, FirstName, Surname, Gender, DOB, Permissions, DepartmentIndex, " .
-                "       Title, DateType, DateSeparator, Password2, PhoneNumber FROM user " .
-                "WHERE Username = '$uname'");
+        $query =    "SELECT Username, FirstName, Surname, Gender, DOB, Permissions, user.DepartmentIndex, " .
+                    "       Title, DateType, DateSeparator, Password2, PhoneNumber " .
+                    "FROM user " .
+                    "WHERE Username = '$uname' ";
+        $res = &  $db->query($query);
         if (DB::isError($res))
             die($res->getDebugInfo()); // Check for errors in query
 
@@ -186,6 +189,11 @@ if ($is_admin) {
             $pval[$key] = "value='" . htmlspecialchars($value, ENT_QUOTES) . "'";
     }
 
+    if($_SESSION['post']['classdepindex'] == "NULL" || is_null($_SESSION['post']['classdepindex'])) {
+        $classdepindex = NULL;
+    } else {
+        $classdepindex = intval($_SESSION['post']['classdepindex']);
+    }
     echo "      <form action='$link' method='post'>\n"; // Form method
     echo "         <p align='center'>\n";
     if(!$modify) {
@@ -337,7 +345,8 @@ if ($is_admin) {
     echo "                   <input type='radio' name='datesep' value='D' $chcd><i>LESSON default</i><br>\n";
     echo "                   <input type='radio' name='datesep' value='/' $chcslash>/ (ex. 1/1/2000)<br>\n";
     echo "                   <input type='radio' name='datesep' value='-' $chcdash>- (ex. 1-1-2000)<br>\n";
-    echo "                   <input type='radio' name='datesep' value='.' $chcperiod>. (ex. 1.1.2000)<br>&nbsp;</td>\n";
+    echo "                   <input type='radio' name='datesep' value='.' $chcperiod>. (ex. 1.1.2000)<br>&nbsp;\n";
+    echo "               </td>\n";
     echo "               <td colspan='1'><b>Groups:</b><br>\n";
     $query =    "SELECT groups.GroupID, grouptype.GroupName FROM " .
             "       groups, groupmem, grouptype " .
@@ -403,10 +412,9 @@ if ($is_admin) {
     if (DB::isError($res))
         die($res->getDebugInfo()); // Check for errors in query
 
+    echo "            <tr>\n";
     if ($res->numRows() > 0) {
-        echo "            <tr>\n";
-        echo "               <td><b>Department</b></td>\n";
-        echo "               <td colspan='2'>\n";
+        echo "               <td><b>Department:</b><br>\n";
         echo "                  <select name='department'>\n";
         $chc = "";
         if(!isset($_SESSION['post']['department']) || $_SESSION['post']['department'] == 'NULL') {
@@ -422,8 +430,99 @@ if ($is_admin) {
         }
         echo "                  </select>\n";
         echo "                  <br/>\n";
-        echo "            </tr>\n";
     }
+    echo "               <td colspan='1'><b>Class:</b><br>\n";
+
+    if($modify) {
+        $query =    "SELECT DepartmentIndex FROM classlist INNER JOIN classterm USING (ClassTermIndex) " .
+                    "                     INNER JOIN class USING (ClassIndex) " .
+                    "WHERE  classlist.Username='$uname' " .
+                    "AND    class.YearIndex=$yearindex " .
+                    "ORDER BY classterm.TermIndex DESC " .
+                    "LIMIT 1";
+        $res = &  $db->query($query);
+        if (DB::isError($res))
+            die($res->getDebugInfo()); // Check for errors in query
+        if ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+            $classdepindex = $row['DepartmentIndex'];
+        } else {
+            $classdepindex = NULL;
+        }
+    } else {
+        $classdepindex = NULL;
+    }
+
+    if($yearindex == $currentyear) {
+        $query =    "SELECT class.ClassName, classterm.ClassTermIndex, term.TermIndex, term.TermName FROM " .
+                    "       class, classterm, currentterm, term " .
+                    "WHERE classterm.ClassIndex=class.ClassIndex " .
+                    "AND   class.YearIndex=$yearindex " .
+                    "AND   term.TermIndex=currentterm.TermIndex " .
+                    "AND   classterm.TermIndex=currentterm.TermIndex ";
+    } elseif($yearindex < $currentyear) {
+        $query =    "SELECT class.ClassName, classterm.ClassTermIndex, term.TermIndex, term.TermName FROM " .
+                    "       class INNER JOIN classterm USING (ClassIndex) " .
+                    "             LEFT OUTER JOIN classterm AS newct ON " .
+                    "                 (classterm.ClassIndex=newct.ClassIndex AND " .
+                    "                  ((class.DepartmentIndex != $depindex AND classterm.TermIndex < newct.TermIndex) OR " .
+                    "                   (class.DepartmentIndex = $depindex AND " .
+                    "                    newct.TermIndex != $termindex AND " .
+                    "                    classterm.TermIndex != $termindex))) " .
+                    "             INNER JOIN term ON (classterm.TermIndex=term.TermIndex) " .
+                    "WHERE class.YearIndex=$yearindex " .
+                    "AND   newct.TermIndex IS NULL ";
+    } else { /* $yearindex > $currentyear */
+        $query =    "SELECT class.ClassName, classterm.ClassTermIndex, term.TermIndex, term.TermName FROM " .
+                    "       class INNER JOIN classterm USING (ClassIndex) " .
+                    "             LEFT OUTER JOIN classterm AS oldct ON " .
+                    "                 (classterm.ClassIndex=oldct.ClassIndex AND " .
+                    "                  ((class.DepartmentIndex != $depindex AND classterm.TermIndex > oldct.TermIndex) OR " .
+                    "                   (class.DepartmentIndex = $depindex AND " .
+                    "                    oldct.TermIndex != $termindex AND " .
+                    "                    classterm.TermIndex != $termindex))) " .
+                    "             INNER JOIN term ON (classterm.TermIndex=term.TermIndex) " .
+                    "WHERE class.YearIndex=$yearindex " .
+                    "AND   oldct.TermIndex IS NULL ";
+    }
+    if(!is_null($classdepindex)) {
+        $query .=   "AND   class.DepartmentIndex=$classdepindex ";
+    }
+    $query .= "ORDER BY class.Grade, class.ClassName";
+    $res = &  $db->query($query);
+    if (DB::isError($res))
+        die($res->getDebugInfo()); // Check for errors in query
+    echo "                  <select name='classtermindex'>\n";
+    $chc = "";
+    echo "                     <option value='NULL'>None</option>\n";
+    while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+        $chc = "";
+        if(!isset($_SESSION['post']['classtermindex']) && !is_null($classdepindex)) {
+            $query =    "SELECT Username FROM classlist INNER JOIN classterm USING (ClassTermIndex) INNER JOIN class USING (ClassIndex) " .
+                        "WHERE classlist.Username='$uname' " .
+                        "AND   class.DepartmentIndex=$classdepindex " .
+                        "AND   classterm.ClassTermIndex={$row['ClassTermIndex']}";
+            $nres = &  $db->query($query);
+            if (DB::isError($nres))
+                die($nres->getDebugInfo()); // Check for errors in query
+            if ( $nres->numRows() > 0) {
+                $_SESSION['post']['classtermindex'] = $row['ClassTermIndex'];
+                $_SESSION['post']['oldclasstermindex'] = $row['ClassTermIndex'];
+            }
+        }
+        if(isset($_SESSION['post']['classtermindex']) && $_SESSION['post']['classtermindex'] == $row['ClassTermIndex']) {
+            $chc = 'selected';
+        }
+        echo "                     <option value='{$row['ClassTermIndex']}' $chc>{$row['ClassName']} - {$row['TermName']}</option>\n";
+    }
+    echo "                  </select>\n";
+    if(!isset($_SESSION['post']['oldclasstermindex']) || is_null($_SESSION['post']['oldclasstermindex'])) {
+        $oldctidx = "NULL";
+    } else {
+        $oldctidx = $_SESSION['post']['oldclasstermindex'];
+    }
+    echo "                  <input type='hidden' name='oldclasstermindex' value='$oldctidx' /><br/>\n";
+    echo "               </td>\n";
+    echo "            </tr>\n";
 
     echo "            <tr>\n";
     if(!$modify) {
