@@ -1626,14 +1626,14 @@ message
 messy
 metal
 method
-metre
+meter
 middle
 midnight
 might
 mile
 military
 milk
-millimetre
+millimeter
 mind
 mine
 mineral
