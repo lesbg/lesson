@@ -1572,3 +1572,30 @@ function add_member_to_group($member, $group_id, $addyear, $addterm) {
         update_parent_members($member, $group_id, $addyear, $addterm);
     }
 }
+
+function crypto_rand_secure($min, $max) {
+        $range = $max - $min;
+        if ($range == 0) return $min; // not so random...
+        $log = log($range, 2);
+        $bytes = (int) ($log / 8) + 1; // length in bytes
+        $bits = (int) $log + 1; // length in bits
+        $filter = (int) (1 << $bits) - 1; // set all lower bits to 1
+        do {
+            $rnd = hexdec(bin2hex(openssl_random_pseudo_bytes($bytes, $s)));
+            $rnd = $rnd & $filter; // discard irrelevant bits
+        } while ($rnd >= $range);
+        return $min + $rnd;
+}
+
+function generate_password($count, &$words) {
+    if(count($words) == 0)
+        return "";
+
+    $origpwd = "";
+    for($x = 0; $x < $count; $x++) {
+        $y = crypto_rand_secure(0, count($words)-1);
+        $origpwd .= " {$words[$y]}";
+    }
+    $origpwd = trim($origpwd);
+    return $origpwd;
+}

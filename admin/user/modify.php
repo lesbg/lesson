@@ -6,6 +6,9 @@
  * Show fields to fill in for a user
  * ***************************************************************
  */
+
+include "user/wordlist.php";
+
 if(isset($_GET['next'])) {
     $backLink = dbfuncInt2String($_GET['next']);
 }
@@ -40,6 +43,18 @@ include "header.php"; // Show header
 
 if ($is_admin) {
 
+    echo "   <script>\n";
+    echo "      var words = [";
+    $first = true;
+    foreach($words as $word) {
+        if(!$first)
+            echo ",";
+        else
+            $first = false;
+        echo "'$word'";
+    }
+    echo "]\n";
+    echo "   </script>\n";
     if(!isset($_SESSION['post'])) {
         $_SESSION['post'] = array();
     }
@@ -71,10 +86,15 @@ if ($is_admin) {
     }
 
     $pwd2 = NULL;
+    if(!isset($change_pwd))
+        $change_pwd = False;
+    if(!isset($disable_pwd))
+        $disable_pwd = False;
+    $origpwd = NULL;
 
     if($modify) {
         $query =    "SELECT Username, FirstName, Surname, Gender, DOB, Permissions, user.DepartmentIndex, " .
-                    "       Title, DateType, DateSeparator, Password2, PhoneNumber " .
+                    "       Title, DateType, DateSeparator, Password, OriginalPassword, PhoneNumber " .
                     "FROM user " .
                     "WHERE Username = '$uname' ";
         $res = &  $db->query($query);
@@ -103,6 +123,11 @@ if ($is_admin) {
                     $_SESSION['post']['datesep'] = 'D';
             }
             $pwd2 = $row['Password2'];
+            if(!isset($_SESSION['post']['password'])) {
+                $origpwd = $row['OriginalPassword'];
+            } else {
+                $origpwd = $_SESSION['post']['password'];
+            }
 
             if($show_family) {
                 if(!isset($_SESSION['post']['fcode'])) {
@@ -182,8 +207,15 @@ if ($is_admin) {
                 }
             }
         }
+        if(!isset($_SESSION['post']['password'])) {
+            $change_pwd = True;
+        } else {
+            $origpwd = $_SESSION['post']['password'];
+        }
     }
-
+    if($change_pwd) {
+        $origpwd = generate_password(4, $words);
+    }
     foreach($_SESSION['post'] as $key => $value) {
         if(is_string($value))
             $pval[$key] = "value='" . htmlspecialchars($value, ENT_QUOTES) . "'";
@@ -525,37 +557,17 @@ if ($is_admin) {
     echo "            </tr>\n";
 
     echo "            <tr>\n";
-    if(!$modify) {
-        echo "               <td colspan='3'><i>Note: if you leave the primary password blank, it will default to the user's username.</i></td>\n";
+    echo "            <td><strong>Password:</strong>";
+    if(($change_pwd or isset($_SESSION['post']['password']))and !is_null($origpwd)) {
+        echo "<input type='hidden' name='password' value='$origpwd' />";
+    }
+    echo "</td>\n";
+    if(!is_null($origpwd)) {
+        echo "               <td><span name='passwd'><strong>$origpwd</strong></span></td>\n";
     } else {
-        echo "               <td colspan='3'><i>Note: if you leave the passwords blank, they will not be changed.</i></td>\n";
+        echo "               <td><span name='passwd'><em>Unknown because it was changed</em></span></td>\n";
     }
-    echo "            </tr>\n";
-    echo "            <tr>\n";
-    echo "               <td colspan='1'><b>New Primary Password:</b></td>\n";
-    echo "               <td colspan='2'><input type='password' name='password' size=35 {$pval['password']}></td>\n";
-    echo "            </tr>\n";
-    echo "            <tr>\n";
-    echo "               <td colspan='1'><b>Confirm New Primary Password:</b></td>\n";
-    echo "               <td colspan='2'><input type='password' name='confirmpassword' size=35 {$pval['confirmpassword']}></td>\n";
-    echo "            </tr>\n";
-    echo "            <tr><td colspan='3'>&nbsp;</td></tr>\n";
-    if(!$modify) {
-        echo "            <tr>\n";
-        echo "               <td colspan='3'><i>Note: if you leave the secondary password blank, it will not be set.</i></td>\n";
-        echo "            </tr>\n";
-    } elseif (is_null($pwd2) || $pwd2 == "!!") {
-        echo "            <tr>\n";
-        echo "               <td colspan='3'><i>Secondary password is currently not set</i></td>\n";
-        echo "            </tr>\n";
-    }
-    echo "            <tr>\n";
-    echo "               <td colspan='1'><b>New Secondary Password:</b></td>\n";
-    echo "               <td colspan='2'><input type='password' name='password2' size=35 {$pval['password2']}></td>\n";
-    echo "            </tr>\n";
-    echo "            <tr>\n";
-    echo "               <td colspan='1'><b>Confirm Secondary Primary Password:</b></td>\n";
-    echo "               <td colspan='2'><input type='password' name='confirmpassword2' size=35 {$pval['confirmpassword2']}></td>\n";
+    echo "               <td colspan='1'><input type='submit' name='newpass' value='Generate new password'></td>\n";
     echo "            </tr>\n";
     echo "            <tr><td colspan='3'>&nbsp;</td></tr>\n";
     echo "            <tr>\n";

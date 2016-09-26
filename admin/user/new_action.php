@@ -48,24 +48,20 @@ if ($is_admin) {
         $error = true;
     } else {
         /* Add new user */
-        echo strlen($_POST['password']);
         if(isset($_POST['password']) && strlen($_POST['password']) > 0) {
-            $phash = password_hash($_POST['password'], PASSWORD_DEFAULT, ['cost' => "15"]);
+            $phash = password_hash($_POST['password'], PASSWORD_DEFAULT, []);
+            $passwd = safe($_POST['password']);
         } else {
-            $phash = password_hash($_POST['uname'], PASSWORD_DEFAULT, ['cost' => "15"]);
-        }
-        if(isset($_POST['password2']) && strlen($_POST['password2']) > 0) {
-            $phash2 = password_hash($_POST['password2'], PASSWORD_DEFAULT, ['cost' => "15"]);
-        } else {
-            $phash2 = "!!";
+            $phash = "!!";
+            $passwd = "!!";
         }
 
-        $query = "INSERT INTO user (Username, FirstName, Surname, Gender, DOB, Password, Password2, " .
+        $query = "INSERT INTO user (Username, FirstName, Surname, Gender, DOB, Password, OriginalPassword, " .
                  "                  Permissions, Title, DateType, DateSeparator, " .
                  "                  DepartmentIndex) " .
                  "VALUES ('{$_POST['uname']}', '{$_POST['fname']}', '{$_POST['sname']}', " .
                  "        '{$_POST['gender']}', {$_POST['DOB']}, '$phash', " .
-                 "        '$phash2', " .
+                 "        '$passwd', " .
                  "        {$_POST['perms']}, {$_POST['title']}, " .
                  "        {$_POST['datetype']}, {$_POST['datesep']}, " .
                  "        {$_POST['department']})";

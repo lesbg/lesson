@@ -37,6 +37,18 @@ foreach($_POST as $key => $value) {
         }
     }
 }
+
+if (isset($_POST['newpass']) and !is_null($_POST['newpass'])) {
+    $change_pwd = True;
+    include "admin/user/modify.php";
+    exit(0);
+}
+if (isset($_POST['disablepass']) and !is_null($_POST['disablepass'])) {
+    $disable_pwd = True;
+    include "admin/user/modify.php";
+    exit(0);
+}
+
 if ($_POST["action"] == "Save" || $_POST["action"] == "Update") { // If update or save were pressed, print
     $title = "LESSON - Saving changes..."; // common info and go to the appropriate page.
     $noHeaderLinks = true;
@@ -158,16 +170,6 @@ if ($_POST["action"] == "Save" || $_POST["action"] == "Update") { // If update o
         }
     } else {
         $_POST['groups'] = array();
-    }
-
-    if ($_POST['password'] != $_POST['confirmpassword']) { // Make sure passwords match.
-        echo "<p>The primary passwords don't match.  Press \"Back\" to fix this.</p>\n";
-        $error = true;
-    }
-
-    if ($_POST['password2'] != $_POST['confirmpassword2']) { // Make sure passwords match.
-        echo "<p>The secondary passwords don't match.  Press \"Back\" to fix this.</p>\n";
-        $error = true;
     }
 
     if (! $error) {

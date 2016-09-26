@@ -25,12 +25,9 @@ if ($is_admin) {
              "DateSeparator = {$_POST['datesep']}, " .
              "DepartmentIndex = {$_POST['department']}";
     if (isset($_POST['password']) && $_POST['password'] != "") {
-        $phash = password_hash($_POST['password'], PASSWORD_DEFAULT, ['cost' => "15"]);
-        $query .= ", Password = '$phash'";
-    }
-    if (isset($_POST['password2']) && $_POST['password2'] != "") {
-        $phash = password_hash($_POST['password2'], PASSWORD_DEFAULT, ['cost' => "15"]);
-        $query .= ", Password2 = '$phash'";
+        $passwd = safe($_POST['password']);
+        $phash = password_hash($_POST['password'], PASSWORD_DEFAULT, []);
+        $query .= ", Password = '$phash', OriginalPassword = '$passwd'";
     }
     $query .= " WHERE username = '$uname'";
     $aRes = & $db->query($query);
