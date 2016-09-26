@@ -93,12 +93,13 @@ if ($is_admin) {
     }
 
     /* Remove any groups we've been removed from */
-    $query =    "SELECT groups.GroupID FROM " .
-                "       groups, groupmem " .
-                "WHERE groupmem.Member=CONCAT('@', groups.GroupTypeID) " .
-                "AND   groupmem.GroupID='userinfo' " .
-                "AND   groupmem.Member='$uname' " .
-                "AND   groups.YearIndex=$yearindex ";
+    $query =    "SELECT groupmem.GroupMemberIndex, groups.GroupID FROM " .
+                "       groups, groupmem AS mastergroupmem, groupmem " .
+                "WHERE mastergroupmem.Member=CONCAT('@', groups.GroupTypeID) " .
+                "AND   mastergroupmem.GroupID='userinfo' " .
+                "AND   groups.YearIndex=$yearindex " .
+                "AND   groupmem.GroupID=groups.GroupID " .
+                "AND   groupmem.Member='$uname' ";
     $aRes = & $db->query($query);
     if (DB::isError($aRes))
         die($aRes->getDebugInfo()); // Check for errors in query
@@ -174,7 +175,6 @@ if ($is_admin) {
         $currentclassterm = NULL;
     }
 
-    echo "<p>{$_POST['classtermindex']} {$_SESSION['post']['oldclasstermindex']}</p>";
     if($_POST['classtermindex'] != $_POST['oldclasstermindex']) {
         if($_POST['oldclasstermindex'] != "NULL") {
             $query = "DELETE FROM classlist WHERE Username='$uname' AND ClassTermIndex='{$_POST['oldclasstermindex']}'";
