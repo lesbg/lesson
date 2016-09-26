@@ -220,22 +220,34 @@ if ($is_admin or $is_principal or $is_hod) {
                 } else {
                     $alt = " class='std'";
                 }
-                if ($is_admin and !is_null($row['LinkID'])) {
-                    $row_id = htmlspecialchars($row['LinkID'], ENT_QUOTES);
-                    $editlink = "index.php?location=" .
+                if (!is_null($row['LinkID'])) {
+                    if($is_admin) {
+                        $row_id = htmlspecialchars($row['LinkID'], ENT_QUOTES);
+                        $editlink = "index.php?location=" .
+                                     dbfuncString2Int("admin/group/list.php") .
+                                     "&amp;key=" . dbfuncString2Int($row_id) .
+                                     "&amp;key2=" . dbfuncString2Int($show_indirect) .
+                                     "&amp;keyname=" . dbfuncString2Int($row['Name']);
+                        $editbutton = dbfuncGetButton($editlink, "E", "small", "edit",
+                                                    "Edit group");
+                    } else {
+                        $editbutton = "";
+                    }
+                    $viewlink = "index.php?location=" .
                                  dbfuncString2Int("admin/group/list.php") .
                                  "&amp;key=" . dbfuncString2Int($row_id) .
                                  "&amp;key2=" . dbfuncString2Int($show_indirect) .
                                  "&amp;keyname=" . dbfuncString2Int($row['Name']);
-                    $editbutton = dbfuncGetButton($editlink, "E", "small", "edit",
-                                                "Edit group");
+                    $viewbutton = dbfuncGetButton($editlink, "V", "small", "view",
+                                                "View group");
                 } else {
                     $editbutton = "";
+                    $viewbutton = "";
                 }
 
                 echo "            <tr$alt>\n";
                 /* Generate edit button */
-                echo "                <td>$editbutton</td>\n";
+                echo "                <td>$viewbutton$editbutton</td>\n";
                 echo "                <td>{$row['Name']}</td>\n"; // Print class name
                 echo "                <td>{$row['ID']}</td>\n";
                 if($show_indirect != "1") {
