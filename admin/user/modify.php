@@ -90,7 +90,8 @@ if ($is_admin) {
         $change_pwd = False;
     if(!isset($disable_pwd))
         $disable_pwd = False;
-    $origpwd = NULL;
+    if(!isset($origpwd))
+        $origpwd = NULL;
 
     if($modify) {
         $query =    "SELECT Username, FirstName, Surname, Gender, DOB, Permissions, user.DepartmentIndex, " .
@@ -123,10 +124,8 @@ if ($is_admin) {
                     $_SESSION['post']['datesep'] = 'D';
             }
             $pwd2 = $row['Password2'];
-            if(!isset($_SESSION['post']['password'])) {
+            if(is_null($origpwd)) {
                 $origpwd = $row['OriginalPassword'];
-            } else {
-                $origpwd = $_SESSION['post']['password'];
             }
 
             if($show_family) {
@@ -207,14 +206,13 @@ if ($is_admin) {
                 }
             }
         }
-        if(!isset($_SESSION['post']['password'])) {
-            $change_pwd = True;
-        } else {
-            $origpwd = $_SESSION['post']['password'];
+        if(is_null($origpwd)) {
+            if(!isset($_SESSION['post']['password'])) {
+                $change_pwd = True;
+            } else {
+                $origpwd = $_SESSION['post']['password'];
+            }
         }
-    }
-    if($change_pwd) {
-        $origpwd = generate_password(4, $words);
     }
     foreach($_SESSION['post'] as $key => $value) {
         if(is_string($value))
@@ -272,6 +270,26 @@ if ($is_admin) {
     echo "            <tr>\n";
     echo "               <td colspan='1'><b>Surname:</b></td>\n";
     echo "               <td colspan='2'><input type='text' name='sname' size=35 {$pval['sname']}></td>\n";
+    echo "            </tr>\n";
+    echo "            <tr><td colspan='3'>&nbsp;</td></tr>\n";
+    echo "            <tr>\n";
+    echo "            <td><strong>Password:</strong>";
+    if(($change_pwd or isset($_SESSION['post']['password'])) and !$modify and !is_null($origpwd)) {
+        echo "<input type='hidden' name='password' value='$origpwd' />";
+    }
+    echo "</td>\n";
+    if(!is_null($origpwd)) {
+        if($origpwd == "!!") {
+            echo "               <td colspan='2'><span name='passwd'><em>User login disabled</em></span></td>\n";
+        } else {
+            echo "               <td colspan='2'><span name='passwd'><h2>$origpwd</h2></span></td>\n";
+        }
+    } else {
+        echo "               <td colspan='2'><span name='passwd'><em>Unknown because it was changed</em></span></td>\n";
+    }
+    echo "            </tr>\n";
+    echo "            <tr>\n";
+    echo "               <td colspan='3'><input type='submit' name='newpass' value='Generate new password'> <input type='submit' name='newpass' value='Set password to username'> <input type='submit' name='newpass' value='Disable user login'></td>\n";
     echo "            </tr>\n";
     echo "            <tr><td colspan='3'>&nbsp;</td></tr>\n";
     $chcm = "";
@@ -556,19 +574,7 @@ if ($is_admin) {
     echo "               </td>\n";
     echo "            </tr>\n";
 
-    echo "            <tr>\n";
-    echo "            <td><strong>Password:</strong>";
-    if(($change_pwd or isset($_SESSION['post']['password']))and !is_null($origpwd)) {
-        echo "<input type='hidden' name='password' value='$origpwd' />";
-    }
-    echo "</td>\n";
-    if(!is_null($origpwd)) {
-        echo "               <td><span name='passwd'><strong>$origpwd</strong></span></td>\n";
-    } else {
-        echo "               <td><span name='passwd'><em>Unknown because it was changed</em></span></td>\n";
-    }
-    echo "               <td colspan='1'><input type='submit' name='newpass' value='Generate new password'></td>\n";
-    echo "            </tr>\n";
+
     echo "            <tr><td colspan='3'>&nbsp;</td></tr>\n";
     echo "            <tr>\n";
     echo "               <td colspan='1'><b>Permissions:</b></td>\n";

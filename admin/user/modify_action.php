@@ -23,13 +23,8 @@ if ($is_admin) {
              "Permissions = {$_POST['perms']}, " . "Title = {$_POST['title']}, " .
              "DateType = {$_POST['datetype']}, " .
              "DateSeparator = {$_POST['datesep']}, " .
-             "DepartmentIndex = {$_POST['department']}";
-    if (isset($_POST['password']) && $_POST['password'] != "") {
-        $passwd = safe($_POST['password']);
-        $phash = password_hash($_POST['password'], PASSWORD_DEFAULT, []);
-        $query .= ", Password = '$phash', OriginalPassword = '$passwd'";
-    }
-    $query .= " WHERE username = '$uname'";
+             "DepartmentIndex = {$_POST['department']} " .
+             "WHERE username = '$uname'";
     $aRes = & $db->query($query);
     if (DB::isError($aRes))
         die($aRes->getDebugInfo()); // Check for errors in query

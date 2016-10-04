@@ -48,7 +48,7 @@ if ($is_admin) {
         $error = true;
     } else {
         /* Add new user */
-        if(isset($_POST['password']) && strlen($_POST['password']) > 0) {
+        if(isset($_POST['password']) and strlen($_POST['password']) > 0 and $_POST['password'] != "!!") {
             $phash = password_hash($_POST['password'], PASSWORD_DEFAULT, []);
             $passwd = safe($_POST['password']);
         } else {

@@ -11,6 +11,13 @@
 /* Get variables */
 $nextLink = dbfuncInt2String($_GET['next']); // Link to next page
 
+if (!$is_admin) {
+    echo "      <p>You do not have permission to access this page</p>\n";
+    echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";
+    include "footer.php";
+    exit(0);
+}
+
 /* Check which button was pressed */
 if ($_POST["action"] == "Test") {
     include "admin/user/new.php";
@@ -39,12 +46,39 @@ foreach($_POST as $key => $value) {
 }
 
 if (isset($_POST['newpass']) and !is_null($_POST['newpass'])) {
+    include "user/wordlist.php";
+
     $change_pwd = True;
-    include "admin/user/modify.php";
-    exit(0);
-}
-if (isset($_POST['disablepass']) and !is_null($_POST['disablepass'])) {
-    $disable_pwd = True;
+
+    $origpwd = "^^^^^^^^^^^^^^^^^^^^^^^^^^^";
+    if($_POST['newpass'] == "Set password to username") {
+        if(isset($_GET['key'])) {
+            $origpwd = dbfuncInt2String($_GET['key']);
+        } else {
+            $origpwd = "username";
+        }
+    } elseif ($_POST['newpass'] == "Disable user login") {
+        $origpwd = "!!";
+    } else {
+        while(strlen($origpwd) > 13) {
+            $origpwd = generate_password(2, $words);
+        }
+    }
+
+    if(isset($_GET['key'])) {
+        $uname = safe(dbfuncInt2String($_GET['key']));
+        if($origpwd != "!!") {
+            $phash = password_hash($origpwd, PASSWORD_DEFAULT, []);
+        } else {
+            $phash = "!!";
+        }
+
+        $query = "UPDATE user SET Password='$phash', OriginalPassword='$origpwd' WHERE Username='$uname'";
+        $aRes = & $db->query($query);
+        if (DB::isError($aRes))
+            die($aRes->getDebugInfo()); // Check for errors in query
+    }
+
     include "admin/user/modify.php";
     exit(0);
 }
