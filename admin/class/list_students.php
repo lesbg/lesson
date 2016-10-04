@@ -84,7 +84,7 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
     }
 
     $query = "SELECT user.FirstName, user.Surname, user.Username, newmem.Username AS NewUser, specialmem.Username AS SpecialUser, " .
-             "       classlist.Conduct, classlist.Average, classlist.Rank, " .
+             "       user.OriginalPassword, classlist.Conduct, classlist.Average, classlist.Rank, " .
              "       COUNT(subjectstudent.SubjectIndex) AS SubjectCount " .
              "       FROM classterm INNER JOIN classlist USING (ClassTermIndex) " .
              "            INNER JOIN user USING (Username) " .
@@ -115,7 +115,7 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
         if($type == "csv") {
             echo "\"Username\",\"First Name\",\"Surname\",";
             if ($is_admin or $is_principal) {
-                echo "\"New\",\"Special\",\"Subjects\",";
+                echo "\"Password\",\"New\",\"Special\",\"Subjects\",";
             }
             if ($is_admin or $is_hod or $is_counselor or $is_principal) {
                 echo "\"Average\",\"Rank\",";
@@ -128,6 +128,7 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
             echo "            <th>Order</th>\n";
             echo "            <th>Student</th>\n";
             if ($is_admin or $is_principal) {
+                echo "            <th>Password</th>\n";
                 echo "            <th>New</th>\n";
                 echo "            <th>Special</th>\n";
                 echo "            <th>Subjects</th>\n";
@@ -294,6 +295,13 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
             if($type == "csv") {
                 echo "\"{$row['Username']}\",\"{$row['FirstName']}\",\"{$row['Surname']}\",";
                 if ($is_admin or $is_principal) {
+                    if (is_null($row['OriginalPassword'])) {
+                        echo "\"\",";
+                    } elseif ($row['OriginalPassword'] == "!!") {
+                        echo "\"!!\",";
+                    } else {
+                        echo "\"{$row['OriginalPassword']}\",";
+                    }
                     if (!is_null($row['NewUser'])) {
                         echo "1,";
                     } else {
@@ -316,6 +324,13 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
                 echo "            <td>$orderNum</td>\n";
                 echo "            <td>{$row['FirstName']} {$row['Surname']} ({$row['Username']})</td>\n";
                 if ($is_admin or $is_principal) {
+                    if (is_null($row['OriginalPassword'])) {
+                        echo "            <td>&nbsp;</td>\n";
+                    } elseif ($row['OriginalPassword'] == "!!") {
+                        echo "            <td><em>Login disabled</em></td>\n";
+                    } else {
+                        echo "            <td>{$row['OriginalPassword']}</td>\n";
+                    }
                     if (!is_null($row['NewUser'])) {
                         echo "            <td>X</td>\n";
                     } else {
