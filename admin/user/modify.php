@@ -208,7 +208,13 @@ if ($is_admin) {
         }
         if(is_null($origpwd)) {
             if(!isset($_SESSION['post']['password'])) {
+                include "user/wordlist.php";
+
                 $change_pwd = True;
+                $origpwd = "^^^^^^^^^^^^^^^^^^^^^^^^^^^";
+                while(strlen($origpwd) > 13) {
+                    $origpwd = generate_password(2, $words);
+                }
             } else {
                 $origpwd = $_SESSION['post']['password'];
             }
@@ -281,6 +287,8 @@ if ($is_admin) {
     if(!is_null($origpwd)) {
         if($origpwd == "!!") {
             echo "               <td colspan='2'><span name='passwd'><em>User login disabled</em></span></td>\n";
+        } elseif($origpwd == "username") {
+            echo "               <td colspan='2'><span name='passwd'><em>Same as username</em></span></td>\n";
         } else {
             echo "               <td colspan='2'><span name='passwd'><h2>$origpwd</h2></span></td>\n";
         }
