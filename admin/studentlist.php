@@ -231,8 +231,11 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
         if (DB::isError($res))
             die($res->getDebugInfo()); // Check for errors in query
     } else {
-        $query =    "SELECT user.FirstName, user.Surname, user.Username, newmem.Username AS New, specialmem.Username AS Special, " .
-                    "       user.House, class.ClassName, class.Grade, GROUP_CONCAT(DISTINCT familylist.FamilyCode SEPARATOR '<br>') AS FamilyCode FROM " .
+        $query =    "SELECT user.FirstName, user.Surname, user.Username, user.OriginalPassword, " .
+                    "       newmem.Username AS New, specialmem.Username AS Special, " .
+                    "       user.House, class.ClassName, class.Grade, " .
+                    "       GROUP_CONCAT(DISTINCT familylist.FamilyCode SEPARATOR '<br>') AS FamilyCode, " .
+                    "       MAX(familylist.Guardian) AS Guardian FROM " .
                     "       user INNER JOIN " .
                     "        (class INNER JOIN classterm ON " .
                     "           (class.YearIndex = $yearindex " .
