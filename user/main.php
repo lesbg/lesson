@@ -38,11 +38,14 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
 $changePWLink = "index.php?location=" .
                  dbfuncString2Int("user/changepassword.php");
 echo "      <p><a href='$changePWLink'>Change Password</a></p>\n";
-$timetableLink = "index.php?location=" .
-                 dbfuncString2Int("user/timetable.php") . "&amp;key=" .
-                 dbfuncString2Int($username) . "&amp;keyname=" .
-                 dbfuncString2Int($fullname);
-echo "      <p><a href='$timetableLink'>Timetable</a></p>\n";
+
+if($activestudent or $activeteacher) {
+    $timetableLink = "index.php?location=" .
+                     dbfuncString2Int("user/timetable.php") . "&amp;key=" .
+                     dbfuncString2Int($username) . "&amp;keyname=" .
+                     dbfuncString2Int($fullname);
+    echo "      <p><a href='$timetableLink'>Timetable</a></p>\n";
+}
 
 $is_staff = False;
 /* If we're supposed to proofread reports this term, show link */
@@ -105,11 +108,13 @@ while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) and
  *
  * if($res->numRows() > 0) {
  */
-$bookLink = "index.php?location=" .
-             dbfuncString2Int("teacher/book/book_list.php") . "&amp;key=" .
-             dbfuncString2Int($username) . "&amp;keyname=" .
-             dbfuncString2Int($fullname);
-echo "      <p><a href='$bookLink'>Book list</a></p>\n";
+if($activestudent or $activestudent) {
+    $bookLink = "index.php?location=" .
+                 dbfuncString2Int("teacher/book/book_list.php") . "&amp;key=" .
+                 dbfuncString2Int($username) . "&amp;keyname=" .
+                 dbfuncString2Int($fullname);
+    echo "      <p><a href='$bookLink'>Book list</a></p>\n";
+}
 // }
 
 /* If user is a hod, show class list hyperlink */
@@ -313,7 +318,7 @@ while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
 /* Telegram Token */
 $link = "index.php?location=" .
         dbfuncString2Int("user/telegram.php");
-/*echo "         <p><a href='$link'>Connect to Telegram</a></p>\n";*/
+echo "         <p><a href='$link'>Connect to Telegram</a></p>\n";
 echo "      </div>\n";
 
 /* Get classes */
