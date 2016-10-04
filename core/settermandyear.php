@@ -136,7 +136,7 @@ if (DB::isError($tty_res))
 if ($tty_row = & $tty_res->fetchRow(DB_FETCHMODE_ASSOC)) {
     $currentterm = $tty_row['TermIndex'];
 } else {
-    $currentterm = 1;
+    $currentterm = NULL;
 }
 
 if (isset($termindex)) {
@@ -147,7 +147,7 @@ if (isset($termindex)) {
     if (DB::isError($tty_res))
         die($tty_res->getDebugInfo()); // Check for errors in query
     if($tty_res->numRows() == 0)
-        $termindex = 1;
+        $termindex = NULL;
 }
 
 if(!isset($termindex) || is_null($termindex)) {
