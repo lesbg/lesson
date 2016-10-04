@@ -119,6 +119,10 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
         $sortorder = "familylist.FamilyCode, familylist.Guardian DESC, class.Grade, class.ClassName, user.Username";
     } elseif ($_GET['sort'] == '11') {
         $sortorder = "familylist.FamilyCode DESC, familylist.Guardian, class.Grade DESC, class.ClassName DESC, user.Username DESC";
+    } elseif ($_GET['sort'] == '12') {
+        $sortorder = "familylist.Guardian, familylist.FamilyCode, class.Grade, class.ClassName, user.Username";
+    } elseif ($_GET['sort'] == '13') {
+        $sortorder = "familylist.Guardian DESC, familylist.FamilyCode DESC, class.Grade DESC, class.ClassName DESC, user.Username DESC";
     } else {
         $sortorder = "user.Username";
     }
@@ -183,10 +187,23 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
                                  dbfuncString2Int("admin/studentlist.php") .
                                  "&amp;sort=11$section", "D", "small", "sort",
                                 "Sort descending");
+    $guardAsc = dbfuncGetButton(
+                                "index.php?location=" .
+                                 dbfuncString2Int("admin/studentlist.php") .
+                                 "&amp;sort=12$section", "A", "small", "sort",
+                                "Sort ascending");
+    $guardDec = dbfuncGetButton(
+                                "index.php?location=" .
+                                 dbfuncString2Int("admin/studentlist.php") .
+                                 "&amp;sort=13$section", "D", "small", "sort",
+                                "Sort descending");
     /* Get student list */
     if ($show_all == 1 || $show_all == 2) {
-        $query =    "SELECT user.FirstName, user.Surname, user.Username, newmem.Username AS New, specialmem.Username AS Special, " .
-                    "       user.House, class.ClassName, class.Grade, GROUP_CONCAT(DISTINCT familylist.FamilyCode SEPARATOR '<br>') AS FamilyCode FROM " .
+        $query =    "SELECT user.FirstName, user.Surname, user.Username, user.OriginalPassword, " .
+                    "       newmem.Username AS New, specialmem.Username AS Special, " .
+                    "       user.House, class.ClassName, class.Grade, " .
+                    "       GROUP_CONCAT(DISTINCT familylist.FamilyCode SEPARATOR '<br>') AS FamilyCode, " .
+                    "       MAX(familylist.Guardian) AS Guardian FROM " .
                     "       user LEFT OUTER JOIN " .
                     "       familylist USING (Username) LEFT OUTER JOIN " .
                     "        (class INNER JOIN classterm ON " .
@@ -253,7 +270,11 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
         echo "            <th>First Name $fnameAsc $fnameDec</th>\n";
         echo "            <th>Last Name $lnameAsc $fnameDec</th>\n";
         echo "            <th>Username $unameAsc $unameDec</th>\n";
+        echo "            <th>Password $pwdAsc $pwdDec</th>\n";
         echo "            <th>Family Code $fcodeAsc $fcodeDec</th>\n";
+        if($show_all == 2) {
+            echo "            <th>Guardian $guardAsc $guardDec</th>\n";
+        }
         echo "            <th>Class $classAsc $classDec</th>\n";
         echo "            <th>House $houseAsc $houseDec</th>\n";
         echo "            <th>New</th>\n";
@@ -350,10 +371,24 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
             echo "            <td>{$row['FirstName']}</td>\n";
             echo "            <td>{$row['Surname']}</td>\n";
             echo "            <td>{$row['Username']}</td>\n";
+            if (is_null($row['OriginalPassword'])) {
+                echo "            <td>&nbsp;</td>\n";
+            } elseif ($row['OriginalPassword'] == "!!") {
+                echo "            <td><em><a title='Login disabled'>X</a></em></td>\n";
+            } else {
+                echo "            <td><a title='Password needs to be changed'>C</a></td>\n";
+            }
             if ($row['FamilyCode'] != NULL) {
                 echo "            <td>{$row['FamilyCode']}</td>\n";
             } else {
                 echo "            <td><i>None</i></td>\n";
+            }
+            if($show_all == 2) {
+                if ($row['Guardian'] != 1) {
+                    echo "            <td>&nbsp;</td>\n";
+                } else {
+                    echo "            <td>X</td>\n";
+                }
             }
             if ($row['ClassName'] != NULL) {
                 echo "            <td>{$row['ClassName']}</td>\n";
