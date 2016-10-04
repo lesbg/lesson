@@ -327,9 +327,9 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
                     if (is_null($row['OriginalPassword'])) {
                         echo "            <td>&nbsp;</td>\n";
                     } elseif ($row['OriginalPassword'] == "!!") {
-                        echo "            <td><em>Login disabled</em></td>\n";
+                        echo "            <td><em><a title='Login disabled'>X</a></em></td>\n";
                     } else {
-                        echo "            <td>{$row['OriginalPassword']}</td>\n";
+                        echo "            <td><a title='Password needs to be changed'>C</a></td>\n";
                     }
                     if (!is_null($row['NewUser'])) {
                         echo "            <td>X</td>\n";
