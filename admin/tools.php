@@ -74,6 +74,8 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) { // Make sure user has perm
                  dbfuncString2Int(
                                 "index.php?location=" .
                                  dbfuncString2Int("admin/tools.php"));
+    $customqueriesLink = "index.php?location=" .
+                 dbfuncString2Int("admin/custom_queries/list.php");
 
     echo "      <div class='button' style='position: absolute; width: 200px; left: 50%; margin-left: -100px;'>\n";
     echo "      <p><a href='$lowmarksLink'>View low marks</a></p>\n";
@@ -81,6 +83,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) { // Make sure user has perm
     echo "      <p><a href='$familyListLink'>Family List</a></p>\n";
     echo "      <p><a href='$teacherListLink'>Teacher List</a></p>\n";
     echo "      <p><a href='$classListLink'>Class List</a></p>\n";
+    echo "      <p><a href='$customqueriesLink'>Custom Queries</a></p>\n";
     echo "      <p><a href='$groupLink'>Groups</a></p>\n";
     echo "      <p><a href='$ctermListLink'>Class Report Options</a></p>\n";
     echo "      <p><a href='$subjectListLink'>Subject List</a></p>\n";
