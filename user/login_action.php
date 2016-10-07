@@ -38,6 +38,7 @@ if (! $row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 
 /* Set username to canonical username */
 $_POST['username'] = $row['Username'];
+$username = safe($_POST['username']);
 
 $good_pw = False;
 if(password_verify($_POST['password'], $row['Password'])) {
@@ -82,6 +83,7 @@ if(!$good_pw) {
     include "user/login.php";
     exit(0);
 }
+
 
 if($_POST['password'] == $_POST['username']) {
     $_SESSION['samepass'] = True;
