@@ -39,6 +39,10 @@ else
 
 include "core/settermandyear.php";
 
+$switchlink = "index.php?location=" .
+        dbfuncString2Int("admin/user/switch_user.php") . "&amp;key=" .
+        dbfuncString2Int($uname);
+$subtitle = "<a href='$switchlink'>Become this user</a>";
 include "header.php"; // Show header
 
 if ($is_admin) {
