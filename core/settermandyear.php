@@ -64,6 +64,15 @@ if (! $showalldeps) {
                  " AND   classlist.ClassTermIndex   = classterm.ClassTermIndex " .
                  " AND   classterm.ClassIndex       = class.ClassIndex " .
                  " AND   class.YearIndex            = $yearindex) " . "UNION " .
+                 "(SELECT class.DepartmentIndex FROM class, classterm, classlist, familylist, familylist AS fl2 " .
+                 " WHERE familylist.Username        = '$username' " .
+                 " AND   familylist.Guardian        = 1 " .
+                 " AND   fl2.FamilyCode             = familylist.FamilyCode " .
+                 " AND   fl2.Guardian               = 0 " .
+                 " AND   classlist.Username         = fl2.Username " .
+                 " AND   classlist.ClassTermIndex   = classterm.ClassTermIndex " .
+                 " AND   classterm.ClassIndex       = class.ClassIndex " .
+                 " AND   class.YearIndex            = $yearindex) " . "UNION " .
                  "(SELECT class.DepartmentIndex  " .
                  "         FROM user, support, class, classterm, classlist, currentterm, groupgenmem, groups " .
                  " WHERE support.WorkerUsername   = '$username' " .
