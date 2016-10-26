@@ -101,7 +101,7 @@ if ($res->numRows() > 0 or $is_admin) {
 
     $dateinfo = date($dateformat); // Print assignment information table with empty fields to fill in
     $duedateinfo = date($dateformat, time() + (24 * 60 * 60)); // Print assignment information table with empty fields to fill in
-    echo "      <form action='$link' method='post' name='assignment'>\n"; // Form method
+    echo "      <form action='$link' enctype='multipart/form-data' method='post' name='assignment'>\n"; // Form method
     echo "         <input type='hidden' id='agenda' name='agenda' value='0'>\n";
     echo "         <table class='transparent' align='center'>\n";
     echo "            <tr>\n";
