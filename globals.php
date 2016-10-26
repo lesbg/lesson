@@ -24,6 +24,8 @@ $UPLOAD_BASE_DIR = "/var/www/share/uploads"; // Base directory for uploads
 
 $SMS_PASSWORD = "password";
 
+$REPLICA_COUNT = 1;
+
 $SHOW_COMMENT_LENGTH = 30;
 
 $DEFAULT_PUN_PERM = 0;
