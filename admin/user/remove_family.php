@@ -23,17 +23,7 @@ if ($is_admin) {
             }
         }
     }
-    $extraMeta = "      <meta http-equiv=\"REFRESH\" content=\"0;url=$backLink\">\n";
-    $noJS = true;
-    $noHeaderLinks = true;
-    $title = "LESSON - Redirecting...";
-
-    include "header.php";
-
-    echo "      <p align=\"center\">Redirecting you to <a href=\"$backLink\">$backLink</a>." .
-    "</p>\n";
-
-    include "footer.php";
+    redirect($backLink);
 } else { // User isn't authorized to view or change users.
     include "header.php"; // Show header
     echo "      <p>You do not have permission to access this page</p>\n";

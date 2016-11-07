@@ -80,23 +80,8 @@ if ($is_admin or $is_teacher) {
         echo "      <p align=\"center\"><a href=\"$link\">Continue</a></p>\n"; // Link to next page
 
         include "footer.php";
-    }  /*
-       * elseif($_POST["action"] == 'Delete') { // If delete was pressed, confirm deletion
-       * include "teacher/confirmdelete";
-       * }
-       */
-else {
-        $extraMeta = "      <meta http-equiv=\"REFRESH\" content=\"0;url=$link\">\n";
-        $noJS = true;
-        $noHeaderLinks = true;
-        $title = "LESSON - Cancelling...";
-
-        include "header.php";
-
-        echo "      <p align=\"center\">Cancelling and redirecting you to <a href=\"$link\">$link</a>." .
-             "</p>\n";
-
-        include "footer.php";
+    } else {
+        redirect($link);
     }
 } else { // User isn't authorized to create punishment request
     /* Log unauthorized access attempt */

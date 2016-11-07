@@ -205,16 +205,7 @@ if ($is_admin or $is_class_teacher or $res->numRows() > 0) {
             include "teacher/book/check_in_out_copy.php";
         }
     } elseif ($_POST["action"] == "Cancel") {
-        $extraMeta = "      <meta http-equiv='REFRESH' content='0;url=$nextLink'>\n";
-        $noJS = true;
-        $noHeaderLinks = true;
-        $title = "LESSON - Redirecting...";
-
-        include "header.php";
-
-        echo "      <p align='center'>Redirecting you to <a href='$nextLink'>$nextLink</a></p>\n";
-
-        include "footer.php";
+        redirect($nextLink);
     } else {
         include "teacher/book/check_in_out_copy.php";
     }

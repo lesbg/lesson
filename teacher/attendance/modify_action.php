@@ -116,14 +116,7 @@ if ($res->numRows() > 0 or dbfuncGetPermission($permissions, $PERM_ADMIN)) {
 
         echo "      <p align=\"center\"><a href=\"$nextLink\">Continue</a></p>\n"; // Link to next page
     } elseif ($_POST["action"] == "Cancel") {
-        $extraMeta = "      <meta http-equiv=\"REFRESH\" content=\"0;url=$nextLink\">\n";
-        $noJS = true;
-        $noHeaderLinks = true;
-        $title = "LESSON - Redirecting...";
-
-        include "header.php";
-
-        echo "      <p align=\"center\">Redirecting you to <a href=\"$nextLink\">$nextLink</a></p>\n";
+        redirect($nextLink);
     }
 } else {
     include "header.php";

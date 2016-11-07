@@ -288,52 +288,35 @@ if ($is_principal or $is_hod or $is_counselor or $is_classteacher or
                             $query = "INSERT INTO casenotenew (CaseNoteIndex, " .
                              "            WorkerUsername) " .
                              "       VALUES ($cn_index, '$wl_username')";
-                        $nrs = &  $db->query($query);
-                        if (DB::isError($nrs))
-                            die($nrs->getDebugInfo());
+                            $nrs = &  $db->query($query);
+                            if (DB::isError($nrs))
+                                die($nrs->getDebugInfo());
+                        }
                     }
                 }
+                echo " done</p>\n";
+                log_event($LOG_LEVEL_TEACHER, "teacher/casenote/new_action.php",
+                        $LOG_TEACHER, "Created new casenote for $student.");
             }
-            echo " done</p>\n";
-            log_event($LOG_LEVEL_TEACHER, "teacher/casenote/new_action.php",
-                    $LOG_TEACHER, "Created new casenote for $student.");
-        } else {
         }
+
+        echo "      <p align=\"center\"><a href=\"$link\">Continue</a></p>\n"; // Link to next page
+
+        include "footer.php";
+    } else {
+        redirect($nextLink);
     }
-
-    echo "      <p align=\"center\"><a href=\"$link\">Continue</a></p>\n"; // Link to next page
-
-    include "footer.php";
-}  /*
-   * elseif($_POST["action"] == 'Delete') { // If delete was pressed, confirm deletion
-   * include "teacher/casenote/confirmdelete";
-   * }
-   */
-else {
-    $extraMeta = "      <meta http-equiv=\"REFRESH\" content=\"0;url=$link\">\n";
-    $noJS = true;
-    $noHeaderLinks = true;
-    $title = "LESSON - Cancelling...";
-
-    include "header.php";
-
-    echo "      <p align=\"center\">Cancelling and redirecting you to <a href=\"$link\">$link</a>." .
-         "</p>\n";
-
-    include "footer.php";
-}
 } else { // User isn't authorized to create casenotes
-/* Log unauthorized access attempt */
-log_event($LOG_LEVEL_ERROR, "teacher/casenote/new_action.php",
-        $LOG_DENIED_ACCESS, "Tried to create new casenote for $student.");
-$title = "LESSON - Unauthorized access";
-$noHeaderLinks = true;
-$noJS = true;
+    /* Log unauthorized access attempt */
+    log_event($LOG_LEVEL_ERROR, "teacher/casenote/new_action.php",
+            $LOG_DENIED_ACCESS, "Tried to create new casenote for $student.");
+    $title = "LESSON - Unauthorized access";
+    $noHeaderLinks = true;
+    $noJS = true;
 
-include "header.php"; // Print header
+    include "header.php"; // Print header
 
-echo "      <p>You do not have permission to access this page</p>\n";
-echo "      <p><a href=\"$backLink\">Click here to go back</a></p>\n";
-include "footer.php";
+    echo "      <p>You do not have permission to access this page</p>\n";
+    echo "      <p><a href=\"$backLink\">Click here to go back</a></p>\n";
+    include "footer.php";
 }
-?>

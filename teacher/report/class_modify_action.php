@@ -719,18 +719,7 @@ if ($_POST['action'] == "Update" or $_POST['action'] == "Close report" or
     unset($_POST);
     $include = "teacher/report/class_modify.php";
 } elseif ($_POST['action'] == "Cancel") {
-    $extraMeta = "      <meta http-equiv='REFRESH' content='0;url=$nextLink'>\n";
-    $noJS = true;
-    $noHeaderLinks = true;
-    $title = "LESSON - Cancelling...";
-
-    include "header.php";
-
-    echo "      <p align='center'>Cancelling and redirecting you to <a href='$nextLink'>$nextLink</a>." .
-         "</p>\n";
-
-    include "footer.php";
-    $do_include = false;
+    redirect($nextLink);
 }
 
 if ($do_include)

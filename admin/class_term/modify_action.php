@@ -196,17 +196,7 @@ if ($_POST['action'] == "Update") {
     }
     include "admin/class_term/modify.php";*/
 } else {
-    $extraMeta = "      <meta http-equiv='REFRESH' content='0;url=$nextLink'>\n";
-    $noJS = true;
-    $noHeaderLinks = true;
-    $title = "LESSON - Cancelling...";
-
-    include "header.php";
-
-    echo "      <p align='center'>Cancelling and redirecting you to <a href='$nextLink'>$nextLink</a>." .
-         "</p>\n";
-
-    include "footer.php";
+    redirect($nextLink);
 }
 log_event($LOG_LEVEL_ADMIN, "admin/class_term/modify_action.php", $LOG_ADMIN,
         "Modified information about {$_POST['name']}.");

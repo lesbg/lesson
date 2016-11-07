@@ -313,16 +313,7 @@ if ($is_admin or ($perm >= $PUN_PERM_PROXY and $is_teacher)) {
 
         include "footer.php";
     } elseif ($_POST["action"] == "Cancel") {
-        $extraMeta = "      <meta http-equiv='REFRESH' content='0;url=$nextLink'>\n";
-        $noJS = true;
-        $noHeaderLinks = true;
-        $title = "LESSON - Redirecting...";
-
-        include "header.php";
-
-        echo "      <p align='center'>Redirecting you to <a href='$nextLink'>$nextLink</a></p>\n";
-
-        include "footer.php";
+        redirect($nextLink);
     } else {
         include "admin/punishment/proxy.php";
     }

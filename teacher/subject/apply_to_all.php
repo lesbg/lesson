@@ -159,17 +159,7 @@ if ($is_teacher or $is_admin) {
 
         include "footer.php";
     } else {
-        $extraMeta = "      <meta http-equiv='REFRESH' content='0;url=$nextLink'>\n";
-        $noJS = true;
-        $noHeaderLinks = true;
-        $title = "LESSON - Cancelling...";
-
-        include "header.php";
-
-        echo "      <p align='center'>Cancelling and redirecting you to <a href='$nextLink'>$nextLink</a>." .
-             "</p>\n";
-
-        include "footer.php";
+        redirect($nextLink);
     }
 } else { // User isn't authorized to view or change scores.
     /* Log unauthorized access attempt */

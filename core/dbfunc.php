@@ -17,6 +17,13 @@ function safe($instring) {
     return $db->escapeSimple(stripslashes($instring));
 }
 
+/* 302 redirect */
+function redirect($url, $code=302) {
+    $url = htmlspecialchars_decode($url);
+    header('Location: ' . $url, true, $code);
+    exit();
+}
+
 /* Connect to database specified by global variable $dsn */
 function &dbfuncConnect() {
     /* Set global parameters */

@@ -114,15 +114,5 @@ if ($_POST["action"] == "Save" || $_POST["action"] == "Update") { // If update o
 } elseif ($_POST["action"] == 'Delete') { // If delete was pressed, confirm deletion
     include "admin/family/delete_confirm.php";
 } else {
-    $extraMeta = "      <meta http-equiv=\"REFRESH\" content=\"0;url=$nextLink\">\n";
-    $noJS = true;
-    $noHeaderLinks = true;
-    $title = "LESSON - Cancelling...";
-
-    include "header.php";
-
-    echo "      <p align=\"center\">Cancelling and redirecting you to <a href=\"$nextLink\">$nextLink</a>." .
-         "</p>\n";
-
-    include "footer.php";
+    redirect($nextLink);
 }

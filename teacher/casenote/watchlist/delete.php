@@ -44,16 +44,7 @@ if ($_POST['action'] == "Yes, remove from my watchlist") {
              "<a href=\"$nextLink\">Click here to continue</a>.</p>\n";
     }
 } else {
-    $title = "LESSON - Cancelling";
-    $noJS = true;
-    $noHeaderLinks = true;
-    $extraMeta = "      <meta http-equiv=\"REFRESH\" content=\"0;url=$nextLink\">\n";
-
-    include "header.php";
-
-    echo "      <p align=\"center\">Cancelling and redirecting you to <a href=\"$nextLink\">$nextLink</a>." .
-         "</p>\n";
+    redirect($nextLink);
 }
 
 include "footer.php";
-?>

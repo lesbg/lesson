@@ -174,16 +174,6 @@ if (isset($_POST['action']) and
     }
     include "admin/book/modify_title.php";
 } else { // if($_POST['action'] == "Cancel")
-    $extraMeta = "      <meta http-equiv=\"REFRESH\" content=\"0;url=$nextLink\">\n";
-    $noJS = true;
-    $noHeaderLinks = true;
-    $book = "LESSON - Cancelling...";
-
-    include "header.php";
-
-    echo "      <p align=\"center\">Cancelling and redirecting you to <a href=\"$nextLink\">$nextLink</a>." .
-         "</p>\n";
-
-    include "footer.php";
+    redirect($nextLink);
 }
 ?>

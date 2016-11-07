@@ -123,17 +123,7 @@ if ($is_teacher or $is_admin) {
             include "footer.php";
         }
     } elseif ($_POST["action"] == "Cancel" or $_POST["action"] == "Close") {
-        $extraMeta = "      <meta http-equiv='REFRESH' content='0;url=$nextLink'>\n";
-        $noJS = true;
-        $noHeaderLinks = true;
-        $title = "LESSON - Cancelling...";
-
-        include "header.php";
-
-        echo "      <p align='center'>Cancelling and redirecting you to <a href='$nextLink'>$nextLink</a>." .
-             "</p>\n";
-
-        include "footer.php";
+        redirect($nextLink);
     } else {
         if (($teacher_can_modify == "1" and $can_modify) or $is_admin) {
             if ($_POST["action"] == "Add") { // Check for added categories

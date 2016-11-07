@@ -30,8 +30,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             log_event($LOG_LEVEL_ERROR, safe(strip_tags(dbfuncInt2String($_GET['location']))),
                       $LOG_DENIED_ACCESS,
                       "ORIGIN header {$SERVER['HTTP_ORIGIN']} doesn't match our site $URL, CSRF attack?");
-            header('Location: ' . $URL, true, 302);
-            exit();
+            redirect($URL);
         }
     }
 }
@@ -45,20 +44,18 @@ if (isset($_SERVER["HTTP_REFERER"])) {
                 $username = $_SESSION['username'];
         log_event($LOG_LEVEL_ERROR, safe(strip_tags(dbfuncInt2String($_GET['location']))),
                   $LOG_DENIED_ACCESS, "REFERER header $check_url doesn't match our site $URL, CSRF attack?");
-        header('Location: ' . $URL, true, 302);
-        exit();
+        redirect($URL);
     }
 } else {
-    /* If there's no referer, then make sure there's no location.  If there is a
-     * location, redirect back to root url */
-    if(isset($_GET['location'])) {
+    /* If it's any request other than GET and there's no referer, then make sure
+     * there's no location.  If there is a location, redirect back to root url */
+    if($_SERVER["REQUEST_METHOD"] != "GET" and isset($_GET['location'])) {
         if(isset($_SESSION['username']))
                 $username = $_SESSION['username'];
         log_event($LOG_LEVEL_ERROR, safe(strip_tags(dbfuncInt2String($_GET['location']))),
                   $LOG_DENIED_ACCESS, "Missing REFERER header, CSRF attack?");
 
-        header('Location: ' . $URL, true, 302);
-        exit();
+        redirect($URL);
     }
 }
 

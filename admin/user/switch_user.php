@@ -24,15 +24,7 @@ if ($is_admin) {
         session_unset();
         $_SESSION['username'] = $uname;
     }
-    $extraMeta = "      <meta http-equiv='REFRESH' content='0;url=index.php'>\n";
-    $noJS = true;
-    $noHeaderLinks = true;
-    $title = "LESSON - Cancelling...";
-
-    include "header.php";
-
-    echo "      <p align='center'>Switching user and and redirecting you to <a href='index.php'>LESSON</a>." .
-         "</p>\n";
+    redirect('index.php');
 } else { // User isn't authorized
     log_event($LOG_LEVEL_ERROR, "admin/user/switch_user.php", $LOG_DENIED_ACCESS,
             "Tried to switch to $uname.");
