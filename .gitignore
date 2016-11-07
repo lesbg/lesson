@@ -7,3 +7,4 @@
 *.pyc
 local-push.sh
 deploy-test.sh
+scraps
