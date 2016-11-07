@@ -21,6 +21,44 @@ $db = & dbfuncConnect(); // Connect to database and store in $db
 session_name("LESSONSESSION");
 session_start();
 
+/* CSRF protection for POST requests with ORIGIN header */
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (isset($_SERVER["HTTP_ORIGIN"])) {
+        if (strpos($URL, $_SERVER["HTTP_ORIGIN"]) !== 0) {
+            if(isset($_SESSION['username']))
+                $username = $_SESSION['username'];
+            log_event($LOG_LEVEL_ERROR, safe(strip_tags(dbfuncInt2String($_GET['location']))),
+                      $LOG_DENIED_ACCESS,
+                      "ORIGIN header {$SERVER['HTTP_ORIGIN']} doesn't match our site $URL, CSRF attack?");
+            redirect($URL);
+        }
+    }
+}
+
+/* CSRF protection for all other requests */
+if (isset($_SERVER["HTTP_REFERER"])) {
+    $check_url = parse_url($_SERVER["HTTP_REFERER"], PHP_URL_SCHEME) . '://' .
+                 parse_url($_SERVER["HTTP_REFERER"], PHP_URL_HOST);
+    if (strpos($URL, $check_url) !== 0) {
+        if(isset($_SESSION['username']))
+                $username = $_SESSION['username'];
+        log_event($LOG_LEVEL_ERROR, safe(strip_tags(dbfuncInt2String($_GET['location']))),
+                  $LOG_DENIED_ACCESS, "REFERER header $check_url doesn't match our site $URL, CSRF attack?");
+        redirect($URL);
+    }
+} else {
+    /* If it's any request other than GET and there's no referer, then make sure
+     * there's no location.  If there is a location, redirect back to root url */
+    if($_SERVER["REQUEST_METHOD"] != "GET" and isset($_GET['location'])) {
+        if(isset($_SESSION['username']))
+                $username = $_SESSION['username'];
+        log_event($LOG_LEVEL_ERROR, safe(strip_tags(dbfuncInt2String($_GET['location']))),
+                  $LOG_DENIED_ACCESS, "Missing REFERER header, CSRF attack?");
+
+        redirect($URL);
+    }
+}
+
 if (isset($_SERVER['REMOTE_HOST'])) {
     $remote_host = $_SERVER['REMOTE_HOST'];
 } else {
