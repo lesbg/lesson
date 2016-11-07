@@ -22,6 +22,8 @@ $LOGS_PER_PAGE = 100; // Number of logs to show per page
 $LOCAL_HOSTS = ".example.local"; // Domain of local hosts
 $UPLOAD_BASE_DIR = "/var/www/share/uploads"; // Base directory for uploads
 
+$URL = "https://lesson.example.com";
+
 $SMS_PASSWORD = "password";
 
 $REPLICA_COUNT = 1;
