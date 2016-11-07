@@ -123,4 +123,3 @@ if ($_POST["action"] == "Ok") { // If ok was pressed, try to change password
         include "footer.php";
     }
 }
-?>

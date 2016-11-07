@@ -15,7 +15,6 @@ $title = "LESSON - Cancelling...";
 include "header.php";
 
 echo "      <p align=\"center\">Cancelling and redirecting you to <a href=\"$nextLink\">$nextLink</a>." .
-	 "</p>\n";
+     "</p>\n";
 
 include "footer.php";
-?>
