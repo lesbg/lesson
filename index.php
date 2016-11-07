@@ -36,14 +36,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 }
 
 /* CSRF protection for all other requests */
-if (isset($_SERVER["HTTP_REFERER"])) {
+if (isset($_SERVER["HTTP_REFERER"]) and ($_SERVER["REQUEST_METHOD"] != "GET" or isset($_GET['location']))) {
     $check_url = parse_url($_SERVER["HTTP_REFERER"], PHP_URL_SCHEME) . '://' .
                  parse_url($_SERVER["HTTP_REFERER"], PHP_URL_HOST);
     if (strpos($URL, $check_url) !== 0) {
         if(isset($_SESSION['username']))
-                $username = $_SESSION['username'];
-        log_event($LOG_LEVEL_ERROR, safe(strip_tags(dbfuncInt2String($_GET['location']))),
-                  $LOG_DENIED_ACCESS, "REFERER header $check_url doesn't match our site $URL, CSRF attack?");
+            $username = $_SESSION['username'];
+        log_event($LOG_LEVEL_ERROR, strip_tags(dbfuncInt2String($_GET['location'])),
+                  $LOG_DENIED_ACCESS, "REFERER header $check_url doesn't match our site $URL, CSRF attack?<br>Full URL: {$SERVER['HTTP_REFERER']}");
         redirect($URL);
     }
 } else {
