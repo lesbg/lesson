@@ -88,7 +88,7 @@ $curLink = substr($_SERVER['REQUEST_URI'],
 $location = "user/start.php";
 
 if (isset($_GET['location'])) { // Check whether we've been passed a location
-    $location = dbfuncInt2String($_GET['location']); // If so, switch to it.
+    $location = strip_tags(dbfuncInt2String($_GET['location'])); // If so, switch to it.
 }
 
 if (isset($_SESSION['depindex'])) {
