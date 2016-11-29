@@ -6,6 +6,7 @@
  * List all students in a particular class
  * ***************************************************************
  */
+
 $classindex = dbfuncInt2String($_GET["key"]);
 $classname = dbfuncInt2String($_GET["keyname"]);
 $type = "html";
@@ -85,7 +86,8 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
 
     $query = "SELECT user.FirstName, user.Surname, user.Username, newmem.Username AS NewUser, specialmem.Username AS SpecialUser, " .
              "       user.OriginalPassword, classlist.Conduct, classlist.Average, classlist.Rank, " .
-             "       COUNT(subjectstudent.SubjectIndex) AS SubjectCount " .
+             "       COUNT(subjectstudent.SubjectIndex) AS SubjectCount, photo.YearIndex AS PhotoYearIndex, " .
+             "       largeimage.FileIndex AS LargeFileIndex, smallimage.FileIndex AS SmallFileIndex " .
              "       FROM classterm INNER JOIN classlist USING (ClassTermIndex) " .
              "            INNER JOIN user USING (Username) " .
              "            LEFT OUTER JOIN (subjectstudent " .
@@ -93,14 +95,22 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
              "               (subjectstudent.Username = user.Username " .
              "                AND subject.YearIndex = $yearindex " .
              "                AND subject.TermIndex = $termindex) " .
-             "            LEFT OUTER JOIN (groupgenmem AS newmem INNER JOIN " .
-             "                             groups AS newgroups ON (newgroups.GroupID=newmem.GroupID " .
-             "                                                     AND newgroups.GroupTypeID='new' " .
-             "                                                     AND newgroups.YearIndex=$yearindex)) ON (user.Username=newmem.Username) " .
-             "            LEFT OUTER JOIN (groupgenmem AS specialmem INNER JOIN " .
-             "                             groups AS specgroups ON (specgroups.GroupID=specialmem.GroupID " .
-             "                                                     AND specgroups.GroupTypeID='special' " .
-             "                                                     AND specgroups.YearIndex=$yearindex)) ON (user.Username=specialmem.Username) " .
+             "            LEFT OUTER JOIN " .
+             "              (groupgenmem AS newmem INNER JOIN groups AS newgroups ON " .
+             "                (newgroups.GroupID=newmem.GroupID " .
+             "                 AND newgroups.GroupTypeID='new' " .
+             "                 AND newgroups.YearIndex=$yearindex)) " .
+             "              ON (user.Username=newmem.Username) " .
+             "            LEFT OUTER JOIN " .
+             "              (groupgenmem AS specialmem INNER JOIN groups AS specgroups ON " .
+             "                (specgroups.GroupID=specialmem.GroupID " .
+             "                 AND specgroups.GroupTypeID='special' " .
+             "                 AND specgroups.YearIndex=$yearindex)) " .
+             "              ON (user.Username=specialmem.Username) " .
+             "            LEFT OUTER JOIN (SELECT * FROM photo WHERE YearIndex<=$yearindex ORDER BY YearIndex DESC) AS photo ON " .
+             "              (user.Username=photo.Username) " .
+             "            LEFT OUTER JOIN image AS largeimage ON (photo.LargeImageIndex=largeimage.ImageIndex) " .
+             "            LEFT OUTER JOIN image AS smallimage ON (photo.SmallImageIndex=smallimage.ImageIndex) " .
              "WHERE classterm.ClassIndex = $classindex " .
              "AND   classterm.TermIndex = $termindex " .
              "GROUP BY user.Username " .
@@ -127,6 +137,7 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
             echo "            <th>&nbsp;</th>\n";
             echo "            <th>Order</th>\n";
             echo "            <th>Student</th>\n";
+            echo "            <th>Picture</th>\n";
             if ($is_admin or $is_principal) {
                 echo "            <th>Password</th>\n";
                 echo "            <th>New</th>\n";
@@ -323,6 +334,23 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
                 echo "            <td>$cnbutton$viewbutton$ttbutton$abutton$subbutton$mbutton$hbutton$repbutton$editbutton</td>\n";
                 echo "            <td>$orderNum</td>\n";
                 echo "            <td>{$row['FirstName']} {$row['Surname']} ({$row['Username']})</td>\n";
+
+                $piclink = "index.php?location=" .
+                    dbfuncString2Int("admin/user/photo.php") . "&amp;key=" .
+                    dbfuncString2Int($row['Username']) . "&amp;keyname=" . dbfuncString2Int(
+                                                                                        $row['FirstName'] .
+                                                                                         " " .
+                                                                                         $row['Surname']);
+                $photo = "<em>None</em>";
+                if(!is_null($row['LargeFileIndex'])) {
+                    if($row['PhotoYearIndex'] == $yearindex) {
+                        $photo = "Current";
+                    } else {
+                        $photo = "Out of date";
+                    }
+                }
+                $photo = "<a href='$piclink'>$photo</a>";
+                echo "            <td>$photo</td>\n";
                 if ($is_admin or $is_principal) {
                     if (is_null($row['OriginalPassword'])) {
                         echo "            <td>&nbsp;</td>\n";
