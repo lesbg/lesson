@@ -303,6 +303,36 @@ if(is_null($queryindex)) {
     exit(0);
 }
 
+$query = "SELECT Year FROM year WHERE YearIndex=$yearindex";
+$res = &  $db->query($query);
+if (DB::isError($res))
+    die($res->getDebugInfo()); // Check for errors in query
+if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+    $yearname = $row['Year'];
+} else {
+    $yearname = "Unknown year";
+}
+
+$query = "SELECT TermName FROM term WHERE TermIndex=$termindex";
+$res = &  $db->query($query);
+if (DB::isError($res))
+    die($res->getDebugInfo()); // Check for errors in query
+if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+    $termname = $row['TermName'];
+} else {
+    $termname = "Unknown term";
+}
+
+$query = "SELECT Department FROM department WHERE DepartmentIndex=$depindex";
+$res = &  $db->query($query);
+if (DB::isError($res))
+    die($res->getDebugInfo()); // Check for errors in query
+if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+    $depname = $row['Department'];
+} else {
+    $depname = "Unknown department";
+}
+
 $query = "SELECT Query, QueryName, QueryPrintTitle FROM custom_query WHERE CustomQueryIndex=$queryindex";
 $res = &  $db->query($query);
 if (DB::isError($res))
@@ -333,11 +363,11 @@ if(is_null($row['QueryPrintTitle'])) {
 }
 
 $query = str_replace("%year%", $yearindex, $query);
-$querytitle = str_replace("%year%", $yearindex, $querytitle);
+$querytitle = str_replace("%year%", $yearname, $querytitle);
 $query = str_replace("%department%", $depindex, $query);
-$querytitle = str_replace("%department%", $depindex, $querytitle);
+$querytitle = str_replace("%department%", $depname, $querytitle);
 $query = str_replace("%term%", $termindex, $query);
-$querytitle = str_replace("%term%", $termindex, $querytitle);
+$querytitle = str_replace("%term%", $termname, $querytitle);
 
 foreach($checkintarray AS $key => $value) {
     $fname = str_replace("%", "", $key);
