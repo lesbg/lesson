@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * teacher/assignment/new_or_modify_action.php (c) 2004-2010 Jonathan Dieter
+ * teacher/assignment/new_or_modify_action.php (c) 2004-2010, 2016 Jonathan Dieter
  *
  * Show common page information for changing or adding new grades
  * and call appropriate second page.
@@ -73,13 +73,12 @@ if ($_POST["action"] == "Save" or $_POST["action"] == "Update" or
             $descr = safe(htmlize_comment($_POST['descr']));
             $descr = "'$descr'";
         }
-        $descr_data = "NULL";
+        $descr_id = "NULL";
         $descr_file_type = "NULL";
     } else {
-        print_r($_FILES);
         if (! isset($_FILES['descr_upload']) or
              $_FILES['descr_upload']['error'] != UPLOAD_ERR_OK) {
-            $descr_data = "NULL";
+            $descr_id = "NULL";
             $descr_file_type = "NULL";
 
             if (! isset($_FILES['descr_upload'])) {
@@ -91,7 +90,7 @@ if ($_POST["action"] == "Save" or $_POST["action"] == "Update" or
                 $error = "Only part of the file was uploaded";
             } elseif ($_FILES['descr_upload']['error'] == UPLOAD_ERR_NO_FILE) {
                 // $error = "You must choose a file to be uploaded";
-                $descr_data = "DescriptionData";
+                $descr_id = "DescriptionFileIndex";
                 $descr_file_type = "DescriptionFileType";
                 $error = false;
             } else {
@@ -107,16 +106,11 @@ if ($_POST["action"] == "Save" or $_POST["action"] == "Update" or
                 print
                 "</p><p align='center' class='error'>Uploaded file is not a PDF document.  Description will be blank.</p><p align='center'>\n";
                 $descr_file_type = "NULL";
-                $descr_data = "NULL";
+                $descr_id = "NULL";
             } else {
                 $descr_file = $_FILES['descr_upload']['tmp_name'];
 
-                $descr_handle = fopen($descr_file, "r");
-                $descr_data = safe(
-                                addslashes(
-                                        fread($descr_handle,
-                                            filesize($descr_file))));
-                $descr_data = "'$descr_data'";
+                $descr_id = "'" . get_id_from_upload($_FILES['descr_upload']) . "'";
                 $descr_file_type = "'$descr_file_type'";
             }
         }

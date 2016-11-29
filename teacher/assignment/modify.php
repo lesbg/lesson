@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * teacher/assignment/modify.php (c) 2004-2007 Jonathan Dieter
+ * teacher/assignment/modify.php (c) 2004-2007, 2016 Jonathan Dieter
  *
  * Show marks for already created assignment and allow teacher to
  * change them.
@@ -54,7 +54,7 @@ if ($res->numRows() > 0 or $is_admin) {
 
     /* Get assignment info */
     $query = "SELECT assignment.Title, assignment.Description, assignment.Max, " .
-             "       assignment.DescriptionFileType, assignment.DescriptionData, " .
+             "       assignment.DescriptionFileType, assignment.DescriptionFileIndex, " .
              "       assignment.TopMark, assignment.BottomMark, assignment.CurveType, " .
              "       assignment.Weight, assignment.Date, assignment.CategoryListIndex, " .
              "       assignment.DueDate, assignment.Hidden, assignment.IgnoreZero, " .
@@ -315,7 +315,8 @@ $aRow['Description'] = htmlspecialchars(
 $currentdata = "None";
 if (isset($aRow['DescriptionFileType'])) {
     if ($aRow['DescriptionFileType'] == "application/pdf") {
-        $currentdata = "PDF Document";
+        $fileloc = get_path_from_id($aRow['DescriptionFileIndex']);
+        $currentdata = "<a href='$fileloc'>PDF Document</a>";
     } elseif ($aRow['DescriptionFileType'] != "") {
         $currentdata = "Unknown format";
     }
