@@ -27,6 +27,11 @@ $URL = "https://lesson.example.com";
 $SMS_PASSWORD = "password";
 
 $REPLICA_COUNT = 1;
+$REPLICA_ID = 1;
+
+$DYNAMIC_FILES_LOCATION = "/var/www/lesson-dynamic";
+$STATIC_FILES_LOCATION = "/var/www/html/lesson-static";
+$STATIC_FILES_WEBPATH = "/lesson-static";
 
 $SHOW_COMMENT_LENGTH = 30;
 
