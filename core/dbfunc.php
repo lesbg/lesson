@@ -46,8 +46,9 @@ function &dbfuncConnect() {
 function &dbfuncConnectMaster() {
     /* Set global parameters */
     global $MASTER_DSN; // DSN to connect to database, stored in globals.php
+    global $DSN;
 
-    if(!isset($MASTER_DSN))
+    if(!isset($MASTER_DSN) or is_null($MASTER_DSN))
         $MASTER_DSN = $DSN;
 
     /* Connection to database */
