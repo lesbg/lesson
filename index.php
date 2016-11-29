@@ -15,6 +15,7 @@ include "globals.php"; // Include global variables
 /* Create connection to database */
 require_once "DB.php"; // Get DB class
 include "core/dbfunc.php"; // Get database connection functions
+include "core/filefunc.php"; // Include file functions
 
 $db = & dbfuncConnect(); // Connect to database and store in $db
 
@@ -27,33 +28,62 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (strpos($URL, $_SERVER["HTTP_ORIGIN"]) !== 0) {
             if(isset($_SESSION['username']))
                 $username = $_SESSION['username'];
-            log_event($LOG_LEVEL_ERROR, safe(strip_tags(dbfuncInt2String($_GET['location']))),
+            $page = strip_tags(dbfuncInt2String($_GET['location']));
+            log_event($LOG_LEVEL_ERROR, $page,
                       $LOG_DENIED_ACCESS,
-                      "ORIGIN header {$SERVER['HTTP_ORIGIN']} doesn't match our site $URL, CSRF attack?");
+                      "ORIGIN header {$_SERVER['HTTP_ORIGIN']} doesn't match our site $URL, CSRF attack?<br>Method: {$_SERVER['REQUEST_METHOD']}<br>Page: $page");
             redirect($URL);
         }
     }
 }
 
 /* CSRF protection for all other requests */
-if (isset($_SERVER["HTTP_REFERER"]) and ($_SERVER["REQUEST_METHOD"] != "GET" or isset($_GET['location']))) {
+if (isset($_SERVER["HTTP_REFERER"]) and
+    (($_SERVER["REQUEST_METHOD"] != "GET" and
+      $_SERVER["REQUEST_METHOD"] != "HEAD") or
+     (isset($_GET['location']) and
+      !is_null($_GET['location']) and
+      $_GET['location'] != "" and
+      dbfuncInt2String($_GET['location']) != "user/main.php" and
+      dbfuncInt2String($_GET['location']) != "user/logout.php" and
+      dbfuncInt2String($_GET['location']) != ""))) {
     $check_url = parse_url($_SERVER["HTTP_REFERER"], PHP_URL_SCHEME) . '://' .
                  parse_url($_SERVER["HTTP_REFERER"], PHP_URL_HOST);
     if (strpos($URL, $check_url) !== 0) {
         if(isset($_SESSION['username']))
             $username = $_SESSION['username'];
+        $page = strip_tags(dbfuncInt2String($_GET['location']));
+
+        if(is_null($_GET['location']))
+            $is_null="yes";
+        else
+            $is_null="no";
+
+        if(isset($_GET['location']))
+            $is_set="yes";
+        else
+            $is_set="no";
+
         log_event($LOG_LEVEL_ERROR, strip_tags(dbfuncInt2String($_GET['location'])),
-                  $LOG_DENIED_ACCESS, "REFERER header $check_url doesn't match our site $URL, CSRF attack?<br>Full URL: {$SERVER['HTTP_REFERER']}");
+                  $LOG_DENIED_ACCESS, "REFERER header $check_url doesn't match our site $URL, CSRF attack?<br>Referer: {$_SERVER['HTTP_REFERER']}<br>Method: {$_SERVER['REQUEST_METHOD']}<br>Page: $page<br>{$_GET['location']}, $is_set, $is_null");
         redirect($URL);
     }
 } else {
-    /* If it's any request other than GET and there's no referer, then make sure
+    /* If it's any request other than GET or HEAD and there's no referer, then make sure
      * there's no location.  If there is a location, redirect back to root url */
-    if($_SERVER["REQUEST_METHOD"] != "GET" and isset($_GET['location'])) {
+    if(($_SERVER["REQUEST_METHOD"] != "GET" and
+        $_SERVER["REQUEST_METHOD"] != "HEAD") and
+       (isset($_GET['location']) and
+        !is_null($_GET['location']) and
+        dbfuncInt2String($_GET['location']) != "user/main.php" and
+        dbfuncInt2String($_GET['location']) != "user/logout.php" and
+        dbfuncInt2String($_GET['location']) != "")) {
+
         if(isset($_SESSION['username']))
                 $username = $_SESSION['username'];
+        $page = strip_tags(dbfuncInt2String($_GET['location']));
         log_event($LOG_LEVEL_ERROR, safe(strip_tags(dbfuncInt2String($_GET['location']))),
-                  $LOG_DENIED_ACCESS, "Missing REFERER header, CSRF attack?");
+                  $LOG_DENIED_ACCESS, "Missing REFERER header, CSRF attack?<br>Method: {$_SERVER['REQUEST_METHOD']}<br>Page: $page");
 
         redirect($URL);
     }
@@ -167,5 +197,42 @@ include "$location"; // Switch to current page
                      // update_subject($row["SubjectIndex"]);
                      // }
 
-// update_conduct_year_term(5, 7);
+/*
+$query = "SELECT FileIndex FROM filebuffer ORDER BY FileIndex";
+$res =& $db->query($query);
+if(DB::isError($res)) die($res->getDebugInfo()); // Check for errors in query
+while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+    get_path_from_id($row['FileIndex']);
+}*/
+
+
+/*
+$filelist = array();
+$dir = new DirectoryIterator("/networld/temp/mugshots2012/");
+foreach ($dir as $fileinfo) {
+    if (!$fileinfo->isDot()) {
+        $filelist[] = $fileinfo->getFilename();
+    }
+}
+
+$query = "SELECT Username FROM classlist INNER JOIN classterm USING (ClassTermIndex) INNER JOIN class USING (ClassIndex) WHERE class.YearIndex=9 AND Grade>5 GROUP BY classlist.Username ORDER BY class.Grade, class.ClassName, classlist.Username";
+$res =& $db->query($query);
+if(DB::isError($res)) die($res->getDebugInfo()); // Check for errors in query
+while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+    $uname = $row['Username'];
+    if(in_array("$uname.jpg", $filelist)) {
+        echo $uname;
+        upload_photo("/networld/temp/mugshots2012/$uname.jpg", $uname, 9);
+    }
+}*/
+
+
+/*
+$query = "SELECT FileIndex FROM filebuffer";
+$res =& $db->query($query);
+if(DB::isError($res)) die($res->getDebugInfo()); // Check for errors in query
+while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+    get_path_from_id($row['FileIndex']);
+}*/
+
 $db->disconnect(); // Close connection to database
