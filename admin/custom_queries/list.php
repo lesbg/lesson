@@ -395,24 +395,27 @@ if($type == "pdf") {
     $html .= "      <p>&nbsp;</p>\n";
 }
 
-$res = & $db->query($query);
-if (DB::isError($res)) {
-    $error = htmlspecialchars($res->getDebugInfo(), ENT_QUOTES);
-    if($type == "html" or $type == "pdf") {
-        $html .= "      <p><strong>Error running query</strong>:<br>$error</p>\n";
-        if($type == "html") {
-            echo $html;
-            include "footer.php";
+preg_match_all("/'(?:\\\\.|[^\\\\'])*'|[^;]+/", $query, $queries);
+foreach($queries[0] as $query) {
+    $res = & $db->query($query);
+    if (DB::isError($res)) {
+        $error = htmlspecialchars($res->getDebugInfo(), ENT_QUOTES);
+        if($type == "html" or $type == "pdf") {
+            $html .= "      <p><strong>Error running query</strong>:<br>$error</p>\n";
+            if($type == "html") {
+                echo $html;
+                include "footer.php";
+            } else {
+                $mpdf=new mPDF('s');
+                $mpdf->SetFooter("{DATE d M Y  h:iA}");
+                $mpdf->WriteHTML($html);
+                $mpdf->Output();
+            }
         } else {
-            $mpdf=new mPDF('s');
-            $mpdf->SetFooter("{DATE d M Y  h:iA}");
-            $mpdf->WriteHTML($html);
-            $mpdf->Output();
+            echo "Error running query:\n$error";
         }
-    } else {
-        echo "Error running query:\n$error";
+        exit(0);
     }
-    exit(0);
 }
 
 if ($res->numRows() == 0) {
