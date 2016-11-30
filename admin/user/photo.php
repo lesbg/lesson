@@ -46,7 +46,7 @@ if ($is_admin) {
                 if ($photo_file_type != "image/png" and $photo_file_type != "image/jpeg") {
                     $error = "Uploaded file is not a JPEG or PNG image.";
                 } else {
-                    $path = $uploadfile['name'];
+                    $path = $_FILES['photo']['name'];
                     $ext = NULL;
                     if(strrpos($path, '/') === FALSE) {
                         $fname = $path;
@@ -56,9 +56,9 @@ if ($is_admin) {
                     if(strrpos($fname, '.') !== FALSE) {
                         $ext = substr($path, strrpos($path, '.')+1);
                     }
-                    rename($_FILES['photo']['tmp_name'], $_FILES['photo']['tmp_name'] . $ext);
+                    rename($_FILES['photo']['tmp_name'], $_FILES['photo']['tmp_name'] . ".$ext");
                     delete_photo($uname, $yearindex);
-                    upload_photo($_FILES['photo']['tmp_name'] . $ext, $uname, $yearindex);
+                    upload_photo($_FILES['photo']['tmp_name'] . ".$ext", $uname, $yearindex);
                 }
             }
         }
