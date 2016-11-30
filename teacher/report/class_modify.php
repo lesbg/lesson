@@ -1339,23 +1339,35 @@ if ($is_admin or $is_ct or $is_hod or $is_principal) {
         echo "               <td>$score</td>\n";
     }
 
-    $query = "SELECT classlist.Username, term.TermNumber, term.TermIndex, " .
-             "       ROUND(SUM(CONVERT(ROUND(classlist.Average * get_term_weight(term.TermIndex, class.ClassIndex, '$student_username')), DECIMAL)) / " .
-             "                           SUM(get_term_weight(term.TermIndex, class.ClassIndex, '$student_username'))) AS Average FROM " .
-             " (term INNER JOIN term AS depterm " .
-             "       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
-             "       AND depterm.TermIndex = $termindex" .
-             "       AND term.TermNumber <= depterm.TermNumber) " .
-             " INNER JOIN " .
-             " (classlist AS tclasslist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
-             "  ON  tclasslist.Username = '$student_username' " .
-             "  AND tclasslist.ClassTermIndex = classterm.ClassTermIndex " .
-             "  AND class.YearIndex = $yearindex) " .
-             " ON term.TermIndex = classterm.TermIndex " .
-             " INNER JOIN classlist " .
-             "  ON classterm.ClassTermIndex = classlist.ClassTermIndex " .
-             "  AND classlist.Average > -1 " . " GROUP BY classlist.Username " .
-             " ORDER BY Average DESC";
+    $query =    "SELECT classlist.Username, " .
+                "       ROUND(SUM(CONVERT(ROUND(studentcl.Average * " .
+                "                               get_term_weight(term.TermIndex, " .
+                "                                               studentclass.ClassIndex, " .
+                "                                               classlist.Username)), DECIMAL)) / " .
+                "             SUM(get_term_weight(term.TermIndex, studentclass.ClassIndex, classlist.Username))) " .
+                "         AS Average " .
+                "FROM classlist AS studentcl, " .
+                "     classterm AS studentct, " .
+                "     class AS studentclass, " .
+                "     term, " .
+                "     term AS selected_term, " .
+                "     class, " .
+                "     classterm, " .
+                "     classlist " .
+                "WHERE classterm.ClassTermIndex=$classtermindex " .
+                "AND   class.ClassIndex=classterm.ClassIndex " .
+                "AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+                "AND   selected_term.TermIndex = classterm.TermIndex " .
+                "AND   term.TermNumber <= selected_term.TermNumber " .
+                "AND   term.DepartmentIndex = selected_term.DepartmentIndex " .
+                "AND   studentclass.YearIndex = class.YearIndex " .
+                "AND   studentct.ClassIndex = studentclass.ClassIndex " .
+                "AND   studentct.TermIndex = term.TermIndex " .
+                "AND   studentcl.ClassTermIndex = studentct.ClassTermIndex " .
+                "AND   studentcl.Username = classlist.Username " .
+                "AND   studentcl.Average != -1 " .
+                "GROUP BY classlist.Username " .
+                "ORDER BY Average DESC";
     $cRes = &   $db->query($query);
     if (DB::isError($cRes))
         die($cRes->getDebugInfo()); // Check for errors in query
