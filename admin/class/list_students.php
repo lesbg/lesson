@@ -84,11 +84,12 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
         echo "      <p align='center'>$csvbutton</p>\n";
     }
 
-    $query = "SELECT user.FirstName, user.Surname, user.Username, newmem.Username AS NewUser, specialmem.Username AS SpecialUser, " .
-             "       user.OriginalPassword, classlist.Conduct, classlist.Average, classlist.Rank, " .
+    $query = "SELECT user.FirstName, user.Surname, user.Username, newmem.Username AS NewUser, " .
+             "       specialmem.Username AS SpecialUser, user.OriginalPassword, classterm.ClassTermIndex, " .
+             "       classlist.Conduct, classlist.Average, classlist.Rank, class.ClassName, " .
              "       COUNT(subjectstudent.SubjectIndex) AS SubjectCount, photo.YearIndex AS PhotoYearIndex, " .
              "       largeimage.FileIndex AS LargeFileIndex, smallimage.FileIndex AS SmallFileIndex " .
-             "       FROM classterm INNER JOIN classlist USING (ClassTermIndex) " .
+             "       FROM class INNER JOIN classterm USING (ClassIndex) INNER JOIN classlist USING (ClassTermIndex) " .
              "            INNER JOIN user USING (Username) " .
              "            LEFT OUTER JOIN (subjectstudent " .
              "               INNER JOIN subject USING (SubjectIndex)) ON " .
@@ -264,9 +265,11 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
                                                                                             $row['FirstName'] .
                                                                                              " " .
                                                                                              $row['Surname']);
-            $replink = "index.php?location=" .
-                     dbfuncString2Int("report/show.php") . "&amp;key=" .
-                     dbfuncString2Int($row['Username']);
+            $replink = "index.php?location=" . dbfuncString2Int("teacher/report/class_modify.php") .
+                     "&amp;key=" . dbfuncString2Int($row['ClassTermIndex']) .
+                     "&amp;keyname=" . dbfuncString2Int($row['ClassName']) .
+                     "&amp;key2=" . dbfuncString2Int($row['Username']) .
+                     "&amp;keyname2=" . dbfuncString2Int("{$row['FirstName']} {$row['Surname']} ({$row['Username']})");
 
             /* Generate view and edit buttons */
             if ($is_admin) {
