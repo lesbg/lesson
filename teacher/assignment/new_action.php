@@ -105,6 +105,11 @@ if ($res->numRows() > 0 or $is_admin) {
     $query = "INSERT INTO mark (MarkIndex, Username, AssignmentIndex, Score, " .
              "                  Comment) VALUES ";
     while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+        // If comment isn't set, we may be accidentally overwriting marks
+        if(!array_key_exists("comment_{$row['Username']}", $_POST)) {
+            continue;
+        }
+
         if ($average_type != $AVG_TYPE_NONE) {
             $score = $_POST["score_{$row['Username']}"]; // Get score for username from POST data
         } else {
@@ -161,9 +166,11 @@ if ($res->numRows() > 0 or $is_admin) {
             $comment = "'$comment'"; // If comment is not blank, put quotes around it
         }
 
-        /* Insert scores into database */
-        $query .= "('', '{$row['Username']}', $assignmentindex, $score, " .
-                 " $comment), ";
+        if($score != "NULL" or $comment != "NULL") {
+            /* Insert scores into database */
+            $query .= "('', '{$row['Username']}', $assignmentindex, $score, " .
+                     " $comment), ";
+        }
     }
     $query = rtrim($query, " ,") . ";";
     $update = & $db->query($query);

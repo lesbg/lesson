@@ -131,6 +131,11 @@ if (DB::isError($res))
 
 /* For each student, check whether there's already a mark, then either insert or update mark as needed */
 while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+    // If comment isn't set, we may be accidentally overwriting marks
+    if(!array_key_exists("comment_{$row['Username']}", $_POST)) {
+        continue;
+    }
+
     if ($average_type != $AVG_TYPE_NONE) {
         $score = $_POST["score_{$row['Username']}"]; // Get score for username from POST data
     } else {
@@ -204,23 +209,35 @@ while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
         die($sRes->getDebugInfo()); // Check for errors in query
 
     if ($sRow = & $sRes->fetchRow(DB_FETCHMODE_ASSOC)) {
-        $update = & $db->query(
-                            "UPDATE mark SET Score = $score, Comment = $comment " .
-                             "WHERE mark.MarkIndex  = {$sRow['MarkIndex']} ");
-        if (DB::isError($update)) {
-            echo "</p>\n      <p>Update: " . $update->getMessage() .
-                 "</p>\n      <p>";
-            $error = true;
+        if($score == "NULL" and $comment == "NULL") {
+            $update = & $db->query(
+                                "DELETE FROM mark WHERE mark.MarkIndex  = {$sRow['MarkIndex']} ");
+            if (DB::isError($update)) {
+                echo "</p>\n      <p>Update: " . $update->getMessage() .
+                     "</p>\n      <p>";
+                $error = true;
+            }
+        } else {
+            $update = & $db->query(
+                                "UPDATE mark SET Score = $score, Comment = $comment " .
+                                 "WHERE mark.MarkIndex  = {$sRow['MarkIndex']} ");
+            if (DB::isError($update)) {
+                echo "</p>\n      <p>Update: " . $update->getMessage() .
+                     "</p>\n      <p>";
+                $error = true;
+            }
         }
     } else {
-        $update = & $db->query(
-                            "INSERT INTO mark (MarkIndex, Username, AssignmentIndex, " .
-                             "Score, Comment) VALUES ('', '{$row['Username']}', " .
-                             "$assignmentindex, $score, $comment);");
-        if (DB::isError($update)) {
-            echo "</p>\n      <p>Insert: " . $update->getDebugInfo() .
-                 "</p>\n      <p>"; // Print any errors
-            $error = true;
+        if($score != "NULL" or $comment != "NULL") {
+            $update = & $db->query(
+                                "INSERT INTO mark (MarkIndex, Username, AssignmentIndex, " .
+                                 "Score, Comment) VALUES ('', '{$row['Username']}', " .
+                                 "$assignmentindex, $score, $comment);");
+            if (DB::isError($update)) {
+                echo "</p>\n      <p>Insert: " . $update->getDebugInfo() .
+                     "</p>\n      <p>"; // Print any errors
+                $error = true;
+            }
         }
     }
 }
