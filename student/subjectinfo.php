@@ -129,7 +129,7 @@ if ($is_admin or $is_hod or $is_principal or $is_counselor or $is_guardian or
              "       ON (subjectstudent.SubjectIndex = subject.SubjectIndex) LEFT OUTER JOIN mark ON " .
              "      (mark.Username = subjectstudent.Username AND mark.AssignmentIndex = assignment.AssignmentIndex) " .
              "       LEFT OUTER JOIN categorylist USING (CategoryListIndex) LEFT OUTER JOIN category USING (CategoryIndex) " .
-             "WHERE mark.Username     = '$studentusername' " .
+             "WHERE subjectstudent.Username = '$studentusername' " .
              "AND   subject.SubjectIndex = $subjectindex " .
              "AND   Hidden       = 0 " . "AND   YearIndex    = $yearindex " .
              "AND   TermIndex    = $termindex " .
