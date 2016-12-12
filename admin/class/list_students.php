@@ -108,7 +108,12 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
              "                 AND specgroups.GroupTypeID='special' " .
              "                 AND specgroups.YearIndex=$yearindex)) " .
              "              ON (user.Username=specialmem.Username) " .
-             "            LEFT OUTER JOIN (SELECT * FROM photo WHERE YearIndex<=$yearindex ORDER BY YearIndex DESC) AS photo ON " .
+             "            LEFT OUTER JOIN (SELECT photo.* FROM photo LEFT OUTER JOIN photo AS newphoto " .
+             "                             ON (photo.Username=newphoto.Username " .
+             "                                 AND photo.YearIndex<newphoto.YearIndex " .
+             "                                 AND newphoto.YearIndex<=$yearindex) " .
+             "                             WHERE photo.YearIndex<=$yearindex " .
+             "                             AND newphoto.YearIndex IS NULL) AS photo ON " .
              "              (user.Username=photo.Username) " .
              "            LEFT OUTER JOIN image AS largeimage ON (photo.LargeImageIndex=largeimage.ImageIndex) " .
              "            LEFT OUTER JOIN image AS smallimage ON (photo.SmallImageIndex=smallimage.ImageIndex) " .
