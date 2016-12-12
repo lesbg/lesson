@@ -104,6 +104,7 @@ if ($res->numRows() > 0 or $is_admin) {
     /* For each student, insert new mark */
     $query = "INSERT INTO mark (MarkIndex, Username, AssignmentIndex, Score, " .
              "                  Comment) VALUES ";
+    $mark_count = 0;
     while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
         // If comment isn't set, we may be accidentally overwriting marks
         if(!array_key_exists("comment_{$row['Username']}", $_POST)) {
@@ -170,19 +171,21 @@ if ($res->numRows() > 0 or $is_admin) {
             /* Insert scores into database */
             $query .= "('', '{$row['Username']}', $assignmentindex, $score, " .
                      " $comment), ";
+            $mark_count += 1;
         }
     }
-    $query = rtrim($query, " ,") . ";";
-    $update = & $db->query($query);
-    if (DB::isError($update)) {
-        echo "</p>\n      <p>Insert: " . $update->getDebugInfo() . "</p>\n      <p>"; // Print any errors
-        $error = true;
-    }
+    if($mark_count > 0) {
+        $query = rtrim($query, " ,") . ";";
+        $update = & $db->query($query);
+        if (DB::isError($update)) {
+            echo "</p>\n      <p>Insert: " . $update->getDebugInfo() . "</p>\n      <p>"; // Print any errors
+            $error = true;
+        }
 
-    if ($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
-        update_marks($assignmentindex);
+        if ($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
+            update_marks($assignmentindex);
+        }
     }
-
     $asr = &  $db->query(
                     "SELECT subject.Name FROM subject " .
                      "WHERE subject.SubjectIndex = $subjectindex");
