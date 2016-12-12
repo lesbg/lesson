@@ -111,7 +111,7 @@ if ($is_admin) {
             if(!isset($_SESSION['post']['fname'])) $_SESSION['post']['fname'] = $row['FirstName'];
             if(!isset($_SESSION['post']['sname'])) $_SESSION['post']['sname'] = $row['Surname'];
             if(!isset($_SESSION['post']['gender'])) $_SESSION['post']['gender'] = $row['Gender'];
-            if(!isset($_SESSION['post']['dob'])) $_SESSION['post']['dob'] = $row['DOB'];
+            if(!isset($_SESSION['post']['DOB'])) $_SESSION['post']['DOB'] = $row['DOB'];
             if(!isset($_SESSION['post']['perms'])) $_SESSION['post']['perms'] = $row['Permissions'];
             if(!isset($_SESSION['post']['department'])) $_SESSION['post']['department'] = $row['DepartmentIndex'];
             if(!isset($_SESSION['post']['title'])) $_SESSION['post']['title'] = $row['Title'];
@@ -311,14 +311,17 @@ if ($is_admin) {
     } else {
         $chcm = "checked";
     }
+    if(isset($_SESSION['post']['DOB']) and !is_null($_SESSION['post']['DOB'])) {
+        $dob = date($dateformat, strtotime($_SESSION['post']['DOB']));
+    } else {
+        $dob = "";
+    }
     echo "            <tr>\n";
     echo "               <td colspan='1'><b>Gender:</b><br>\n";
     echo "                   <input type='radio' name='gender' value='M' $chcm>Male<br>\n";
     echo "                   <input type='radio' name='gender' value='F' $chcf>Female</td>\n";
-    /*
-     * echo " <td colspan='2'><b>Date of Birth:</b><br>\n";
-     * echo " <input type='text' name='DOB' size=35><br>&nbsp;</td>\n";
-     */
+    echo "               <td colspan='2'><b>Date of Birth:</b><br>\n";
+    echo "                   <input type='text' name='DOB' size=35 value='$dob'><br>&nbsp;</td>\n";
     echo "            </tr>\n";
     echo "            <tr>\n";
     echo "               <td><b>Phone number</b></td>\n";
