@@ -276,22 +276,11 @@ function get_path_from_id($id) {
             $nres = & $db->query($query);
             if (DB::isError($nres))
                 die($nres->getDebugInfo());
-            $query =    "SELECT FileBufferCounterIndex FROM filebuffercounter WHERE FileIndex='$id'";
-            $nres = & $db->query($query);
-            if (DB::isError($nres))
-                die($nres->getDebugInfo());
-            if($nres->numRows() >= $REPLICA_COUNT) {
-                $query =    "DELETE FROM filebuffer WHERE FileIndex='$id'";
-                $nres = & $db->query($query);
-                if (DB::isError($nres))
-                    die($nres->getDebugInfo());
-                $query =    "DELETE FROM filebuffercounter WHERE FileIndex='$id'";
-                $nres = & $db->query($query);
-                if (DB::isError($nres))
-                    die($nres->getDebugInfo());
-            }
+
+            purge_downloaded($id);
         }
     } else {
+        purge_downloaded($id);
         $path = $row['Path'];
         $static = $row['Static'];
     }
@@ -301,5 +290,25 @@ function get_path_from_id($id) {
     } else {
         return "index.php?location=" . dbfuncString2Int("core/get_file.php") .
                          "&amp;key=" . dbfuncString2Int($id);
+    }
+}
+
+function purge_downloaded($id) {
+    global $REPLICA_COUNT;
+    global $db;
+
+    $query =    "SELECT FileBufferCounterIndex FROM filebuffercounter WHERE FileIndex='$id'";
+    $nres = & $db->query($query);
+    if (DB::isError($nres))
+        die($nres->getDebugInfo());
+    if($nres->numRows() >= $REPLICA_COUNT) {
+        $query =    "DELETE FROM filebuffer WHERE FileIndex='$id'";
+        $nres = & $db->query($query);
+        if (DB::isError($nres))
+            die($nres->getDebugInfo());
+        $query =    "DELETE FROM filebuffercounter WHERE FileIndex='$id'";
+        $nres = & $db->query($query);
+        if (DB::isError($nres))
+            die($nres->getDebugInfo());
     }
 }
