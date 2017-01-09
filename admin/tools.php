@@ -65,8 +65,6 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) { // Make sure user has perm
                        dbfuncString2Int("admin/principal/modify.php");
     $bookLink =        "index.php?location=" .
                        dbfuncString2Int("admin/book/title_list.php");
-    $messageLink =     "index.php?location=" .
-                       dbfuncString2Int("user/messages.php");
     $lowmarksLink =    "index.php?location=" .
                        dbfuncString2Int("admin/marks/low.php");
     $proofLink =       "index.php?location=" .
@@ -100,7 +98,6 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) { // Make sure user has perm
     echo "      <p><a href='$newUserLink'>New user</a></p>\n";
     echo "      <p><a href='$newQuarterLink'>Generate new quarter</a></p>\n";
     echo "      <p><a href='$openreportLink'>Open reports</a></p>\n";
-    echo "      <p><a href='$messageLink'>Messages</a></p>\n";
     echo "      <p><a href='$supportLink'>Support teachers\n";
     echo "      <p><a href='$viewLogLink'>View log</a></p>\n";
     echo "      </div>\n";
