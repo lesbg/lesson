@@ -39,7 +39,6 @@ $query =    "SELECT CONCAT(user.FirstName, ' ', user.Surname, ' (', user.Usernam
             "                   AND mark.Username = makeup_user.Username) " .
             "WHERE makeup_user.MakeupAssignmentIndex=$makeup_assignment_index " .
             "ORDER BY user.FirstName, user.Surname, user.Username";
-echo $query;
 $res = &  $db->query($query);
 if (DB::isError($res))
     die($res->getDebugInfo()); // Check for errors in query
