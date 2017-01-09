@@ -24,8 +24,13 @@ $checkintarray = array(
 $checkstrarray = array(
   "%username%" =>
     array(
-      "SELECT Username AS `Index`, CONCATENATE(Username, ' - ', FirstName, ' ', Surname) AS `Name` FROM user ORDER BY Username",
-      "SELECT CONCATENATE(Username, ' - ', FirstName, ' ', Surname) AS `Name` FROM user WHERE Username='%index%'"
+      "SELECT Username AS `Index`, CONCAT(Username, ' - ', FirstName, ' ', Surname) AS `Name` FROM user ORDER BY Username",
+      "SELECT CONCAT(Username, ' - ', FirstName, ' ', Surname) AS `Name` FROM user WHERE Username='%index%'"
+    ),
+  "%makeup%" =>
+    array(
+      "SELECT MakeupIndex AS `Index`, CONCAT(MakeupDate, ' by ', Title, ' ', FirstName, ' ', Surname) AS `Name` FROM makeup INNER JOIN user USING (Username) WHERE YearIndex=%year% ORDER BY MakeupDate DESC",
+      "SELECT CONCAT(MakeupDate, ' by ', Title, ' ', FirstName, ' ', Surname) AS `Name` FROM makeup INNER JOIN user USING (Username) WHERE MakeupIndex='%index%'"
     )
   );
 
