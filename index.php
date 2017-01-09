@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * index.php (c) 2004-2005, 2015-2016 Jonathan Dieter
+ * index.php (c) 2004-2005, 2015-2017 Jonathan Dieter
  *
  * Central script that runs by default. This script includes
  * any child scripts that need to be run. Thus, as far as the
@@ -88,6 +88,10 @@ if (isset($_SERVER["HTTP_REFERER"]) and
         redirect($URL);
     }
 }
+
+// Clear out any untrusted tags from $_GET variables
+if(isset($_GET))
+    $_GET = clean_vals($_GET, $base64=True);
 
 if (isset($_SERVER['REMOTE_HOST'])) {
     $remote_host = $_SERVER['REMOTE_HOST'];

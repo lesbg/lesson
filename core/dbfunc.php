@@ -1691,3 +1691,48 @@ function makeup_remove_students($makeup_assignment_index) {
     if (DB::isError($res))
         die($res->getDebugInfo());
 }
+
+function clean_vals($var, $base64=False) {
+    if(is_array($var)) {
+        $new_var = array();
+        foreach($var as $key=>$value) {
+            $key = clean_vals($key, False);
+            $new_var[$key] = clean_vals($value, $base64);
+        }
+    } else {
+        $new_var = $var;
+        if($base64)
+            $new_var = base64_decode($new_var);
+
+        // Remove javascript:
+        $new_var = str_replace("javascript:", "", $new_var);
+
+        // Remove tag braces
+        $new_var = str_replace("<", "&lt;", $new_var);
+        $new_var = str_replace(">", "&gt;", $new_var);
+
+        // Re-insert allowed tags
+        $new_var = str_replace("&lt;br&gt;>", "<br />", $new_var);
+        $new_var = str_replace("&lt;BR&gt;", "<br />", $new_var);
+        $new_var = str_replace("&lt;br /&gt;", "<br />", $new_var);
+        $new_var = str_replace("&lt;BR /&gt;>", "<br />", $new_var);
+        $new_var = str_replace("&lt;br/&gt;>", "<br />", $new_var);
+        $new_var = str_replace("&lt;BR/&gt;>", "<br />", $new_var);
+        $new_var = str_replace("&lt;p&gt;", "<p>", $new_var);
+        $new_var = str_replace("&lt;/p&gt;", "</p>", $new_var);
+        $new_var = str_replace("&lt;P&gt;", "<p>", $new_var);
+        $new_var = str_replace("&lt;/P&gt;", "</p>", $new_var);
+        $new_var = str_replace("&lt;ol&gt;", "<ol>", $new_var);
+        $new_var = str_replace("&lt;/ol&gt;", "</ol>", $new_var);
+        $new_var = str_replace("&lt;OL&gt;", "<ol>", $new_var);
+        $new_var = str_replace("&lt;/OL&gt;", "</ol>", $new_var);
+        $new_var = str_replace("&lt;ul&gt;", "<ul>", $new_var);
+        $new_var = str_replace("&lt;/ul&gt;", "</ul>", $new_var);
+        $new_var = str_replace("&lt;UL&gt;", "<ul>", $new_var);
+        $new_var = str_replace("&lt;/UL&gt;", "</ul>", $new_var);
+
+        if($base64)
+            $new_var = base64_encode($new_var);
+    }
+    return $new_var;
+}
