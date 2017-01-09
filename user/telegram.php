@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * user/new_message.php (c) 2016 Jonathan Dieter
+ * user/telegram.php (c) 2016 Jonathan Dieter
  *
  * Connect to Telegram bot
  * ***************************************************************
