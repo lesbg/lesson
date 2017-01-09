@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * teacher/makeup/modify_action.php (c) 2016-2017 Jonathan Dieter
+ * admin/makeup/modify_action.php (c) 2016-2017 Jonathan Dieter
  *
  * Run query to add or change a makeup
  * ***************************************************************
@@ -20,9 +20,9 @@ $error_list = array();
 if (!$is_admin) {
     include "header.php";
 
-    log_event($LOG_LEVEL_ERROR, "teacher/assignment/modify_action.php",
+    log_event($LOG_LEVEL_ERROR, "admin/makeup/modify_action.php",
         $LOG_DENIED_ACCESS, "Tried to modify makeup information.");
-    echo "      <p>You do not have permission to change these grades.</p>\n";
+    echo "      <p>You do not have permission to change this makeup.</p>\n";
 
     include "footer.php";
 
