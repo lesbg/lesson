@@ -10,7 +10,7 @@ if(!isset($_GET['key']))
     die("No makeup index set");
 
 $makeup_date = dbfuncInt2String($_GET['keyname']);
-$title = "Modify Makeup on " . htmlspecialchars($makeup_date, ENT_QUOTES);
+$title = "Makeup on " . htmlspecialchars($makeup_date, ENT_QUOTES);
 $makeup_index = safe(dbfuncInt2String($_GET['key']));
 
 include "header.php"; // Show header
