@@ -10,7 +10,7 @@ $student_name = "";
 $student_username = "";
 
 /* Get variables */
-$subjectindex = safe(dbfuncInt2String($_GET['key']));
+$subjectindex = intval(safe(dbfuncInt2String($_GET['key'])));
 $subject = dbfuncInt2String($_GET['keyname']);
 if (isset($_GET['key2'])) {
     $student_username = safe(dbfuncInt2String($_GET['key2']));

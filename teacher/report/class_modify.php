@@ -21,7 +21,7 @@ if (! $show_only) {
 } else {
     $title = $student_name;
 }
-$classtermindex = safe(dbfuncInt2String($_GET['key']));
+$classtermindex = intval(safe(dbfuncInt2String($_GET['key'])));
 $student_username = safe(dbfuncInt2String($_GET['key2']));
 
 $link = "index.php?location=" .
