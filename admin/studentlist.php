@@ -312,13 +312,6 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
                      dbfuncString2Int(
                                     "{$row['FirstName']} {$row['Surname']} ({$row['Username']})") .
                      "&amp;keyname2=" . dbfuncSTring2Int($row['FirstName']);
-            $mlink = "index.php?location=" .
-                     dbfuncString2Int("user/new_message.php") . "&amp;key=" .
-                     dbfuncString2Int($row['Username']) . "&amp;keyname=" .
-                     dbfuncString2Int(
-                                    "{$row['FirstName']} {$row['Surname']} ({$row['Username']})") .
-                     "&amp;key2=" . dbfuncString2Int($MSG_TYPE_USERNAME) .
-                     "&amp;next=" . dbfuncString2Int($here);
             $sublink = "index.php?location=" .
                      dbfuncString2Int("admin/subject/modify_by_student.php") .
                      "&amp;key=" . dbfuncString2Int($row['Username']) .
@@ -352,8 +345,6 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
                                             "Edit student's subjects");
                 $editbutton = dbfuncGetButton($editlink, "E", "small", "edit",
                                             "Edit student");
-                $mbutton = dbfuncGetButton($mlink, "M", "small", "msg",
-                                        "Send message");
                 $hbutton = dbfuncGetButton($hlink, "H", "small", "view",
                                         "Student's conduct history");
                 $abutton = dbfuncGetButton($alink, "A", "small", "view",
@@ -363,14 +354,13 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
                 $ttbutton = "";
                 $subbutton = "";
                 $editbutton = "";
-                $mbutton = "";
                 $hbutton = "";
                 $abutton = "";
             }
 
             $cnbutton = dbfuncGetButton($cnlink, "C", "small", "cn",
                                         "Casenotes for student");
-            echo "            <td>$cnbutton$viewbutton$ttbutton$abutton$subbutton$mbutton$hbutton$editbutton</td>\n";
+            echo "            <td>$cnbutton$viewbutton$ttbutton$abutton$subbutton$hbutton$editbutton</td>\n";
             echo "            <td>{$row['FirstName']}</td>\n";
             echo "            <td>{$row['Surname']}</td>\n";
             echo "            <td>{$row['Username']}</td>\n";

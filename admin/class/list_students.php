@@ -242,12 +242,6 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
                      dbfuncString2Int($row['Username']) . "&amp;keyname=" . dbfuncString2Int(
                                                                                             "{$row['FirstName']} {$row['Surname']} ({$row['Username']})") .
                      "&amp;keyname2=" . dbfuncSTring2Int($row['FirstName']);
-            $mlink = "index.php?location=" .
-                     dbfuncString2Int("user/new_message.php") . "&amp;key=" .
-                     dbfuncString2Int($row['Username']) . "&amp;keyname=" . dbfuncString2Int(
-                                                                                            "{$row['FirstName']} {$row['Surname']} ({$row['Username']})") .
-                     "&amp;key2=" . dbfuncString2Int($MSG_TYPE_USERNAME) .
-                     "&amp;next=" . dbfuncString2Int($here);
             $sublink = "index.php?location=" .
                      dbfuncString2Int("admin/subject/modify_by_student.php") .
                      "&amp;key=" . dbfuncString2Int($row['Username']) .
@@ -286,8 +280,6 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
                                             "Edit student's subjects");
                 $editbutton = dbfuncGetButton($editlink, "E", "small", "edit",
                                             "Edit student");
-                $mbutton = dbfuncGetButton($mlink, "M", "small", "msg",
-                                        "Send message");
                 $hbutton = dbfuncGetButton($hlink, "H", "small", "view",
                                         "Student's conduct history");
                 $abutton = dbfuncGetButton($alink, "A", "small", "view",
@@ -301,7 +293,6 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
                                             "View student's timetable");
                 $subbutton = "";
                 $editbutton = "";
-                $mbutton = "";
                 $hbutton = dbfuncGetButton($hlink, "H", "small", "view",
                                         "Student's conduct history");
                 $abutton = dbfuncGetButton($alink, "A", "small", "view",
@@ -339,7 +330,7 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
                 echo "$conduct_val,$absent_val,$late_val,$suspended_val\n";
             } else {
                 echo "         <tr$alt>\n";
-                echo "            <td>$cnbutton$viewbutton$ttbutton$abutton$subbutton$mbutton$hbutton$repbutton$editbutton</td>\n";
+                echo "            <td>$cnbutton$viewbutton$ttbutton$abutton$subbutton$hbutton$repbutton$editbutton</td>\n";
                 echo "            <td>$orderNum</td>\n";
                 echo "            <td>{$row['FirstName']} {$row['Surname']} ({$row['Username']})</td>\n";
 
