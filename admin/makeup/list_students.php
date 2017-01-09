@@ -29,7 +29,8 @@ $query =    "SELECT CONCAT(user.FirstName, ' ', user.Surname, ' (', user.Usernam
             "       CONCAT_WS(' ', rq_user.Title, rq_user.FirstName, rq_user.Surname, " .
             "                 CONCAT('(', rq_user.Username, ')')) AS Requester, " .
             "       ROUND(mark.Percentage) AS Percentage, makeup_user.Requested, " .
-            "       makeup_user.RequestTime, makeup_user.Mandatory, user.Username " .
+            "       makeup_user.RequestTime, makeup_user.Mandatory, user.Username, " .
+            "       makeup_user.MakeupUserIndex " .
             "FROM makeup_user INNER JOIN makeup_assignment USING (MakeupAssignmentIndex) " .
             "                 INNER JOIN assignment USING (AssignmentIndex) " .
             "                 INNER JOIN user USING (Username) " .
@@ -71,9 +72,17 @@ while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
     $regtime = date("g:iA", strtotime($row['RequestTime']));
 
     $studentlink =  "index.php?location=" .
-                 dbfuncString2Int("student/makeups.php") . // link to create a new subject
-                 "&amp;key=" . dbfuncString2Int($row['Username']) .
-                 "&amp;keyname=" . dbfuncString2Int($row['Student']);
+                    dbfuncString2Int("student/makeups.php") . // link to create a new subject
+                    "&amp;key=" . dbfuncString2Int($row['Username']) .
+                    "&amp;keyname=" . dbfuncString2Int($row['Student']);
+
+    $deletelink =   "index.php?location=" .
+                    dbfuncString2Int("admin/makeup/delete.php") . // link to create a new subject
+                    "&amp;key=" . dbfuncString2Int($row['MakeupUserIndex']) .
+                    "&amp;keyname=" . dbfuncString2Int($row['Student'] . " in $assignment");
+
+    $deletebutton = dbfuncGetButton($deletelink, "X", "small", "delete",
+                            "Delete this makeup");
 
     $name = htmlspecialchars($row['Student'], ENT_QUOTES);
     if($row['Mandatory'] == 1) {
@@ -94,7 +103,7 @@ while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
     }
 
     echo "         <tr$alt>\n";
-    echo "            <td>&nbsp;</td>";
+    echo "            <td>$deletebutton</td>";
     echo "            <td>$em<a href='$studentlink'>$name</a>$unem</td>\n";
     echo "            <td>$em{$row['Percentage']}$unem</td>\n";
     echo "            <td>$em$mandatory$unem</td>\n";
