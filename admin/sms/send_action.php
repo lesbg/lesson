@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/sms/send_action.php (c) 2007 Jonathan Dieter
+ * admin/sms/send_action.php (c) 2007, 2016-2017 Jonathan Dieter
  *
  * Actually send SMS to user
  * ***************************************************************
@@ -11,6 +11,18 @@
 $nextLink = dbfuncInt2String($_GET['next']); // Link to next page
 $destusername = safe(dbfuncInt2String($_GET['key']));
 $destfullname = dbfuncInt2String($_GET['keyname']);
+
+if (! $is_admin ) {
+    /* Print error message */
+    echo "      <p>You do not have permission to access this page</p>\n";
+    echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";
+    log_event($LOG_LEVEL_ERROR, "admin/sms/send_action.php",
+            $LOG_DENIED_ACCESS,
+            "Tried to send SMS to $destusername.");
+
+    include "footer.php";
+    exit(0);
+}
 
 /* Check which button was pressed */
 if ($_POST["action"] == "Send") {
