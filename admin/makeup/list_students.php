@@ -85,16 +85,20 @@ while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
     if($row['Requested'] == 1) {
         $regname = htmlspecialchars($row['Requester'], ENT_QUOTES);
         $registered = "<a title='Registered by $regname at $regtime on $regdate'>Y</a>";
+        $em = "<strong>";
+        $unem = "</strong>";
     } else {
         $registered = "N";
+        $em = "";
+        $unem = "";
     }
 
     echo "         <tr$alt>\n";
     echo "            <td>&nbsp;</td>";
-    echo "            <td><a href='$studentlink'>$name</a></td>\n";
-    echo "            <td>{$row['Percentage']}</td>\n";
-    echo "            <td>$mandatory</td>\n";
-    echo "            <td>$registered</td>";
+    echo "            <td>$em<a href='$studentlink'>$name</a>$unem</td>\n";
+    echo "            <td>$em{$row['Percentage']}$unem</td>\n";
+    echo "            <td>$em$mandatory$unem</td>\n";
+    echo "            <td>$em$registered$unem</td>";
     echo "         </tr>\n";
 }
 

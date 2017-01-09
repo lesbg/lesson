@@ -250,20 +250,24 @@ while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
 
     if($row['Requested'] == 1) {
         $reg_link = "<input type='submit' name='action-{$row['MakeupUserIndex']}' value='Unregister' title='$regtitle' $regdisabled/>";
+        $em = "<strong>";
+        $unem = "</strong>";
     } else {
         $reg_link = "<input type='submit' name='action-{$row['MakeupUserIndex']}' value='Register' title='$regtitle' $regdisabled/>";
+        $em = "";
+        $unem = "";
     }
 
     echo "            <tr$alt>\n";
-    echo "               <td>$reg_link</td>";
-    echo "               <td>{$row['SubjectName']}</td>\n";
-    echo "               <td>$name</td>\n";
-    echo "               <td>{$row['Percentage']}</td>\n";
-    echo "               <td>$makeup_date</td>\n";
-    echo "               <td>$close_date</td>\n";
-    echo "               <td>$regopen</td>\n";
-    echo "               <td>$mandatory</td>\n";
-    echo "               <td>$registered</td>\n";
+    echo "               <td>$em$reg_link$unem</td>";
+    echo "               <td>$em{$row['SubjectName']}$unem</td>\n";
+    echo "               <td>$em$name$unem</td>\n";
+    echo "               <td>$em{$row['Percentage']}$unem</td>\n";
+    echo "               <td>$em$makeup_date$unem</td>\n";
+    echo "               <td>$em$close_date$unem</td>\n";
+    echo "               <td>$em$regopen$unem</td>\n";
+    echo "               <td>$em$mandatory$unem</td>\n";
+    echo "               <td>$em$registered$unem</td>\n";
     echo "            </tr>\n";
 }
 
