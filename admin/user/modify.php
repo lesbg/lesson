@@ -98,7 +98,7 @@ if ($is_admin) {
         $origpwd = NULL;
 
     if($modify) {
-        $query =    "SELECT Username, FirstName, Surname, Gender, DOB, Permissions, user.DepartmentIndex, " .
+        $query =    "SELECT Username, FirstName, Surname, Gender, DOB, House, Permissions, user.DepartmentIndex, " .
                     "       Title, DateType, DateSeparator, Password, OriginalPassword, PhoneNumber " .
                     "FROM user " .
                     "WHERE Username = '$uname' ";
@@ -112,6 +112,7 @@ if ($is_admin) {
             if(!isset($_SESSION['post']['sname'])) $_SESSION['post']['sname'] = $row['Surname'];
             if(!isset($_SESSION['post']['gender'])) $_SESSION['post']['gender'] = $row['Gender'];
             if(!isset($_SESSION['post']['DOB'])) $_SESSION['post']['DOB'] = $row['DOB'];
+            if(!isset($_SESSION['post']['house'])) $_SESSION['post']['house'] = $row['House'];
             if(!isset($_SESSION['post']['perms'])) $_SESSION['post']['perms'] = $row['Permissions'];
             if(!isset($_SESSION['post']['department'])) $_SESSION['post']['department'] = $row['DepartmentIndex'];
             if(!isset($_SESSION['post']['title'])) $_SESSION['post']['title'] = $row['Title'];
@@ -586,6 +587,20 @@ if ($is_admin) {
         $oldctidx = $_SESSION['post']['oldclasstermindex'];
     }
     echo "                  <input type='hidden' name='oldclasstermindex' value='$oldctidx' /><br/>\n";
+    echo "               </td>\n";
+    echo "               <td colspan='1'><b>House:</b><br>\n";
+    echo "                  <select name='house'>\n";
+    echo "                     <option value='NULL'>None</option>\n";
+    $houses = array("B"=>"Barouk", "C"=>"Cedars", "H"=>"Hermon", "S"=>"Sannine");
+    foreach($houses as $key=>$value) {
+        if(isset($_SESSION['post']['house']) and $_SESSION['post']['house'] == $key) {
+            $chc = " selected";
+        } else {
+            $chc = "";
+        }
+        echo "                     <option value='$key' $chc>$value</option>\n";
+    }
+    echo "                  </select>\n";
     echo "               </td>\n";
     echo "            </tr>\n";
 

@@ -20,6 +20,7 @@ if ($is_admin) {
              "Surname = '{$_POST['sname']}', " .
              "Gender = '{$_POST['gender']}', " .
              "PhoneNumber = '{$_POST['phone']}', " . "DOB = {$_POST['DOB']}, " .
+             "House = {$_POST['house']}, " .
              "Permissions = {$_POST['perms']}, " . "Title = {$_POST['title']}, " .
              "DateType = {$_POST['datetype']}, " .
              "DateSeparator = {$_POST['datesep']}, " .

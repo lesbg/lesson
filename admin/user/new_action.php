@@ -58,11 +58,11 @@ if ($is_admin) {
             $passwd = "!!";
         }
 
-        $query = "INSERT INTO user (Username, FirstName, Surname, Gender, DOB, Password, OriginalPassword, " .
+        $query = "INSERT INTO user (Username, FirstName, Surname, Gender, DOB, House, Password, OriginalPassword, " .
                  "                  Permissions, Title, DateType, DateSeparator, " .
                  "                  DepartmentIndex) " .
                  "VALUES ('{$_POST['uname']}', '{$_POST['fname']}', '{$_POST['sname']}', " .
-                 "        '{$_POST['gender']}', {$_POST['DOB']}, '$phash', " .
+                 "        '{$_POST['gender']}', {$_POST['DOB']}, {$_POST['house']}, '$phash', " .
                  "        '$passwd', " .
                  "        {$_POST['perms']}, {$_POST['title']}, " .
                  "        {$_POST['datetype']}, {$_POST['datesep']}, " .

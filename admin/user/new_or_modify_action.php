@@ -220,6 +220,12 @@ if ($_POST["action"] == "Save" || $_POST["action"] == "Update") { // If update o
             $_POST['DOB'] = "'" . $tmpDate . "'";
         }
 
+        if (! isset($_POST['house']) or !in_array($_POST['house'], array("B", "C", "H", "S"))) {
+            $_POST['house'] = "NULL";
+        } else {
+            $_POST['house'] = "'" . $_POST['house'] . "'";
+        }
+
         if (! isset($_POST['title']) || $_POST['title'] == "") { // Make sure title is in correct format.
             $_POST['title'] = "NULL";
         } else {
