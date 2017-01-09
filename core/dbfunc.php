@@ -3,7 +3,7 @@
 
 /**
  * ***************************************************************
- * core/dbfunc.php (c) 2004-2016 Jonathan Dieter
+ * core/dbfunc.php (c) 2004-2017 Jonathan Dieter
  *
  * Functions for connecting to the database, plus miscellaneous
  * functions for getting permissions and munging of location
@@ -1606,4 +1606,88 @@ function generate_password($count, &$words) {
     }
     $origpwd = trim($origpwd);
     return $origpwd;
+}
+
+function makeup_add_students_lower_than($makeup_assignment_index, $aidx, $min, $max, $mandatory=1) {
+    global $db;
+    global $username;
+
+    $query =    "SELECT Username, Percentage FROM mark " .
+                "WHERE AssignmentIndex=$aidx " .
+                "AND   Percentage >= 0 " .
+                "AND   Percentage >= $min " .
+                "AND   Percentage < $max";
+    $res = & $db->query($query);
+    if (DB::isError($res))
+        die($res->getDebugInfo());
+
+    while ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+        $query =    "SELECT MakeupUserIndex FROM makeup_user " .
+                    "WHERE Username='{$row['Username']}' " .
+                    "AND   MakeupAssignmentIndex=$makeup_assignment_index " .
+                    "AND   Mandatory=$mandatory";
+        $nres = & $db->query($query);
+        if (DB::isError($nres))
+            die($nres->getDebugInfo());
+        if($nres->numRows() != 0)
+            continue;
+
+        if($mandatory == 1) {
+            $request_username = "'$username'";
+            $request_time = "NOW()";
+            $requested = 1;
+        } else {
+            $request_username = "NULL";
+            $request_time = "NULL";
+            $requested = 0;
+        }
+
+        $query =    "INSERT INTO makeup_user (MakeupAssignmentIndex, Username, " .
+                    "                         Requested, RequestUsername, " .
+                    "                         RequestTime, Mandatory) " .
+                    "                 VALUES ($makeup_assignment_index, '{$row['Username']}', " .
+                    "                         $requested, $request_username, " .
+                    "                         $request_time, $mandatory)";
+        $nres = & $db->query($query);
+        if (DB::isError($nres))
+            die($nres->getDebugInfo());
+    }
+
+    // Remove students who are no longer eligible for makeups
+    $query =    "DELETE makeup_user FROM makeup_user, (SELECT makeup_user.MakeupUserIndex FROM " .
+                "       makeup_user INNER JOIN makeup_assignment " .
+                "         ON  makeup_user.MakeupAssignmentIndex=$makeup_assignment_index " .
+                "         AND makeup_assignment.MakeupAssignmentIndex=makeup_user.MakeupAssignmentIndex " .
+                "         AND makeup_user.Mandatory=$mandatory " .
+                "       LEFT OUTER JOIN mark " .
+                "         ON  mark.AssignmentIndex=makeup_assignment.AssignmentIndex " .
+                "         AND mark.Username=makeup_user.Username " .
+                "         AND mark.Percentage >= 0 " .
+                "         AND mark.Percentage >= $min " .
+                "         AND mark.Percentage < $max " .
+                " WHERE mark.Username IS NULL) AS remove_users " .
+                "WHERE makeup_user.MakeupUserIndex=remove_users.MakeupUserIndex";
+    $res = & $db->query($query);
+    if (DB::isError($res))
+        die($res->getDebugInfo());
+}
+
+// Add mandatory students to makeup
+function makeup_add_students($makeup_assigment_index, $aidx, $mandatory_lower, $optional_lower) {
+    makeup_add_students_lower_than($makeup_assigment_index, $aidx, 0, $mandatory_lower, 1);
+    makeup_add_students_lower_than($makeup_assigment_index, $aidx, $mandatory_lower, $optional_lower, 0);
+}
+
+function makeup_remove_students($makeup_assignment_index) {
+    global $db;
+
+    $query = "DELETE FROM makeup_user WHERE MakeupAssignmentIndex=$makeup_assignment_index";
+    $res = & $db->query($query);
+    if (DB::isError($res))
+        die($res->getDebugInfo());
+
+    $query = "DELETE FROM makeup_assignment WHERE MakeupAssignmentIndex=$makeup_assignment_index";
+    $res = & $db->query($query);
+    if (DB::isError($res))
+        die($res->getDebugInfo());
 }

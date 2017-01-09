@@ -198,6 +198,37 @@ if ($nrs->numRows() > 0) {
     echo "      <p><a href='$disclink'>Issued Punishments</a></p>\n";
 }
 
+$query =    "SELECT CASE WHEN CURDATE() <= MAX(makeup.MakeupDate) THEN 2 " .
+            "            WHEN makeup.MakeupDate IS NOT NULL THEN 1 END AS Requested " .
+            "FROM makeup_user " .
+            "   INNER JOIN makeup_assignment " .
+            "       ON (makeup_user.Username='$username' " .
+            "           AND makeup_assignment.MakeupAssignmentIndex=makeup_user.MakeupAssignmentIndex) " .
+            "   INNER JOIN makeup " .
+            "       ON (makeup.YearIndex=$yearindex " .
+            "           AND makeup.MakeupIndex=makeup_assignment.MakeupIndex) ";
+$nrs = &  $db->query($query);
+if (DB::isError($nrs))
+    die($nrs->getDebugInfo()); // Check for errors in query
+if ($row = & $nrs->fetchRow(DB_FETCHMODE_ASSOC)) {
+    if(!is_null($row['Requested'])) {
+        $makeup_link = "index.php?location=" .
+                    dbfuncString2Int("student/makeups.php") .
+                    "&amp;key=" .
+                    dbfuncString2Int($username) .
+                    "&amp;keyname=" .
+                    dbfuncString2Int($fullname);
+        if($row['Requested'] == 2) {
+            $bold = "<strong>";
+            $unbold = "</strong>";
+        } else {
+            $bold = "";
+            $unbold = "";
+        }
+        echo "      <p>$bold<a href='$makeup_link'>Makeups</a>$unbold</p>\n";
+    }
+}
+
 if($is_staff or $is_admin) {
     if($yearindex > $currentyear) {
         $query =    "SELECT user.Username, user.FirstName, user.Surname, NULL AS SubjectCount, grade.GradeName AS ClassName, NULL AS TermIndex FROM " .
