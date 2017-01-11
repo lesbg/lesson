@@ -26,7 +26,7 @@ if (!$is_admin) {
 }
 
 $query =    "SELECT assignment.Title, assignment.AssignmentIndex, " .
-            "       assignment.Date, ROUND(assignment.Average) AS Average, " .
+            "       assignment.Date, assignment.Average, " .
             "       subject.Name AS SubjectName, makeup_assignment.MakeupAssignmentIndex, " .
             "       GROUP_CONCAT(DISTINCT CONCAT(user.Title, ' ', " .
             "                           user.FirstName, ' ', " .
@@ -93,13 +93,16 @@ while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
 
     $viewbutton = dbfuncGetButton($viewlink, "V", "small", "view",
                             "View makeups for assignment");
+
+    $average = round($row['Average']);
+
     echo "         <tr$alt>\n";
     echo "            <td>$viewbutton</td>";
     echo "            <td>{$row['Title']}</td>\n";
     echo "            <td>{$row['SubjectName']}</td>\n";
     echo "            <td>{$row['Teacher']}</td>\n";
     echo "            <td>$assignmentdate</td>";
-    echo "            <td>{$row['Average']}</td>\n";
+    echo "            <td>$average</td>\n";
     echo "            <td>{$row['StudentCount']}</td>\n";
     echo "            <td>{$row['Requested']}</td>\n";
     echo "            <td>{$row['Mandatory']}</td>\n";

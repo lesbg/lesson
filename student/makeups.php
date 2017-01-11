@@ -126,7 +126,7 @@ if(isset($_POST)) {
 }
 
 $query =    "SELECT assignment.Title, assignment.AssignmentIndex, " .
-            "       assignment.Date, ROUND(mark.Percentage) AS Percentage, " .
+            "       assignment.Date, mark.Percentage, " .
             "       makeup.MakeupDate, makeup.CloseDate, CURDATE() <= makeup.CloseDate AS RegOpen, " .
             "       subject.Name AS SubjectName, makeup_assignment.MakeupAssignmentIndex, " .
             "       makeup_user.Mandatory, makeup_user.Requested, makeup_user.RequestTime, " .
@@ -258,11 +258,12 @@ while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
         $unem = "";
     }
 
+    $percentage = round($row['Percentage']);
     echo "            <tr$alt>\n";
     echo "               <td>$em$reg_link$unem</td>";
     echo "               <td>$em{$row['SubjectName']}$unem</td>\n";
     echo "               <td>$em$name$unem</td>\n";
-    echo "               <td>$em{$row['Percentage']}$unem</td>\n";
+    echo "               <td>$em$percentage$unem</td>\n";
     echo "               <td>$em$makeup_date$unem</td>\n";
     echo "               <td>$em$close_date$unem</td>\n";
     echo "               <td>$em$regopen$unem</td>\n";

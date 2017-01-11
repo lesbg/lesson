@@ -28,7 +28,7 @@ if (!$is_admin) {
 $query =    "SELECT CONCAT(user.FirstName, ' ', user.Surname, ' (', user.Username, ')') AS Student, " .
             "       CONCAT_WS(' ', rq_user.Title, rq_user.FirstName, rq_user.Surname, " .
             "                 CONCAT('(', rq_user.Username, ')')) AS Requester, " .
-            "       ROUND(mark.Percentage) AS Percentage, makeup_user.Requested, " .
+            "       mark.Percentage, makeup_user.Requested, " .
             "       makeup_user.RequestTime, makeup_user.Mandatory, user.Username, " .
             "       makeup_user.MakeupUserIndex " .
             "FROM makeup_user INNER JOIN makeup_assignment USING (MakeupAssignmentIndex) " .
@@ -102,10 +102,12 @@ while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
         $unem = "";
     }
 
+    $percentage = round($row['Percentage']);
+
     echo "         <tr$alt>\n";
     echo "            <td>$deletebutton</td>";
     echo "            <td>$em<a href='$studentlink'>$name</a>$unem</td>\n";
-    echo "            <td>$em{$row['Percentage']}$unem</td>\n";
+    echo "            <td>$em$percentage$unem</td>\n";
     echo "            <td>$em$mandatory$unem</td>\n";
     echo "            <td>$em$registered$unem</td>";
     echo "         </tr>\n";
