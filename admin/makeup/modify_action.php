@@ -165,12 +165,27 @@ echo "      <p align='center'>Saving changes...";
 
 if($_POST['action'] == "Save") {
     $makeup_index = "NULL";
+    $makeup_username = $username;
+} else {
+    $query = "SELECT Username FROM makeup WHERE MakeupIndex=$makeup_index";
+    $res = &  $db->query($query);
+    if (DB::isError($res))
+        die($res->getDebugInfo()); // Check for errors in query
+    if(!$row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+        echo "</p><p align='center'>Error: Unable to find makeup!</p>\n";
+        echo "      <p align='center'><a href='$nextLink'>Continue</a></p>\n"; // Link to next page
+        include "footer.php";
+        unset($_SESSION['makeup_assignment']);
+        unset($_SESSION['post']);
+        exit(0);
+    }
+    $makeup_username = $row['Username'];
 }
 
 $query =    "REPLACE INTO makeup (MakeupIndex, OpenDate, CloseDate, MakeupDate, " .
             "                     MandatoryLower, OptionalLower, Username, YearIndex) " .
             "             VALUES ($makeup_index, '$open_date', '$close_date', '$makeup_date', " .
-            "                     $mandatory_lower, $optional_lower, '$username', $yearindex) ";
+            "                     $mandatory_lower, $optional_lower, '$makeup_username', $yearindex) ";
 
 $res = &  $db->query($query);
 if (DB::isError($res))
@@ -182,7 +197,7 @@ if($makeup_index == "NULL") {
                 "AND   MakeupDate='$makeup_date' " .
                 "AND   MandatoryLower=$mandatory_lower " .
                 "AND   OptionalLower=$optional_lower " .
-                "AND   Username='$username'";
+                "AND   Username='$makeup_username'";
     $res = &  $db->query($query);
     if (DB::isError($res))
         die($res->getDebugInfo()); // Check for errors in query
