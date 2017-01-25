@@ -95,16 +95,21 @@ if(isset($_POST)) {
             continue;
 
         $index = intval(substr($key, 7));
-        $query =    "SELECT makeup_user.Username FROM makeup_user " .
+        $query =    "SELECT makeup_user.Username, CURDATE() <= makeup.CloseDate AS RegOpen FROM " .
+                    "       makeup_user INNER JOIN makeup_assignment USING (MakeupAssignmentIndex) " .
+                    "                   INNER JOIN makeup USING (MakeupIndex) " .
                     "WHERE MakeupUserIndex=$index " .
-                    "AND   Username='$student_username'";
+                    "AND   makeup_user.Username='$student_username'";
 
         $res = &  $db->query($query);
         if (DB::isError($res))
             die($res->getDebugInfo()); // Check for errors in query
 
-        if($res->numRows() == 0)
+        if(!$row = & $res->fetchRow(DB_FETCHMODE_ASSOC))
             die("Registration index doesn't match username");
+
+        if($row['RegOpen'] != 1 and !$is_admin)
+            die("Registration is closed");
 
         if($value == "Register") {
             $req_value = 1;
@@ -233,7 +238,7 @@ while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
         $registered = "N";
     }
 
-    if($row['RegOpen'] == 1) {
+    if($row['RegOpen'] == 1 or $is_admin) {
         $regopen = "Y";
         $regdisabled = "";
         $regtitle = "";
