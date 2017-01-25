@@ -51,10 +51,10 @@ $query =    "SELECT * FROM " .
             "              (makeup_user.MakeupAssignmentIndex=makeup_assignment.MakeupAssignmentIndex) " .
             "             INNER JOIN user ON makeup.Username=user.Username " .
             " WHERE makeup.YearIndex=$yearindex " .
+            " GROUP BY makeup.MakeupIndex " .
             ") AS subtable " .
             "WHERE MakeupIndex IS NOT NULL " .
             "ORDER BY MakeupDate DESC";
-
 $res = &  $db->query($query);
 if (DB::isError($res))
     die($res->getDebugInfo()); // Check for errors in query
