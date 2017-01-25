@@ -81,7 +81,7 @@ if ($_POST["action"] == "Save" or $_POST["action"] == "Update" or
             $descr_id = "NULL";
             $descr_file_type = "NULL";
 
-            if (! isset($_FILES['descr_upload'])) {
+            if (! isset($_FILES['descr_upload']['error'])) {
                 $error = "Error when attempting to upload file";
             } elseif ($_FILES['descr_upload']['error'] == UPLOAD_ERR_INI_SIZE or
                      $_FILES['descr_upload']['error'] == UPLOAD_ERR_FORM_SIZE) {
