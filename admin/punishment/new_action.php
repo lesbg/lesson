@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/punishment/new_action.php (c) 2006-2016 Jonathan Dieter
+ * admin/punishment/new_action.php (c) 2006-2017 Jonathan Dieter
  *
  * Create a punishment
  * ***************************************************************
@@ -38,10 +38,27 @@ if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
     $perm = $DEFAULT_PUN_PERM;
 }
 
+$type = intval($_POST['type']);
+$query =    "SELECT PermLevel FROM " .
+            "   disciplinetype INNER JOIN disciplineweight USING (DisciplineTypeIndex) " .
+            "WHERE  disciplineweight.DisciplineWeightIndex = $type " .
+            "AND    disciplineweight.YearIndex = $currentyear " .
+            "AND    disciplineweight.TermIndex = $currentterm ";
+$res = &  $db->query($query);
+if (DB::isError($res))
+    die($res->getDebugInfo()); // Check for errors in query
+if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+    $perm_level = $row['PermLevel'];
+    if($perm_level < $PUN_PERM_ISSUE)
+        $perm_level = $PUN_PERM_ISSUE;
+} else {
+    $perm_level = $PUN_PERM_ISSUE;
+}
+
 include "core/settermandyear.php";
 
-if (dbfuncGetPermission($permissions, $PERM_ADMIN) or
-     ($perm >= $PUN_PERM_ISSUE and $is_teacher)) {
+if ($is_admin or
+     ($perm >= $perm_level and $is_teacher)) {
     /* Check which button was pressed */
     if ($_POST["action"] == "Save") { // If update or save were pressed, print
         $title = "LESSON - Saving punishment...";
@@ -60,6 +77,12 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN) or
         }
         $dateinfo = "'" . $db->escapeSimple($_POST['date']) . "'";
         $thisdateinfo = "'" . dbfuncCreateDate(date($dateformat)) . "'";
+
+        if (! isset($_POST['comment']) || $_POST['comment'] == "") {
+            $comment = "NULL";
+        } else {
+            $comment = "'" . safe($_POST['comment']) . "'";
+        }
 
         /* Check whether or not a type was included and cancel if it wasn't */
         if ($_POST['type'] == "" or is_null($_POST['type'])) {
@@ -108,10 +131,10 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN) or
                     if ($_POST["action"] == "Save") {
                         $query = "INSERT INTO discipline (DisciplineWeightIndex, Username, WorkerUsername, " .
                              "                        RecordUsername, DateRequested, DateIssued, " .
-                             "                        Date, Comment) " .
+                             "                        Date, Comment, Extra) " .
                              "       VALUES " .
                              "       ($weightindex, '$studentusername', '$username', '$username', " .
-                             "        $thisdateinfo, $thisdateinfo, $dateinfo, '$reason')";
+                             "        $thisdateinfo, $thisdateinfo, $dateinfo, '$reason', $comment)";
                         $res = & $db->query($query);
                         if (DB::isError($res))
                             die($res->getDebugInfo()); // Check for errors in query
