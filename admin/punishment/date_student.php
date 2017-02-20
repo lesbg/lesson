@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/punishment/date_student.php (c) 2006-2016 Jonathan Dieter
+ * admin/punishment/date_student.php (c) 2006-2017 Jonathan Dieter
  *
  * Set date of next punishment for all students up to set date
  * ***************************************************************

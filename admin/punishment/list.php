@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/punishment/list.php (c) 2006-2016 Jonathan Dieter
+ * admin/punishment/list.php (c) 2006-2017 Jonathan Dieter
  *
  * Print information about all issued punishment history for
  * term

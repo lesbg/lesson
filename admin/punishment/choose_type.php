@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/punishment/choose_type.php (c) 2006-2016 Jonathan Dieter
+ * admin/punishment/choose_type.php (c) 2006-2017 Jonathan Dieter
  *
  * Choose punishment type
  * ***************************************************************
