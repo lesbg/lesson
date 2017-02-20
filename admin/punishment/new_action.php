@@ -28,6 +28,8 @@ if ($res->numRows() > 0) {
     $is_teacher = false;
 }
 
+include "core/settermandyear.php";
+
 $query = "SELECT Permissions FROM disciplineperms WHERE Username='$username'";
 $res = &  $db->query($query);
 if (DB::isError($res))
@@ -54,8 +56,6 @@ if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 } else {
     $perm_level = $PUN_PERM_ISSUE;
 }
-
-include "core/settermandyear.php";
 
 if ($is_admin or
      ($perm >= $perm_level and $is_teacher)) {
