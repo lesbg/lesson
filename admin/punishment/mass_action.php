@@ -127,7 +127,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN) or
 
         include "header.php"; // Print header
 
-        echo "      <p align=\"center\">Saving punishment...";
+        echo "      <p align='center'>Saving punishment...";
 
         if (! isset($_POST['date']) || $_POST['date'] == "") { // Make sure date is in correct format.
             echo "</p>\n      <p>Date not entered, defaulting to today.</p>\n      <p>"; // Print error message
@@ -141,7 +141,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN) or
         /* Check whether or not a type was included and cancel if it wasn't */
         if ($_POST['type'] == "" or is_null($_POST['type'])) {
             echo "failed</p>\n";
-            echo "      <p align=\"center\">You must select a punishment type!</p>\n";
+            echo "      <p align='center'>You must select a punishment type!</p>\n";
         } else {
             $weightindex = intval($_POST['type']);
             $query = "SELECT DisciplineWeightIndex FROM disciplineweight " .
@@ -155,13 +155,13 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN) or
             if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
                 if ($_POST['reason'] == "" or is_null($_POST['reason'])) {
                     echo "failed</p>\n";
-                    echo "      <p align=\"center\">You must explain why you want the students punished!</p>\n";
+                    echo "      <p align='center'>You must explain why you want the students punished!</p>\n";
                     $failed = 1;
                 } elseif ($_POST['reason'] == "other") {
                     if ($_POST['reasonother'] == "" or
                              is_null($_POST['reasonother'])) {
                         echo "failed</p>\n";
-                        echo "      <p align=\"center\">You must explain why you want the students punished!</p>\n";
+                        echo "      <p align='center'>You must explain why you want the students punished!</p>\n";
                         $failed = 1;
                     } else {
                         $reason = $db->escapeSimple($_POST['reasonother']);
@@ -177,7 +177,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN) or
                         $reason = $row['DisciplineReason'];
                     } else {
                         echo "failed</p>\n";
-                        echo "      <p align=\"center\">You must explain why you want the students punished!</p>\n";
+                        echo "      <p align='center'>You must explain why you want the students punished!</p>\n";
                         $failed = 1;
                     }
                 }
@@ -185,11 +185,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN) or
                     foreach ( $punish_list as $studentusername => $student ) {
                         if ($student != "") {
                             if (substr($studentusername, 0, 1) == "!") {
-                                $classindex = intval(
-                                                    substr(
-                                                        strrchr(
-                                                                $studentusername,
-                                                                "!"), 1));
+                                $classindex = intval(substr(strrchr($studentusername, "!"), 1));
                                 $query = "SELECT user.Username FROM user, classlist " .
                                          "WHERE  user.Username = classlist.Username " .
                                          "AND    classlist.ClassIndex = $classindex " .
@@ -235,11 +231,11 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN) or
                 }
             } else {
                 echo "failed</p>\n";
-                echo "      <p align=\"center\">There is no punishment of selected type!</p>\n";
+                echo "      <p align='center'>There is no punishment of selected type!</p>\n";
             }
         }
 
-        echo "      <p align=\"center\"><a href=\"$nextLink\">Continue</a></p>\n"; // Link to next page
+        echo "      <p align='center'><a href='$nextLink'>Continue</a></p>\n"; // Link to next page
 
         include "footer.php";
     } elseif ($_POST["action"] == "Cancel") {
@@ -258,8 +254,8 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN) or
 
     include "header.php";
 
-    echo "      <p align=\"center\">You do not have permission to access this page. <a href=" .
-         "\"$nextLink\">Click here to continue.</a></p>\n";
+    echo "      <p align='center'>You do not have permission to access this page. <a href=" .
+         "'$nextLink'>Click here to continue.</a></p>\n";
 
     include "footer.php";
 }
