@@ -26,7 +26,7 @@ if ($res->numRows() > 0) {
     $is_teacher = false;
 }
 
-$query = "SELECT Permissions FROM disciplineperms WHERE Username=\"$username\"";
+$query = "SELECT Permissions FROM disciplineperms WHERE Username='$username'";
 $res = &  $db->query($query);
 if (DB::isError($res))
     die($res->getDebugInfo()); // Check for errors in query
@@ -40,8 +40,8 @@ include "header.php"; // Show header
 
 if (dbfuncGetPermission($permissions, $PERM_ADMIN) or
      ($perm >= $PUN_PERM_ALL and $is_teacher)) {
-    echo "      <form action=\"$link\" method=\"post\" name=\"pundate\">\n"; // Form method
-    echo "         <table border=\"0\" class=\"transparent\" align=\"center\">\n";
+    echo "      <form action='$link' method='post' name='pundate'>\n"; // Form method
+    echo "         <table border='0' class='transparent' align='center'>\n";
     echo "            <tr>\n";
     echo "               <td>\n";
     echo "                  Which punishment would you like to work with?<br>\n";
@@ -64,9 +64,9 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN) or
         } else {
             $default = "";
         }
-        echo "                  <label for=\"type{$row['DisciplineTypeIndex']}\">\n";
+        echo "                  <label for='type{$row['DisciplineTypeIndex']}'>\n";
         $val = $row['DisciplineTypeIndex'];
-        echo "                  <input type=\"radio\" name=\"type\" value=\"$val\" id=\"type{$row['DisciplineTypeIndex']}\" $default>\n";
+        echo "                  <input type='radio' name='type' value='$val' id='type{$row['DisciplineTypeIndex']}' $default>\n";
         echo "                     {$row['DisciplineType']}\n";
         echo "                  </label><br>\n";
     }
@@ -74,8 +74,8 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN) or
     echo "            </tr>\n";
 
     echo "         </table>\n";
-    echo "         <p align=\"center\">\n";
-    echo "            <input type=\"submit\" name=\"action\" value=\"Continue\">&nbsp; \n";
+    echo "         <p align='center'>\n";
+    echo "            <input type='submit' name='action' value='Continue'>&nbsp; \n";
     echo "         </p>\n";
     echo "      </form>\n";
 } else { // User isn't authorized to create a punishment
@@ -84,7 +84,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN) or
             $LOG_DENIED_ACCESS, "Tried to set punishment date.");
 
     echo "      <p>You do not have permission to access this page</p>\n";
-    echo "      <p><a href=\"$backLink\">Click here to go back</a></p>\n";
+    echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";
 }
 
 include "footer.php";
