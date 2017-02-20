@@ -195,7 +195,8 @@ if ($is_admin or ($perm >= $PUN_PERM_SEE and $is_teacher)) {
     $fpstart = intval(intval($max) / $LOGS_PER_PAGE) * $LOGS_PER_PAGE;
 
     $query = "SELECT disciplinetype.DisciplineType, disciplineweight.DisciplineWeight, user.Username, " .
-             "       user.FirstName, user.Surname, discipline.Date, discipline.Comment, class.ClassName, " .
+             "       user.FirstName, user.Surname, discipline.Date, discipline.Comment, discipline.Extra, " .
+             "       class.ClassName, " .
              "       discipline.DisciplineIndex, tuser.FirstName AS TFirstName, tuser.Title AS TTitle, " .
              "       tuser.Surname AS TSurname, ruser.FirstName AS RFirstName, ruser.Surname AS RSurname, " .
              "       ruser.Title AS RTitle, " .
@@ -295,12 +296,13 @@ if ($is_admin or ($perm >= $PUN_PERM_SEE and $is_teacher)) {
         echo "         <tr>\n";
         echo "            <th nowrap></th>\n";
         echo "            <th nowrap>Teacher $teacherAsc $teacherDec</th>\n";
-        echo "            <th nowrap>Discipline Type $typeAsc $typeDec</th>\n";
+        echo "            <th nowrap>Type $typeAsc $typeDec</th>\n";
         echo "            <th nowrap>Student $studentAsc $studentDec</th>\n";
         echo "            <th nowrap>Class $classAsc $classDec</th>\n";
-        echo "            <th nowrap>Violation Date $dateAsc $dateDec</th>\n";
+        echo "            <th nowrap><a title='Violation Date'>VD</a> $dateAsc $dateDec</th>\n";
         echo "            <th nowrap>Reason $reasonAsc $reasonDec</th>\n";
-        echo "            <th nowrap>Punishment Date $punDateAsc $punDateDec</th>\n";
+        echo "            <th nowrap>Comment</th>\n";
+        echo "            <th nowrap><a title='Punishment Date'>PD</a> $punDateAsc $punDateDec</th>\n";
         echo "            <th nowrap>Showed up? $showedAsc $showedDec</th>\n";
         echo "            <th nowrap>Recorded By</th>\n";
         echo "         </tr>\n";
@@ -348,7 +350,8 @@ if ($is_admin or ($perm >= $PUN_PERM_SEE and $is_teacher)) {
             echo "            <td nowrap>{$row['FirstName']} {$row['Surname']} ({$row['Username']})</td>\n";
             echo "            <td nowrap>{$row['ClassName']}</td>\n";
             echo "            <td nowrap>$dateinfo</td>\n";
-            echo "            <td nowrap>{$row['Comment']}</td>\n";
+            echo "            <td>{$row['Comment']}</td>\n";
+            echo "            <td>{$row['Extra']}</td>\n";
             echo "            <td nowrap>$punish_date</td>\n";
             if (! is_null($row['ServedType']) and $row['ServedType'] == 1) {
                 echo "            <td nowrap>Yes</td>\n";
