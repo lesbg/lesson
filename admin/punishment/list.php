@@ -27,7 +27,7 @@ if ($res->numRows() > 0) {
     $is_teacher = false;
 }
 
-$query = "SELECT Permissions FROM disciplineperms WHERE Username=\"$username\"";
+$query = "SELECT Permissions FROM disciplineperms WHERE Username='$username'";
 $res = &  $db->query($query);
 if (DB::isError($res))
     die($res->getDebugInfo()); // Check for errors in query
@@ -281,18 +281,18 @@ if ($is_admin or ($perm >= $PUN_PERM_SEE and $is_teacher)) {
         $totalval = strval($max + 1);
 
         /* Print header with rows being shown and buttons to move in punishment list */
-        echo "      <table class=\"transparent\" width=\"100%\">\n";
+        echo "      <table class='transparent' width='100%'>\n";
         echo "         <tr>\n";
-        echo "            <td width=\"100px\" nowrap>$first_record $prev_record</td>\n";
-        echo "            <td class=\"title\" nowrap><span class=\"text\">Showing punishments $startval-$endval " .
+        echo "            <td width='100px' nowrap>$first_record $prev_record</td>\n";
+        echo "            <td class='title' nowrap><span class='text'>Showing punishments $startval-$endval " .
              "of $totalval</span></td>\n";
-        echo "            <td width=\"100px\" align=\"right\" nowrap>$next_record $last_record</td>\n";
+        echo "            <td width='100px' align='right' nowrap>$next_record $last_record</td>\n";
         echo "         </tr>\n";
         echo "      </table>\n";
 
         /* Print punishments */
-        echo "         <span class=\"small_text\">\n";
-        echo "      <table align=\"center\" border=\"1\">\n"; // Table headers
+        echo "         <span class='small_text'>\n";
+        echo "      <table align='center' border='1'>\n"; // Table headers
         echo "         <tr>\n";
         echo "            <th nowrap></th>\n";
         echo "            <th nowrap>Teacher $teacherAsc $teacherDec</th>\n";
@@ -317,14 +317,14 @@ if ($is_admin or ($perm >= $PUN_PERM_SEE and $is_teacher)) {
                 $alt_step = "std";
             }
             if ($row['PermLevel'] == 99) {
-                $alt = " class=\"$alt_step\"";
+                $alt = " class='$alt_step'";
             } elseif (! is_null($row['ServedType']) and $row['ServedType'] == 1) {
-                $alt = " class=\"$alt_step\"";
+                $alt = " class='$alt_step'";
             } elseif ((! is_null($row['ServedType']) and $row['ServedType'] == 0) or
                      $row['DisciplineWeight'] == 0) {
-                $alt = " class=\"late-$alt_step\"";
+                $alt = " class='late-$alt_step'";
             } else {
-                $alt = " class=\"$alt_step\"";
+                $alt = " class='$alt_step'";
             }
             $dateinfo = date($dateformat, strtotime($row['Date']));
             if ($row['PunishDate'] != "") {
@@ -366,16 +366,16 @@ if ($is_admin or ($perm >= $PUN_PERM_SEE and $is_teacher)) {
         echo "      </table>\n";
         echo "      </span>\n";
         /* Print header with rows being shown and buttons to move in punishment list */
-        echo "      <table class=\"transparent\" width=\"100%\">\n";
+        echo "      <table class='transparent' width='100%'>\n";
         echo "         <tr>\n";
-        echo "            <td width=\"100px\" nowrap>$first_record $prev_record</td>\n";
-        echo "            <td class=\"title\" nowrap><span class=\"text\">Showing punishments $startval-$endval " .
+        echo "            <td width='100px' nowrap>$first_record $prev_record</td>\n";
+        echo "            <td class='title' nowrap><span class='text'>Showing punishments $startval-$endval " .
              "of $totalval</span></td>\n";
-        echo "            <td width=\"100px\" align=\"right\" nowrap>$next_record $last_record</td>\n";
+        echo "            <td width='100px' align='right' nowrap>$next_record $last_record</td>\n";
         echo "         </tr>\n";
         echo "      </table>\n";
     } else {
-        echo "      <p align=\"center\" class=\"subtitle\">No punishments have been issued this term.</p>\n";
+        echo "      <p align='center' class='subtitle'>No punishments have been issued this term.</p>\n";
     }
     log_event($LOG_LEVEL_ADMIN, "admin/punishment/list.php", $LOG_ADMIN,
             "Viewed issued punishments for this term.");
@@ -385,7 +385,7 @@ if ($is_admin or ($perm >= $PUN_PERM_SEE and $is_teacher)) {
             "Tried to view issued punishments for this term.");
 
     echo "      <p>You do not have permission to access this page</p>\n";
-    echo "      <p><a href=\"$backLink\">Click here to go back</a></p>\n";
+    echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";
 }
 
 include "footer.php";

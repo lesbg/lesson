@@ -36,7 +36,7 @@ if ($res->numRows() > 0) {
 } else {
     $is_teacher = false;
 }
-$query = "SELECT Permissions FROM disciplineperms WHERE Username=\"$username\"";
+$query = "SELECT Permissions FROM disciplineperms WHERE Username='$username'";
 $res = &  $db->query($query);
 if (DB::isError($res))
     die($res->getDebugInfo()); // Check for errors in query
@@ -123,15 +123,15 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN) or
     if ($res->numRows() > 0) {
         /* Print punishments */
 
-        echo "      <form action=\"$link\" method=\"post\" name=\"pundate\">\n"; // Form method
+        echo "      <form action='$link' method='post' name='pundate'>\n"; // Form method
 
-        echo "      <p align=\"center\">\n";
-        echo "         <input type=\"submit\" name=\"action\" value=\"Edit\">&nbsp; \n";
-        echo "         <input type=\"submit\" name=\"action\" value=\"Check all\">&nbsp; \n";
-        echo "         <input type=\"submit\" name=\"action\" value=\"Uncheck all\">&nbsp; \n";
-        echo "         <input type=\"submit\" name=\"action\" value=\"Done\"> \n";
+        echo "      <p align='center'>\n";
+        echo "         <input type='submit' name='action' value='Edit'>&nbsp; \n";
+        echo "         <input type='submit' name='action' value='Check all'>&nbsp; \n";
+        echo "         <input type='submit' name='action' value='Uncheck all'>&nbsp; \n";
+        echo "         <input type='submit' name='action' value='Done'> \n";
         echo "      </p>\n";
-        echo "      <table align=\"center\" border=\"1\">\n"; // Table headers
+        echo "      <table align='center' border='1'>\n"; // Table headers
         echo "         <tr>\n";
         echo "            <th>&nbsp;</th>\n";
         echo "            <th>Student</th>\n";
@@ -169,11 +169,11 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN) or
             } else {
                 $checked = "";
             }
-            $alt = " class=\"$alt_step\"";
+            $alt = " class='$alt_step'";
             echo "         <tr$alt>\n";
-            echo "            <td><input type='checkbox' name='mass[]' value='{$row['Username']}' id=\"check{$row['Username']}\" $checked></input></td>\n";
-            echo "            <td><label for=\"check{$row['Username']}\">{$row['FirstName']} {$row['Surname']} ({$row['Username']})</label></td>\n";
-            echo "            <td><label for=\"check{$row['Username']}\">{$row['ClassName']}</label></td>\n";
+            echo "            <td><input type='checkbox' name='mass[]' value='{$row['Username']}' id='check{$row['Username']}' $checked></input></td>\n";
+            echo "            <td><label for='check{$row['Username']}'>{$row['FirstName']} {$row['Surname']} ({$row['Username']})</label></td>\n";
+            echo "            <td><label for='check{$row['Username']}'>{$row['ClassName']}</label></td>\n";
             $query = "SELECT Date, Comment, DisciplineIndex, tFirstName, tTitle, " .
                      "       tSurname, PunishDate " .
                      "       FROM view_discipline " .
@@ -187,7 +187,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN) or
             $nres = &  $db->query($query);
             if (DB::isError($nres))
                 die($nres->getDebugInfo()); // Check for errors in query
-            echo "            <td nowrap><label for=\"check{$row['Username']}\">";
+            echo "            <td nowrap><label for='check{$row['Username']}'>";
             if ($nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
                 echo "{$nrow['tTitle']} {$nrow['tFirstName']} {$nrow['tSurname']}";
                 while ( $nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC) ) {
@@ -198,7 +198,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN) or
             $nres = &  $db->query($query);
             if (DB::isError($nres))
                 die($nres->getDebugInfo()); // Check for errors in query
-            echo "            <td nowrap><label for=\"check{$row['Username']}\">";
+            echo "            <td nowrap><label for='check{$row['Username']}'>";
             if ($nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
                 $dateinfo = date($dateformat, strtotime($nrow['Date']));
                 echo "$dateinfo";
@@ -211,7 +211,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN) or
             $nres = &  $db->query($query);
             if (DB::isError($nres))
                 die($nres->getDebugInfo()); // Check for errors in query
-            echo "            <td nowrap><label for=\"check{$row['Username']}\">";
+            echo "            <td nowrap><label for='check{$row['Username']}'>";
             if ($nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
                 echo "{$nrow['Comment']}";
                 while ( $nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC) ) {
@@ -224,7 +224,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN) or
         echo "      </table>\n";
         echo "      </form>\n";
     } else {
-        echo "      <p align=\"center\" class=\"subtitle\">No punishments of this type have been issued and not punished yet up to {$_POST['date']}.</p>\n";
+        echo "      <p align='center' class='subtitle'>No punishments of this type have been issued and not punished yet up to {$_POST['date']}.</p>\n";
     }
 } else {
     include "header.php";
@@ -234,7 +234,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN) or
             $LOG_DENIED_ACCESS, "Tried to set next punishment date.");
 
     echo "      <p>You do not have permission to access this page</p>\n";
-    echo "      <p><a href=\"$backLink\">Click here to go back</a></p>\n";
+    echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";
 }
 
 include "footer.php";
