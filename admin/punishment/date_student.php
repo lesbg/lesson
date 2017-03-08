@@ -105,29 +105,46 @@ include "header.php";
 $link = "index.php?location=" .
          dbfuncString2Int("admin/punishment/date_student_action.php") .
          "&amp;type=" . $_GET['type'] . "&amp;next=" . $_GET['next'];
-$query = "SELECT user.Username, user.FirstName, user.Surname, discipline.Date, discipline.Comment, " .
-         "       class.ClassName, discipline.DisciplineIndex, disciplinedate.PunishDate " .
-         "       FROM user INNER JOIN discipline USING (Username) " .
-         "                 INNER JOIN disciplineweight USING (DisciplineWeightIndex) " .
-         "                 INNER JOIN classlist ON (user.Username=classlist.Username) " .
-         "                 INNER JOIN classterm USING (ClassTermIndex) " .
-         "                 INNER JOIN class USING (ClassIndex) " .
-         "                 LEFT OUTER JOIN disciplinedate USING (DisciplineDateIndex) " .
-         "                 LEFT OUTER JOIN (attendance INNER JOIN period USING (PeriodIndex)) " .
-         "                 ON ( " .
-         "                  discipline.Username = attendance.Username " .
-         "                  AND attendance.Date = '$pundate' " .
-         "                  AND period.Period = 1 " .
-         "                 ) " .
-         "                 LEFT OUTER JOIN attendancetype USING (AttendanceTypeIndex) " .
-         "WHERE  disciplineweight.YearIndex = $yearindex " .
-         "AND    (disciplinedate.PunishDate IS NULL AND discipline.Date <= '$enddate') " .
-         "AND    disciplineweight.DisciplineTypeIndex = $dtype " .
-         "AND    classterm.TermIndex = $termindex " .
-         "AND    class.YearIndex = $yearindex " .
-         "AND    class.DepartmentIndex = $depindex " .
-         "GROUP BY user.Username " .
-         "ORDER BY class.Grade, class.ClassName, discipline.Username ";
+$query =    "SELECT user.Username, user.FirstName, user.Surname, " .
+            "       SUBSTRING_INDEX( " .
+            "           GROUP_CONCAT(discipline.Date ORDER BY discipline.Date, " .
+            "                        discipline.DisciplineIndex SEPARATOR '*/*/'), " .
+            "           '*/*/', 1) AS Date, " .
+            "       SUBSTRING_INDEX( " .
+            "           GROUP_CONCAT(discipline.Comment ORDER BY discipline.Date, " .
+            "                        discipline.DisciplineIndex SEPARATOR '*/*/'), " .
+            "           '*/*/', 1) AS Comment, " .
+            "       SUBSTRING_INDEX( " .
+            "           GROUP_CONCAT(discipline.DisciplineIndex ORDER BY discipline.Date, " .
+            "                        discipline.DisciplineIndex SEPARATOR '*/*/'), " .
+            "           '*/*/', 1) AS DisciplineIndex, " .
+            "       SUBSTRING_INDEX( " .
+            "           GROUP_CONCAT(CONCAT(teacher.Title, ' ', teacher.FirstName, ' ', teacher.Surname) " .
+            "                        ORDER BY discipline.Date, discipline.DisciplineIndex SEPARATOR '*/*/'), " .
+            "           '*/*/', 1) AS Teacher, " .
+            "       class.ClassName, disciplinedate.PunishDate " .
+            "       FROM user INNER JOIN discipline USING (Username) " .
+            "                 INNER JOIN user AS teacher ON (teacher.Username=discipline.WorkerUsername) " .
+            "                 INNER JOIN disciplineweight USING (DisciplineWeightIndex) " .
+            "                 INNER JOIN classlist ON (user.Username=classlist.Username) " .
+            "                 INNER JOIN classterm USING (ClassTermIndex) " .
+            "                 INNER JOIN class USING (ClassIndex) " .
+            "                 LEFT OUTER JOIN disciplinedate USING (DisciplineDateIndex) " .
+            "                 LEFT OUTER JOIN (attendance INNER JOIN period USING (PeriodIndex)) " .
+            "                 ON ( " .
+            "                  discipline.Username = attendance.Username " .
+            "                  AND attendance.Date = '$pundate' " .
+            "                  AND period.Period = 1 " .
+            "                 ) " .
+            "                 LEFT OUTER JOIN attendancetype USING (AttendanceTypeIndex) " .
+            "WHERE  disciplineweight.YearIndex = $yearindex " .
+            "AND    ((disciplinedate.Done=0 OR disciplinedate.PunishDate IS NULL) AND discipline.Date <= '$enddate') " .
+            "AND    disciplineweight.DisciplineTypeIndex = $dtype " .
+            "AND    class.YearIndex = $yearindex " .
+            "AND    classterm.TermIndex = $termindex " .
+            "AND    class.DepartmentIndex = $depindex " .
+            "GROUP BY user.Username " .
+            "ORDER BY class.Grade, class.ClassName, discipline.Username ";
 $res = &  $db->query($query);
 if (DB::isError($res))
     die($res->getDebugInfo()); // Check for errors in query
@@ -173,7 +190,7 @@ while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
                 $checked = "";
             }
         } else {
-            if (! is_null($row['Done'])) {
+            if (! is_null($row['PunishDate'])) {
                 $checked = "checked";
             } else {
                 $checked = "";
@@ -189,51 +206,10 @@ while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
     echo "            <td><input type='checkbox' name='mass[]' value='{$row['Username']}' id='check{$row['Username']}' $checked></input></td>\n";
     echo "            <td><label for='check{$row['Username']}'>{$row['FirstName']} {$row['Surname']} ({$row['Username']})</label></td>\n";
     echo "            <td><label for='check{$row['Username']}'>{$row['ClassName']}</label></td>\n";
-    $query = "SELECT Date, Comment, DisciplineIndex, tFirstName, tTitle, " .
-             "       tSurname, PunishDate " .
-             "       FROM view_discipline " .
-             "WHERE  YearIndex = $yearindex " .
-             "AND    tUsername IS NOT NULL " .
-             "AND    ((PunishDate IS NULL AND Date <= '$enddate') " .
-             "        OR Done = 0) " .
-             "AND    DisciplineTypeIndex = $dtype " .
-             "AND    Username = '{$row['Username']}' " .
-             "ORDER BY Date, DisciplineIndex";
-    $nres = &  $db->query($query);
-    if (DB::isError($nres))
-        die($nres->getDebugInfo()); // Check for errors in query
-    echo "            <td nowrap><label for='check{$row['Username']}'>";
-    if ($nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-        echo "{$nrow['tTitle']} {$nrow['tFirstName']} {$nrow['tSurname']}";
-        while ( $nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC) ) {
-            echo "<br>{$nrow['tTitle']} {$nrow['tFirstName']} {$nrow['tSurname']}";
-        }
-    }
-    echo "</label></td>\n";
-    $nres = &  $db->query($query);
-    if (DB::isError($nres))
-        die($nres->getDebugInfo()); // Check for errors in query
-    echo "            <td nowrap><label for='check{$row['Username']}'>";
-    if ($nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-        $dateinfo = date($dateformat, strtotime($nrow['Date']));
-        echo "$dateinfo";
-        while ( $nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC) ) {
-            $dateinfo = date($dateformat, strtotime($nrow['Date']));
-            echo "<br>$dateinfo";
-        }
-    }
-    echo "</label></td>\n";
-    $nres = &  $db->query($query);
-    if (DB::isError($nres))
-        die($nres->getDebugInfo()); // Check for errors in query
-    echo "            <td nowrap><label for='check{$row['Username']}'>";
-    if ($nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-        echo "{$nrow['Comment']}";
-        while ( $nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC) ) {
-            echo "<br>{$nrow['Comment']}";
-        }
-    }
-    echo "</label></td>\n";
+    echo "            <td nowrap><label for='check{$row['Username']}'>{$row['Teacher']}</label></td>\n";
+    $dateinfo = date($dateformat, strtotime($row['Date']));
+    echo "            <td><label for='check{$row['Username']}'>$dateinfo</label></td>\n";
+    echo "            <td><label for='check{$row['Username']}'>{$row['Comment']}</label></td>\n";
     echo "         </tr>\n";
 }
 echo "      </table>\n";
