@@ -19,6 +19,16 @@ $checkintarray = array(
     array(
       "SELECT SubjectIndex AS `Index`, Name AS `Name` FROM subject WHERE YearIndex=%year% AND TermIndex=%term% ORDER BY Name",
       "SELECT Name AS `Name` FROM subject WHERE SubjectIndex=%index%"
+    ),
+  "%punishment_session%" =>
+    array(
+      "SELECT DisciplineDateIndex AS `Index`, CONCAT(disciplinetype.DisciplineType, ' on ', disciplinedate.PunishDate) AS `Name` FROM disciplinedate INNER JOIN disciplinetype USING (DisciplineTypeIndex) INNER JOIN discipline USING (DisciplineDateIndex) INNER JOIN disciplineweight USING (DisciplineWeightIndex) WHERE YearIndex=%year% AND TermIndex=%term% GROUP BY DisciplineDateIndex ORDER BY PunishDate DESC",
+      "SELECT CONCAT(disciplinetype.DisciplineType, ' on ', disciplinedate.PunishDate) AS `Name` FROM disciplinedate INNER JOIN disciplinetype USING (DisciplineTypeIndex) WHERE DisciplineDateIndex=%index%"
+    ),
+  "%open_punishment_session%" =>
+    array(
+      "SELECT DisciplineDateIndex AS `Index`, CONCAT(disciplinetype.DisciplineType, ' on ', disciplinedate.PunishDate) AS `Name` FROM disciplinedate INNER JOIN disciplinetype USING (DisciplineTypeIndex) INNER JOIN discipline USING (DisciplineDateIndex) INNER JOIN disciplineweight USING (DisciplineWeightIndex) WHERE YearIndex=%year% AND TermIndex=%term% AND disciplinedate.Done=0 GROUP BY DisciplineDateIndex ORDER BY PunishDate DESC",
+      "SELECT CONCAT(disciplinetype.DisciplineType, ' on ', disciplinedate.PunishDate) AS `Name` FROM disciplinedate INNER JOIN disciplinetype USING (DisciplineTypeIndex) WHERE DisciplineDateIndex=%index%"
     )
   );
 $checkstrarray = array(
@@ -233,7 +243,8 @@ if($type == "html") {
             if (strpos($ckquery, $key) !== false) {
                 if(!is_null($value[0])) {
                     $fname = str_replace("%", "", $key);
-                    $dname = ucfirst($fname);
+                    $sname = str_replace("_", " ", $fname);
+                    $dname = ucfirst($sname);
                     $query = $value[0];
                     $query = str_replace("%year%", $yearindex, $query);
                     $query = str_replace("%department%", $depindex, $query);
@@ -243,13 +254,13 @@ if($type == "html") {
                     if (DB::isError($res))
                         die($res->getDebugInfo()); // Check for errors in query
                     if ($res->numRows() == 0) {
-                        echo "      <p align='center'>Query requires $fname field, but none are available</p>\n";
+                        echo "      <p align='center'>There are no ${sname}s</p>\n";
                         include "footer.php";
                         exit(0);
                     }
                     echo "      <p align='center'>$dname: \n";
                     echo "        <select name='$fname' onchange='this.form.submit()'>\n";
-                    echo "            <option value='NULL'>Please select a $fname...</option>\n";
+                    echo "            <option value='NULL'>Please select a $sname...</option>\n";
                     $found = False;
                     while ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
                         $selected = "";
