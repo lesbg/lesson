@@ -471,6 +471,58 @@ if ($res->numRows() > 0) {
         echo "         </tr>\n";
     }
     echo "      </table>\n"; // End of table
+
+    $query =    "SELECT disciplinedate.PunishDate, disciplinetype.DisciplineType, " .
+                "       discipline.Date, discipline.Comment, IF(PunishDate=CURDATE(), 1, 0) AS Today " .
+                "       FROM discipline INNER JOIN disciplinedate USING (DisciplineDateIndex) " .
+                "                       INNER JOIN disciplinetype USING (DisciplineTypeIndex) " .
+                "WHERE disciplinedate.Done = 0 " .
+                "AND   discipline.DisciplineDateIndex IS NOT NULL " .
+                "AND   discipline.Username='$username' " .
+                "ORDER BY disciplinedate.PunishDate, discipline.Date, discipline.DisciplineIndex";
+    $dRes = &   $db->query($query);
+    if (DB::isError($dRes))
+        die($dRes->getDebugInfo()); // Check for errors in query
+    if($dRes->numRows() > 0) {
+        echo "      <p></p>\n";
+        echo "      <table align='center' border='1'>\n"; // Table headers
+        echo "         <tr>\n";
+        echo "            <th>Punishment</th>\n";
+        echo "            <th>Punishment date</th>\n";
+        echo "            <th>Reason</th>\n";
+        echo "            <th>Infraction date</th>\n";
+        echo "         </tr>\n";
+
+        /* For each subject, print a row with the subject name and teacher(s) */
+        $alt_count = 0;
+        while ( $row = & $dRes->fetchRow(DB_FETCHMODE_ASSOC) ) {
+            $alt_count += 1;
+            if ($alt_count % 2 == 0) {
+                $alt = " class='alt'";
+            } else {
+                $alt = " class='std'";
+            }
+
+            if($row['Today'] == 1) {
+                $emph = "<strong>";
+                $unemph = "</strong>";
+            } else {
+                $emph = "";
+                $unemph = "";
+            }
+            $pundate = date($dateformat, strtotime($row['PunishDate']));
+            $infr_date = date($dateformat, strtotime($row['Date']));
+            $comment = htmlspecialchars($row['Comment'], ENT_QUOTES);
+            echo "         <tr$alt>\n";
+            echo "            <td>$emph{$row['DisciplineType']}$unemph</td>\n";
+            echo "            <td>$emph$pundate$unemph</td>\n";
+            echo "            <td>$emph$comment$unemph</td>\n";
+            echo "            <td>$emph$infr_date$unemph</td>\n";
+            echo "         </tr>\n";
+        }
+        echo "      </table>\n"; // End of table
+    }
+
     /* Calculate conduct mark */
     $disclink = "index.php?location=" . dbfuncString2Int("student/discipline.php") .
                  "&amp;key=" . dbfuncString2Int($username) . "&amp;keyname=" .
@@ -486,9 +538,15 @@ if ($res->numRows() > 0) {
         die($conductRes->getDebugInfo()); // Check for errors in query
     if ($conductRow = & $conductRes->fetchrow(DB_FETCHMODE_ASSOC) and
          $conductRow['Conduct'] != "") {
-        if ($conductRow['Conduct'] < 0)
-            $conductRow['Conduct'] = 0;
-        echo "      <p class='subtitle' align='center'><a href='$disclink'>Conduct: {$conductRow['Conduct']}%</a></p>\n";
+        $conduct = $conductRow['Conduct'];
+        if ($conduct < 0)
+            $conduct = 0;
+        if(is_null($conductRow['Conduct'])) {
+            $conduct = "N/A";
+        } else {
+            $conduct = "$conduct%";
+        }
+        echo "      <p class='subtitle' align='center'><a href='$disclink'>Conduct: $conduct</a></p>\n";
     }
     echo "      <p></p>\n";
 }
