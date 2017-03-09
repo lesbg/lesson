@@ -68,19 +68,19 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN) or $perm == 1) {
              dbfuncString2Int("teacher/punishment/date/modify_action.php") .
              "&amp;type=" . $_GET['type'] . "&amp;ptype=" .
              dbfuncString2Int($pindex) . "&amp;next=" . $_GET['next'];
-    $query = "SELECT view_discipline.Username, view_discipline.FirstName, view_discipline.Surname, view_discipline.Date, " .
-             "       view_discipline.Comment, class.ClassName, view_discipline.DisciplineIndex, " .
-             "       view_discipline.PunishDate, view_discipline.ServedType " .
-             "       FROM class, classlist, view_discipline " .
-             "WHERE  view_discipline.DisciplineDateIndex = $pindex " .
-             "AND    classlist.Username         = view_discipline.Username " .
-             "AND    classlist.ClassTermIndex   = classterm.ClassTermIndex " .
+    $query = "SELECT discipline.Username, user.FirstName, user.Surname, discipline.Date, " .
+             "       discipline.Comment, class.ClassName, discipline.DisciplineIndex, " .
+             "       disciplinedate.PunishDate, discipline.ServedType " .
+             "       FROM discipline INNER JOIN classlist USING (Username) " .
+             "                       INNER JOIN classterm USING (ClassTermIndex) " .
+             "                       INNER JOIN class USING (ClassIndex) " .
+             "                       INNER JOIN disciplinedate USING (DisciplineDateIndex) " .
+             "                       INNER JOIN user ON (discipline.Username=user.Username) " .
+             "WHERE  disciplinedate.DisciplineDateIndex = $pindex " .
              "AND    classterm.TermIndex        = $termindex " .
-             "AND    classterm.ClassIndex       = class.ClassIndex " .
              "AND    class.YearIndex            = $yearindex " .
-             "AND    class.DepartmentIndex      = $depindex " .
-             "GROUP BY view_discipline.Username " .
-             "ORDER BY class.Grade, class.ClassName, view_discipline.Username ";
+             //"GROUP BY view_discipline.Username " .
+             "ORDER BY class.Grade, class.ClassName, user.Username ";
     $res = &  $db->query($query);
     if (DB::isError($res))
         die($res->getDebugInfo()); // Check for errors in query

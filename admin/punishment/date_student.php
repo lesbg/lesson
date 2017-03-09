@@ -203,7 +203,7 @@ while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
     }
     $alt = " class='$alt_step'";
     echo "         <tr$alt>\n";
-    echo "            <td><input type='checkbox' name='mass[]' value='{$row['Username']}' id='check{$row['Username']}' $checked></input></td>\n";
+    echo "            <td><input type='checkbox' name='mass[]' value='{$row['DisciplineIndex']}' id='check{$row['Username']}' $checked></input></td>\n";
     echo "            <td><label for='check{$row['Username']}'>{$row['FirstName']} {$row['Surname']} ({$row['Username']})</label></td>\n";
     echo "            <td><label for='check{$row['Username']}'>{$row['ClassName']}</label></td>\n";
     echo "            <td nowrap><label for='check{$row['Username']}'>{$row['Teacher']}</label></td>\n";
