@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/family/new_action.php (c) 2015 Jonathan Dieter
+ * admin/family/new_action.php (c) 2015-2017 Jonathan Dieter
  *
  * Run query to insert a new family code into the database.
  * ***************************************************************

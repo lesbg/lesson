@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/family/new_or_modify_action.php (c) 2015 Jonathan Dieter
+ * admin/family/new_or_modify_action.php (c) 2015-2017 Jonathan Dieter
  *
  * Show common page information for changing or adding a new
  * family code and call appropriate second page.

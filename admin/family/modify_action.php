@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/family/modify_action.php (c) 2015-2016 Jonathan Dieter
+ * admin/family/modify_action.php (c) 2015-2017 Jonathan Dieter
  *
  * Run query to modify a family code in the database.
  * ***************************************************************

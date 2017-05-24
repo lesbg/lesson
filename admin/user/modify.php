@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/user/modify.php (c) 2005, 2015-2016 Jonathan Dieter
+ * admin/user/modify.php (c) 2005, 2015-2017 Jonathan Dieter
  *
  * Show fields to fill in for a user
  * ***************************************************************

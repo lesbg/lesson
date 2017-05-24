@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/family/modify.php (c) 2015 Jonathan Dieter
+ * admin/family/modify.php (c) 2015-2017 Jonathan Dieter
  *
  * Show fields to fill in for changing a family's information
  * ***************************************************************
