@@ -212,6 +212,10 @@ if ($is_admin) {
                 if(isset($_SESSION['post_family']) and isset($_SESSION['post_family']['house']))
                     $_SESSION['post']['house'] = $_SESSION['post_family']['house'];
             }
+            if(!isset($_SESSION['post']['phone'])) {
+                $_SESSION['post']['phone'] = array();
+                $_SESSION['post']['phone'][] = array(-1, "", 2, "");
+            }
         }
         if(is_null($origpwd)) {
             if(!isset($_SESSION['post']['password'])) {
