@@ -209,6 +209,8 @@ if ($is_admin) {
                     }
                     $_SESSION['post']['groups'][] = $row['GroupID'];
                 }
+                if(isset($_SESSION['post_family']) and isset($_SESSION['post_family']['house']))
+                    $_SESSION['post']['house'] = $_SESSION['post_family']['house'];
             }
         }
         if(is_null($origpwd)) {

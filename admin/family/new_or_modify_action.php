@@ -65,6 +65,21 @@ if ($_POST["action"] == "Save" || $_POST["action"] == "Update") { // If update o
         $_POST['fname'] = safe($_POST['fname']);
     }
 
+    if($_POST['house'] != "NULL") {
+        $_POST['house'] = safe($_POST['house']);
+        $query = "SELECT House FROM house WHERE House='{$_POST['house']}'";
+        $res = & $db->query($query);
+        if (DB::isError($res))
+            die($res->getDebugInfo()); // Check for errors in query
+
+        if($res->numRows() == 0) {
+            echo "<p>Invalid house selected.  Press \"Back\" to fix this.</p>\n";
+            $error = true;
+        } else {
+            $_POST['house'] = "'{$_POST['house']}'";
+        }
+    }
+
     if (isset($_POST['remove_uname']) && count($_POST['remove_uname']) > 0) {
         foreach($_POST['remove_uname'] as $i => $uname) {
             $_POST['remove_uname'][$i]= safe($uname);
@@ -85,8 +100,9 @@ if ($_POST["action"] == "Save" || $_POST["action"] == "Update") { // If update o
             if($res->numRows() == 0) {
                 echo "<p>Invalid username $uname in family.  Press \"Back\" to fix this.</p>\n";
                 $error = true;
+            } else {
+                $_POST['uname'][$i][0] = $unamem;
             }
-            $_POST['uname'][$i][0] = $unamem;
         }
     } else {
         $_POST['uname'] = array();
