@@ -314,7 +314,7 @@ if ($is_admin) {
     } else {
         $chcm = "checked";
     }
-    if(isset($_SESSION['post']['DOB']) and !is_null($_SESSION['post']['DOB'])) {
+    if(isset($_SESSION['post']['DOB']) and !is_null($_SESSION['post']['DOB']) and $_SESSION['post']['DOB'] != "") {
         $dob = date($dateformat, strtotime($_SESSION['post']['DOB']));
     } else {
         $dob = "";
