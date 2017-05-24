@@ -234,6 +234,9 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
                 echo "            <td>$fcode</td>\n";
                 echo "            <td>$fname</td>\n";
                 echo "            <td>$house</td>\n";
+                if($row['Guardian'] == 0) {
+                    echo "            <td>&nbsp;</td>\n";
+                }
             }
             if($row['Guardian'] != $prev_guardian && !is_null($row['Guardian'])) {
                 $prev_guardian = $row['Guardian'];
