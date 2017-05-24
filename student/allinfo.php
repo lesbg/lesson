@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * student/allinfo.php (c) 2004-2007 Jonathan Dieter
+ * student/allinfo.php (c) 2004-2017 Jonathan Dieter
  *
  * Print information about how student is doing in all classes
  * ***************************************************************
@@ -130,7 +130,6 @@ if ($is_admin or $is_hod or $is_counselor or $is_principal or $is_guardian or
              "AND   TermIndex = $termindex ";
     if ($showtype == "u") {
         $query .= "AND   mark.Score IS NULL " . "AND   subject.ShowInList = 1 " .
-             "AND   DATE(NOW()) >= assignment.Date " .
              "AND   DATE(ADDTIME(NOW(), '09:00:00')) <= assignment.DueDate " . // Clever hack to not show homework due today after 3:00PM
              "ORDER BY DueDate ASC, Date ASC, AssignmentIndex DESC"; // (15:00 + 9 hours = next day)
     } elseif ($showtype == "m") {
@@ -141,7 +140,6 @@ if ($is_admin or $is_hod or $is_counselor or $is_principal or $is_guardian or
         "ORDER BY DueDate ASC, Date ASC, AssignmentIndex DESC";
     } elseif ($showtype == "t") {
         $query .= "AND   mark.Score IS NULL " . "AND   subject.ShowInList = 1 " .
-                 "AND   DATE(NOW()) >= assignment.Date " .
                  "AND   DATE(NOW()) =  assignment.DueDate " .
                  "ORDER BY DueDate ASC, Date ASC, AssignmentIndex DESC";
     } else {
