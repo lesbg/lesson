@@ -48,7 +48,7 @@ if ($is_admin) {
     } else {
         /* Add new user */
         $query = "INSERT INTO family (FamilyCode, FamilyName, House) " .
-                 "VALUES ('$fcode', '{$_POST['fname']}', '{$_POST['house']}')";
+                 "VALUES ('$fcode', '{$_POST['fname']}', {$_POST['house']})";
         $aRes = & $db->query($query);
         if (DB::isError($aRes))
             die($aRes->getDebugInfo()); // Check for errors in query
