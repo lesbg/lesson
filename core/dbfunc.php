@@ -1541,8 +1541,8 @@ function remove_member_from_groupgen($member, $group_id) {
         if (DB::isError($res))
             die($res->getDebugInfo());
 
-        if($res->numRows() == 0) {
-            $query = "DELETE FROM groupgenmem WHERE IDUsername='{$group_id}:{$member}')";
+        if($res->numRows() > 0) {
+            $query = "DELETE FROM groupgenmem WHERE IDUsername='{$group_id}:{$member}'";
             $res = & $db->query($query);
             if (DB::isError($res))
                 die($res->getDebugInfo());
@@ -1610,7 +1610,7 @@ function add_member_to_group($member, $group_id) {
     }
 }
 
-function remove_member_from_group($member, $group_id)
+function remove_member_from_group($member, $group_id) {
     global $db;
 
     $query = "SELECT Member FROM groupmem WHERE GroupID='$group_id' AND Member='$member'";
@@ -1618,7 +1618,7 @@ function remove_member_from_group($member, $group_id)
     if (DB::isError($res))
         die($res->getDebugInfo());
 
-    if($res->numRows() == 0) {
+    if($res->numRows() > 0) {
         $query =    "DELETE FROM groupmem WHERE Member='$member' AND GroupID='$group_id'";
         $res = & $db->query($query);
         if (DB::isError($res))
@@ -1800,6 +1800,8 @@ function clean_vals($var, $base64=False) {
 }
 
 function class_remove_student($username, $classtermindex) {
+    global $db;
+
     $query =    "DELETE FROM classlist " .
                 "WHERE Username       = '$username' " .
                 "AND   ClassTermIndex = $classtermindex";
@@ -1848,7 +1850,7 @@ function subject_remove_student_from_all($username, $yearindex, $termindex) {
     global $db;
 
     $query =    "SELECT subject.SubjectIndex FROM subject INNER JOIN subjectstudent USING (SubjectIndex) " .
-                "WHERE subjectstudent.Username = '$username" .
+                "WHERE subjectstudent.Username = '$username' " .
                 "AND   subject.YearIndex       = $yearindex " .
                 "AND   subject.TermIndex       = $termindex";
     $res =& $db->query($query);
@@ -1863,15 +1865,15 @@ function subject_remove_student_from_all($username, $yearindex, $termindex) {
 }
 
 function school_remove_student($username, $yearindex, $termindex) {
-    global $db
+    global $db;
 
     subject_remove_student_from_all($username, $yearindex, $termindex);
     punishment_remove_student($username, $yearindex, $termindex);
 
     $query =    "SELECT classterm.ClassTermIndex FROM " .
-                "       class INNER classterm USING (ClassIndex) " .
+                "       class INNER JOIN classterm USING (ClassIndex) " .
                 "             INNER JOIN classlist USING (ClassTermIndex) " .
-                "WHERE classlist.Username  = '$username " .
+                "WHERE classlist.Username  = '$username' " .
                 "AND   class.YearIndex     = $yearindex " .
                 "AND   classterm.TermIndex = $termindex";
     $res =& $db->query($query);
