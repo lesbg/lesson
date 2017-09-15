@@ -51,15 +51,15 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
         include "core/titletermyear.php";
 
         if (isset($errorlist) and is_array($errorlist)) {
-            echo "      <p class=\"error\" align=\"center\">";
+            echo "      <p class='error' align='center'>";
             foreach ( $errorlist as $key => $error_user ) { // If there were errors, print them.
                 echo "         $error_user still has marks/comments in this subject.<br>\n";
             }
             echo "      </p>\n";
-            echo "      <p class=\"error\" align=\"center\">If you want the marks deleted, " .
+            echo "      <p class='error' align='center'>If you want the marks deleted, " .
                  "remove the student(s) from the subject again.</p>\n";
         }
-        echo "      <form action=\"$link\" name=\"modSubj\" method=\"post\">\n"; // Form method
+        echo "      <form action='$link' name='modSubj' method='post'>\n"; // Form method
 
         $editlink = "index.php?location=" .
                      dbfuncString2Int("admin/subject/modify.php") . "&amp;key=" .
@@ -67,17 +67,17 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
                      "&amp;next=" . dbfuncString2Int($nextLink);
         $editbutton = dbfuncGetButton($editlink, "Edit subject", "medium", "",
                                     "Edit subject specific data");
-        echo "         <p align=\"center\">$editbutton</p>\n";
-        echo "         <table align=\"center\" border=\"1\">\n"; // Table headers
+        echo "         <p align='center'>$editbutton</p>\n";
+        echo "         <table align='center' border='1'>\n"; // Table headers
         echo "            <tr>\n";
         echo "               <th>Students in subject</th>\n";
         echo "               <th>Unassigned students</th>\n";
         echo "            </tr>\n";
-        echo "            <tr class=\"std\">\n";
+        echo "            <tr class='std'>\n";
 
         /* Get list of students in subject and store in option list */
         echo "               <td>\n";
-        echo "                  <select name=\"removefromsubject[]\" style=\"width: 200px;\" multiple size=19>\n";
+        echo "                  <select name='removefromsubject[]' style='width: 200px;' multiple size=19>\n";
         $res = &  $db->query(
                         "SELECT user.FirstName, user.Surname, user.Username FROM " .
                          "       user, subjectstudent " .
@@ -92,7 +92,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
             } else {
                 $remUsername = "{$row['Username']}";
             }
-            echo "                     <option value=\"$remUsername\">{$row['Username']} - {$row['FirstName']} " .
+            echo "                     <option value='$remUsername'>{$row['Username']} - {$row['FirstName']} " .
                  "{$row['Surname']}\n";
         }
         echo "                  </select>\n";
@@ -100,7 +100,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
 
         /* Create listboxes with classes */
         echo "               <td>\n";
-        echo "                  List Class: <select name=\"class\" onchange=\"modSubj.submit()\">\n";
+        echo "                  List Class: <select name='class' onchange='modSubj.submit()'>\n";
         $res = &  $db->query(
                         "SELECT ClassIndex, Grade, ClassName FROM class " .
                          "WHERE YearIndex = $yearindex " .
@@ -118,14 +118,14 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
                     $_POST['class'] = $row['ClassIndex'];
                 }
             }
-            echo "                     <option value=\"{$row['ClassIndex']}\"";
+            echo "                     <option value='{$row['ClassIndex']}'";
             if ($_POST['class'] == $row['ClassIndex'])
                 echo " selected";
             echo ">{$row['ClassName']}\n";
         }
         echo "                  </select>\n";
         echo "                  <noscript>\n"; // No javascript compatibility
-        echo "                     <input type=\"submit\" name=\"action\" value=\"Update\" \>\n";
+        echo "                     <input type='submit' name='action' value='Update' \>\n";
         echo "                  </noscript><br>\n";
 
         $showNew = "";
@@ -149,7 +149,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
         }
 
         /* Get list of students who are in the active class */
-        echo "                  <select name=\"addtosubject[]\" style=\"width: 200px;\" multiple size=10>\n";
+        echo "                  <select name='addtosubject[]' style='width: 200px;' multiple size=10>\n";
         if ($_POST['class'] != "") {
             $query = "SELECT user.FirstName, user.Surname, user.Username, newmem.Username AS New, specialmem.Username AS Special FROM " .
                  "       user " .
@@ -182,52 +182,52 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
                 die($res->getDebugInfo()); // Check for errors in query
 
             while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-                echo "                     <option value=\"{$row['Username']}\">{$row['Username']} - {$row['FirstName']} " .
+                echo "                     <option value='{$row['Username']}'>{$row['Username']} - {$row['FirstName']} " .
                      "{$row['Surname']}\n";
             }
         }
         echo "                  </select><br>\n";
-        echo "                  <label for=\"showall\">\n";
-        echo "                     <input type=\"radio\" name=\"show\" value=\"all\" onchange=\"modSubj.submit()\" " .
-             "id=\"showall\" $showAll>All students<br>\n";
+        echo "                  <label for='showall'>\n";
+        echo "                     <input type='radio' name='show' value='all' onchange='modSubj.submit()' " .
+             "id='showall' $showAll>All students<br>\n";
         echo "                  </label>\n";
-        echo "                  <label for=\"shownew\">\n";
-        echo "                     <input type=\"radio\" name=\"show\" value=\"new\" onchange=\"modSubj.submit()\" " .
-             "id=\"shownew\" $showNew>New students<br>\n";
+        echo "                  <label for='shownew'>\n";
+        echo "                     <input type='radio' name='show' value='new' onchange='modSubj.submit()' " .
+             "id='shownew' $showNew>New students<br>\n";
         echo "                  </label>\n";
-        echo "                  <label for=\"showold\">\n";
-        echo "                     <input type=\"radio\" name=\"show\" value=\"old\" onchange=\"modSubj.submit()\" " .
-             "id=\"showold\" $showOld>Old students<br>\n";
+        echo "                  <label for='showold'>\n";
+        echo "                     <input type='radio' name='show' value='old' onchange='modSubj.submit()' " .
+             "id='showold' $showOld>Old students<br>\n";
         echo "                  </label>\n";
-        echo "                  <label for=\"showspec\">\n";
-        echo "                     <input type=\"radio\" name=\"show\" value=\"spec\" onchange=\"modSubj.submit()\" " .
-             "id=\"showspec\" $showSpec>Special students<br>\n";
+        echo "                  <label for='showspec'>\n";
+        echo "                     <input type='radio' name='show' value='spec' onchange='modSubj.submit()' " .
+             "id='showspec' $showSpec>Special students<br>\n";
         echo "                  </label>\n";
-        echo "                  <label for=\"showreg\">\n";
-        echo "                     <input type=\"radio\" name=\"show\" value=\"reg\" onchange=\"modSubj.submit()\" " .
-             "id=\"showreg\" $showReg>Regular students\n";
+        echo "                  <label for='showreg'>\n";
+        echo "                     <input type='radio' name='show' value='reg' onchange='modSubj.submit()' " .
+             "id='showreg' $showReg>Regular students\n";
         echo "                  </label>\n";
         echo "               </td>\n";
         echo "            </tr>\n";
-        echo "            <tr class=\"alt\">\n";
-        echo "               <td align=\"center\">\n";
-        echo "                  <input type=\"submit\" name=\"action\" value=\"&gt;&gt;\">\n";
-        echo "                  <input type=\"submit\" name=\"action\" value=\"&gt;\">\n";
+        echo "            <tr class='alt'>\n";
+        echo "               <td align='center'>\n";
+        echo "                  <input type='submit' name='action' value='&gt;&gt;'>\n";
+        echo "                  <input type='submit' name='action' value='&gt;'>\n";
         echo "               </td>\n";
-        echo "               <td align=\"center\">\n";
-        echo "                  <input type=\"submit\" name=\"action\" value=\"&lt;\">\n";
-        echo "                  <input type=\"submit\" name=\"action\" value=\"&lt;&lt;\">\n";
+        echo "               <td align='center'>\n";
+        echo "                  <input type='submit' name='action' value='&lt;'>\n";
+        echo "                  <input type='submit' name='action' value='&lt;&lt;'>\n";
         echo "               </td>\n";
         echo "            </tr>\n";
         echo "            <tr>\n";
         echo "               <th>Subject teacher(s)</th>\n";
         echo "               <th>Unassigned teachers</th>\n";
         echo "            </tr>\n";
-        echo "            <tr class=\"std\">\n";
+        echo "            <tr class='std'>\n";
 
         /* Get list of teachers in subject and store in option list */
         echo "               <td>\n";
-        echo "                  <select name=\"removefromteacherlist[]\" style=\"width: 200px;\" multiple size=10>\n";
+        echo "                  <select name='removefromteacherlist[]' style='width: 200px;' multiple size=10>\n";
         $res = &  $db->query(
                         "SELECT user.FirstName, user.Surname, user.Username FROM " .
                          "       user, subjectteacher " .
@@ -237,7 +237,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
         if (DB::isError($res))
             die($res->getDebugInfo()); // Check for errors in query
         while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-            echo "                     <option value=\"{$row['Username']}\">{$row['Username']} - {$row['FirstName']} " .
+            echo "                     <option value='{$row['Username']}'>{$row['Username']} - {$row['FirstName']} " .
                  "{$row['Surname']}\n";
         }
         echo "                  </select>\n";
@@ -245,7 +245,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
 
         /* Get list of unassigned teachers */
         echo "               <td>\n";
-        echo "                  <select name=\"addtoteacherlist[]\" style=\"width: 200px;\" multiple size=10>\n";
+        echo "                  <select name='addtoteacherlist[]' style='width: 200px;' multiple size=10>\n";
 
         $query =    "SELECT user.FirstName, user.Surname, user.Username FROM " .
                     "       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
@@ -261,31 +261,31 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
             die($res->getDebugInfo()); // Check for errors in query
 
         while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-            echo "                     <option value=\"{$row['Username']}\">{$row['Username']} - {$row['FirstName']} " .
+            echo "                     <option value='{$row['Username']}'>{$row['Username']} - {$row['FirstName']} " .
                  "{$row['Surname']}\n";
         }
         echo "                  </select><br>\n";
         echo "               </td>\n";
         echo "            </tr>\n";
-        echo "            <tr class=\"alt\">\n";
-        echo "               <td align=\"center\">\n";
-        echo "                  <input type=\"submit\" name=\"actiont\" value=\"&gt;\">\n";
+        echo "            <tr class='alt'>\n";
+        echo "               <td align='center'>\n";
+        echo "                  <input type='submit' name='actiont' value='&gt;'>\n";
         echo "               </td>\n";
-        echo "               <td align=\"center\">\n";
-        echo "                  <input type=\"submit\" name=\"actiont\" value=\"&lt;\">\n";
+        echo "               <td align='center'>\n";
+        echo "                  <input type='submit' name='actiont' value='&lt;'>\n";
         echo "               </td>\n";
         echo "            </tr>\n";
         echo "         </table>\n"; // End of table
-        echo "         <p align=\"center\"><input type=\"submit\" name=\"action\" value=\"Done\" \></p>\n";
+        echo "         <p align='center'><input type='submit' name='action' value='Done' \></p>\n";
         echo "         <p></p>\n";
         echo "      </form>\n";
     } else {
-        echo "      <p>The subject \"$title\" is no longer accessible.  Have you deleted it?</p>\n";
-        echo "      <p><a href=\"$backLink\">Click here to go back</a></p>\n";
+        echo "      <p>The subject '$title' is no longer accessible.  Have you deleted it?</p>\n";
+        echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";
     }
 } else { // User isn't authorized to view or change scores.
     echo "      <p>You do not have permission to access this page</p>\n";
-    echo "      <p><a href=\"$backLink\">Click here to go back</a></p>\n";
+    echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";
 }
 
 include "footer.php";
