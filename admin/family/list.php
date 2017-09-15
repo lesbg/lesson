@@ -12,7 +12,7 @@ if(isset($_GET['key2']) && dbfuncInt2String($_GET['key2']) == "1") {
 } else {
     $show_all = 0;
 }
-$show_str = dbfuncString2Int($show_all);
+$show_str = intval(dbfuncString2Int($show_all));
 
 include "header.php"; // Show header
 
@@ -131,17 +131,17 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
                     "        GROUP_CONCAT(phone.Comment ORDER BY phone.SortOrder SEPARATOR '#*#*'), " .
                     "        '#*#*', 1) AS Comment " .
                     "FROM " .
-                    "   (SELECT family.FamilyCode, family.FamilyName, house.HouseName FROM " .
+                    "   (SELECT family.FamilyCode, family.FamilyName, house.HouseName, MAX(groupgenmem.Username) AS ActiveStudents FROM " .
                     "       family LEFT OUTER JOIN " .
                     "            (familylist AS familylist2 INNER JOIN user AS user2 USING (Username)) USING (FamilyCode) " .
-                    "              LEFT OUTER JOIN house ON family.House=house.House ";
+                    "              LEFT OUTER JOIN house ON family.House=house.House " .
+                    "              LEFT OUTER JOIN (groupgenmem INNER JOIN groups " .
+                    "                               ON (groups.GroupTypeID='activestudent' " .
+                    "                                   AND groupgenmem.GroupID=groups.GroupID " .
+                    "                                   AND groups.YearIndex=$yearindex)) " .
+                    "                   ON (user2.Username=groupgenmem.Username and familylist2.Guardian=0) ";
     if(!$show_all) {
-        $query .=   "        LEFT OUTER JOIN (groupgenmem INNER JOIN groups " .
-                    "                     ON (groups.GroupTypeID='activestudent' " .
-                    "                         AND groupgenmem.GroupID=groups.GroupID " .
-                    "                         AND groups.YearIndex=$yearindex)) " .
-                    "                   USING (Username) " .
-                    "    WHERE (groupgenmem.Username IS NOT NULL OR familylist2.FamilyCode IS NULL) ";
+        $query .=   "    WHERE (groupgenmem.Username IS NOT NULL OR familylist2.FamilyCode IS NULL) ";
     }
     $query .=       "    GROUP BY family.FamilyCode) AS familyinfo " .
                     "   LEFT OUTER JOIN (familylist INNER JOIN user USING (Username) " .
@@ -214,12 +214,24 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
                              dbfuncString2Int($row['FamilyCode']) . "&amp;keyname=" .
                              dbfuncString2Int("{$row['FamilyName']}");
 
-                /* Generate view and edit buttons */
+                $removelink = "index.php?location=" .
+                             dbfuncString2Int("admin/family/remove_from_school.php") . "&amp;key=" .
+                             dbfuncString2Int($row['FamilyCode']) . "&amp;keyname=" .
+                             dbfuncString2Int("{$row['FamilyName']}");
+
+                /* Generate edit and remove buttons */
                 if ($is_admin) {
                     $editbutton = dbfuncGetButton($editlink, "E", "small", "edit",
                                                 "Edit family");
+                    if(!is_null($row['ActiveStudents']) and $yearindex == $currentyear) {
+                        $removebutton = dbfuncGetButton($removelink, "-", "small", "delete",
+                                                    "Remove all students in family from school");
+                    } else {
+                        $removebutton = "";
+                    }
                 } else {
                     $editbutton = "";
+                    $removebutton = "";
                 }
 
                 $fcode = htmlspecialchars($row['FamilyCode']);
@@ -230,7 +242,7 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
                     $house = "<em>None</em>";
                 }
                 $row['FamilyCode'] = safe($row['FamilyCode']);
-                echo "            <td>$editbutton</td>\n";
+                echo "            <td nowrap='nowrap'>$editbutton $removebutton</td>\n";
                 echo "            <td>$fcode</td>\n";
                 echo "            <td>$fname</td>\n";
                 echo "            <td>$house</td>\n";
@@ -261,26 +273,44 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
                         dbfuncString2Int($row['Username']) . "&amp;keyname=" .
                         dbfuncString2Int(
                             "{$row['FirstName']} {$row['Surname']} ({$row['Username']})");
+                $removelink = "index.php?location=" .
+                        dbfuncString2Int("admin/family/remove_student_from_school.php") . "&amp;key=" .
+                        dbfuncString2Int($row['Username']) . "&amp;keyname=" .
+                        dbfuncString2Int(
+                            "{$row['FirstName']} {$row['Surname']} ({$row['Username']})");
+
                 $cnlink = "index.php?location=" .
                         dbfuncString2Int("teacher/casenote/list.php") . "&amp;key=" .
                         dbfuncString2Int($row['Username']) . "&amp;keyname=" .
                         dbfuncString2Int(
                             "{$row['FirstName']} {$row['Surname']} ({$row['Username']})") .
                         "&amp;keyname2=" . dbfuncSTring2Int($row['FirstName']);
-                if(!is_null($row['ActiveStudent']) && $row['Guardian'] == 0) {
-                    $viewbutton = dbfuncGetButton($viewlink, "V", "small", "view",
-                            "View $who's subjects");
+                if($is_admin) {
+                    if(!is_null($row['ActiveStudent']) && $row['Guardian'] == 0) {
+                        $viewbutton = dbfuncGetButton($viewlink, "V", "small", "view",
+                                "View $who's subjects");
+                        if($yearindex == $currentyear) {
+                            $removebutton = dbfuncGetButton($removelink, "-", "small", "delete",
+                                                    "Remove from school");
+                        } else {
+                            $removebutton = "";
+                        }
+                    } else {
+                        $viewbutton = "";
+                        $removebutton = "";
+                    }
+                    $editbutton = dbfuncGetButton($editlink, "E", "small", "edit",
+                            "Edit $who");
                 } else {
                     $viewbutton = "";
+                    $editbutton = "";
+                    $removebutton = "";
                 }
-                $editbutton = dbfuncGetButton($editlink, "E", "small", "edit",
-                        "Edit $who");
-
-                echo "$viewbutton $editbutton";
+                echo "$viewbutton $editbutton $removebutton";
                 if(!is_null($row['ActiveStudent'])) {
                     echo "<strong>";
                 }
-                if(!is_null($row['ActiveTeacher']) || $row['Guardian'] == 1) {
+                if($row['Guardian'] == 1) {
                     echo "<em>";
                     if(isset($row['Title']) and $row['Title'] != "") {
                         echo "{$row['Title']} ";
@@ -290,7 +320,7 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
                 if(!is_null($row['ActiveStudent'])) {
                     echo " - {$row['ClassName']}";
                 }
-                if(!is_null($row['ActiveTeacher']) || $row['Guardian'] == 1) {
+                if($row['Guardian'] == 1) {
                     if($row['Number'] != "") {
                         echo " - {$row['Number']}";
                     }
