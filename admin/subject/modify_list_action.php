@@ -42,26 +42,9 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
                 $row = & $res->fetchRow(DB_FETCHMODE_ASSOC); // and we're not force the removal, pop up an error
                 $errorlist[$remUserName] = "{$row['FirstName']} {$row['Surname']} ($remUserName)"; // message
             } else { // Remove all null score and comment marks, then remove user from subject
-                $nRes = & $db->query(
-                        "SELECT AssignmentIndex FROM assignment WHERE SubjectIndex = $subjectindex");
-                if (DB::isError($nRes))
-                    die($nRes->getDebugInfo()); // Check for errors in query
-                while ( $nRow = & $nRes->fetchRow(DB_FETCHMODE_ASSOC) ) { // This is a work-around for early (<4.0) versions
-                    $res = &  $db->query(
-                        "DELETE FROM mark " . // of MySQL
-                         "WHERE mark.Username = '$remUserName' " .
-                         "AND   mark.AssignmentIndex = {$nRow['AssignmentIndex']}");
-                    if (DB::isError($res))
-                        die($res->getDebugInfo()); // Check for errors in query
-                }
-                $res = &  $db->query(
-                                "DELETE FROM subjectstudent " .
-                                 "WHERE Username     = \"$remUserName\" " .
-                                 "AND   SubjectIndex = $subjectindex");
-                if (DB::isError($res))
-                    die($res->getDebugInfo()); // Check for errors in query
+                subject_remove_student($remUserName, $subjectindex);
                 log_event($LOG_LEVEL_ADMIN, "admin/subject/modify_list_action.php",
-            $LOG_ADMIN, "Removed $remUserName from subject $subject.");
+                          $LOG_ADMIN, "Removed $remUserName from subject $subject.");
             }
         }
         include "admin/subject/modify_list.php";
@@ -86,30 +69,13 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
             if (DB::isError($res))
                 die($res->getDebugInfo()); // Check for errors in query
 
-            if ($res->numRows() > 0) { // If there's at least one mark with a score or comment,
+            if ($res->numRows() > 0 && ! $forceRemove) { // If there's at least one mark with a score or comment,
                 $row = & $res->fetchRow(DB_FETCHMODE_ASSOC); // and we're not force the removal, pop up an error
                 $errorlist[$remUserName] = "{$row['FirstName']} {$row['Surname']} ($remUserName)"; // message
             } else { // Remove all null score and comment marks, then remove user from subject
-                $nRes = & $db->query(
-                        "SELECT AssignmentIndex FROM assignment WHERE SubjectIndex = $subjectindex");
-                if (DB::isError($nRes))
-                    die($nRes->getDebugInfo()); // Check for errors in query
-                while ( $nRow = & $nRes->fetchRow(DB_FETCHMODE_ASSOC) ) { // This is a work-around for early (<4.0) versions
-                    $res = &  $db->query(
-                        "DELETE FROM mark " . // of MySQL
-                         "WHERE mark.Username = '$remUserName' " .
-                         "AND   mark.AssignmentIndex = {$nRow['AssignmentIndex']}");
-                    if (DB::isError($res))
-                        die($res->getDebugInfo()); // Check for errors in query
-                }
-                $res = &  $db->query(
-                                "DELETE FROM subjectstudent " .
-                                 "WHERE Username     = \"$remUserName\" " .
-                                 "AND   SubjectIndex = $subjectindex");
-                if (DB::isError($res))
-                    die($res->getDebugInfo()); // Check for errors in query
+                subject_remove_student($remUserName, $subjectindex);
                 log_event($LOG_LEVEL_ADMIN, "admin/subject/modify_list_action.php",
-            $LOG_ADMIN, "Removed $remUserName from subject $subject.");
+                          $LOG_ADMIN, "Removed $remUserName from subject $subject.");
             }
         }
         include "admin/subject/modify_list.php";
@@ -128,7 +94,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
                 if (DB::isError($res))
                     die($res->getDebugInfo()); // Check for errors in query
                 log_event($LOG_LEVEL_ADMIN, "admin/subject/modify_list_action.php",
-            $LOG_ADMIN, "Added $addUserName to subject $subject.");
+                          $LOG_ADMIN, "Added $addUserName to subject $subject.");
             }
         }
         include "admin/subject/modify_list.php";
@@ -194,7 +160,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
                     if (DB::isError($res))
                         die($res->getDebugInfo()); // Check for errors in query
                     log_event($LOG_LEVEL_ADMIN, "admin/subject/modify_list_action.php",
-            $LOG_ADMIN, "Added $addUserName to subject $subject.");
+                              $LOG_ADMIN, "Added $addUserName to subject $subject.");
                 }
             }
         }
@@ -208,7 +174,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
             if (DB::isError($res))
                 die($res->getDebugInfo()); // Check for errors in query
             log_event($LOG_LEVEL_ADMIN, "admin/subject/modify_list_action.php",
-            $LOG_ADMIN, "Removed $remUserName from teaching subject $subject.");
+                      $LOG_ADMIN, "Removed $remUserName from teaching subject $subject.");
         }
         include "admin/subject/modify_list.php";
     } elseif ($_POST["actiont"] == "<") {
@@ -227,8 +193,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
                     die($res->getDebugInfo()); // Check for errors in query
             }
             log_event($LOG_LEVEL_ADMIN, "admin/subject/modify_list_action.php",
-                    $LOG_ADMIN,
-                    "Set $addUserName as a teacher for subject $subject.");
+                      $LOG_ADMIN, "Set $addUserName as a teacher for subject $subject.");
         }
         include "admin/subject/modify_list.php";
     } elseif ($_POST["action"] == "Done") {
@@ -239,7 +204,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
 } else {
     /* Log unauthorized access attempt */
     log_event($LOG_LEVEL_ERROR, "admin/subject/modify_list_action.php",
-            $LOG_DENIED_ACCESS, "Attempted to modify subject $subject.");
+              $LOG_DENIED_ACCESS, "Attempted to modify subject $subject.");
 
     $noJS = true;
     $noHeaderLinks = true;

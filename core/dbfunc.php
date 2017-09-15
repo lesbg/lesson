@@ -1462,7 +1462,7 @@ function gen_group_members($group_id) {
     }
 }
 
-function update_parent_members($member, $group_id, $addyear, $addterm) {
+function update_parent_members($member, $group_id) {
     global $db;
 
     $query =    "SELECT groups.GroupID FROM groupmem, groups, grouptype " .
@@ -1475,7 +1475,7 @@ function update_parent_members($member, $group_id, $addyear, $addterm) {
         die($res->getDebugInfo());
 
     while ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-        add_member_to_groupgen($member, safe($row['GroupID']), $addyear, $addterm);
+        add_member_to_groupgen($member, safe($row['GroupID']));
         $query =    "UPDATE groups, " .
                     "(SELECT groups.GroupID, COUNT(groupgenmem.Username) AS RealUserCount FROM groups, groupgenmem " .
                     " WHERE groupgenmem.GroupID = groups.GroupID " .
@@ -1488,11 +1488,11 @@ function update_parent_members($member, $group_id, $addyear, $addterm) {
         if (DB::isError($nres))
             die($nres->getDebugInfo());
 
-        update_parent_members($member, safe($row['GroupID']), $addyear, $addterm);
+        update_parent_members($member, safe($row['GroupID']));
     }
 }
 
-function add_member_to_groupgen($member, $group_id, $addyear, $addterm) {
+function add_member_to_groupgen($member, $group_id) {
     global $db;
 
     /* If new group member is also a group, add all members of the new group to the parent */
@@ -1504,7 +1504,7 @@ function add_member_to_groupgen($member, $group_id, $addyear, $addterm) {
             die($res->getDebugInfo());
 
         while ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-            add_member_to_groupgen(safe($row['Member']), $group_id, $addyear, $addterm);
+            add_member_to_groupgen(safe($row['Member']), $group_id);
         }
     } else {
         $query = "SELECT Username FROM groupgenmem WHERE GroupID='$group_id' AND Username='$member'";
@@ -1521,7 +1521,36 @@ function add_member_to_groupgen($member, $group_id, $addyear, $addterm) {
     }
 }
 
-function add_member_to_group($member, $group_id, $addyear, $addterm) {
+function remove_member_from_groupgen($member, $group_id) {
+    global $db;
+
+    /* If removed group member is also a group, remove all members of the group from the parent */
+    if(substr($member, 0, 1) == "@") {
+        $query =    "SELECT groupmem.Member FROM groupmem " .
+                    "WHERE CONCAT('@', groupmem.GroupID) = '$member'";
+        $res = & $db->query($query);
+        if (DB::isError($res))
+            die($res->getDebugInfo());
+
+        while ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+            add_member_to_groupgen(safe($row['Member']), $group_id);
+        }
+    } else {
+        $query = "SELECT Username FROM groupgenmem WHERE GroupID='$group_id' AND Username='$member'";
+        $res = & $db->query($query);
+        if (DB::isError($res))
+            die($res->getDebugInfo());
+
+        if($res->numRows() == 0) {
+            $query = "DELETE FROM groupgenmem WHERE IDUsername='{$group_id}:{$member}')";
+            $res = & $db->query($query);
+            if (DB::isError($res))
+                die($res->getDebugInfo());
+        }
+    }
+}
+
+function add_member_to_group($member, $group_id) {
     global $db;
 
     $query =    "SELECT PrimaryGroupType FROM groups, grouptype " .
@@ -1565,7 +1594,7 @@ function add_member_to_group($member, $group_id, $addyear, $addterm) {
             die($res->getDebugInfo());
     }
     if(!$is_primary) {
-        add_member_to_groupgen($member, $group_id, $addyear, $addterm);
+        add_member_to_groupgen($member, $group_id);
         $query =    "UPDATE groups, " .
                     "(SELECT groups.GroupID, COUNT(groupgenmem.Username) AS RealUserCount FROM groups, groupgenmem " .
                     " WHERE groupgenmem.GroupID = groups.GroupID " .
@@ -1577,7 +1606,49 @@ function add_member_to_group($member, $group_id, $addyear, $addterm) {
         if (DB::isError($res))
             die($res->getDebugInfo());
 
-        update_parent_members($member, $group_id, $addyear, $addterm);
+        update_parent_members($member, $group_id);
+    }
+}
+
+function remove_member_from_group($member, $group_id)
+    global $db;
+
+    $query = "SELECT Member FROM groupmem WHERE GroupID='$group_id' AND Member='$member'";
+    $res = & $db->query($query);
+    if (DB::isError($res))
+        die($res->getDebugInfo());
+
+    if($res->numRows() == 0) {
+        $query =    "DELETE FROM groupmem WHERE Member='$member' AND GroupID='$group_id'";
+        $res = & $db->query($query);
+        if (DB::isError($res))
+            die($res->getDebugInfo());
+
+        $query =    "UPDATE groups, " .
+                    "(SELECT groups.GroupID, COUNT(groupmem.Member) AS MemberCount FROM groups, groupmem " .
+                    " WHERE groupmem.GroupID = groups.GroupID " .
+                    " AND groups.GroupID = '$group_id' " .
+                    " GROUP BY groups.GroupID) AS oldgroup " .
+                    "SET groups.MemberCount = oldgroup.MemberCount " .
+                    "WHERE groups.GroupID = oldgroup.GroupID ";
+        $res = & $db->query($query);
+        if (DB::isError($res))
+            die($res->getDebugInfo());
+    }
+    if(!$is_primary) {
+        remove_member_from_groupgen($member, $group_id);
+        $query =    "UPDATE groups, " .
+                    "(SELECT groups.GroupID, COUNT(groupgenmem.Username) AS RealUserCount FROM groups, groupgenmem " .
+                    " WHERE groupgenmem.GroupID = groups.GroupID " .
+                    " AND groups.GroupID = '$group_id' " .
+                    " GROUP BY groups.GroupID) AS oldgroup " .
+                    "SET groups.RealUserCount = oldgroup.RealUserCount " .
+                    "WHERE groups.GroupID = oldgroup.GroupID ";
+        $res = & $db->query($query);
+        if (DB::isError($res))
+            die($res->getDebugInfo());
+
+        update_parent_members($member, $group_id);
     }
 }
 
@@ -1726,4 +1797,91 @@ function clean_vals($var, $base64=False) {
             $new_var = base64_encode($new_var);
     }
     return $new_var;
+}
+
+function class_remove_student($username, $classtermindex) {
+    $query =    "DELETE FROM classlist " .
+                "WHERE Username       = '$username' " .
+                "AND   ClassTermIndex = $classtermindex";
+    $res =& $db->query($query);
+    if (DB::isError($res))
+        die($res->getDebugInfo()); // Check for errors in query
+
+    return True;
+}
+
+function subject_remove_student($username, $subjectindex) {
+    global $db;
+
+    $query =    "DELETE mark FROM assignment INNER JOIN mark USING (AssignmentIndex) " .
+                "WHERE assignment.SubjectIndex = $subjectindex " .
+                "AND   mark.Username           = '$username'";
+    $res =& $db->query($query);
+    if (DB::isError($res))
+        die($res->getDebugInfo()); // Check for errors in query
+
+    $query =    "DELETE FROM subjectstudent " .
+                "WHERE Username     = '$username' " .
+                "AND   SubjectIndex = $subjectindex";
+    $res =& $db->query($query);
+    if (DB::isError($res))
+        die($res->getDebugInfo()); // Check for errors in query
+
+    return True;
+}
+
+function punishment_remove_student($username, $yearindex, $termindex) {
+    global $db;
+
+    $query =    "DELETE discipline FROM discipline INNER JOIN disciplineweight USING (DisciplineWeightIndex) " .
+                "WHERE discipline.Username        = '$username' " .
+                "AND   disciplineweight.YearIndex = $yearindex " .
+                "AND   disciplineweight.TermIndex = $termindex";
+    $res =& $db->query($query);
+    if (DB::isError($res))
+        die($res->getDebugInfo()); // Check for errors in query
+
+    return True;
+}
+
+function subject_remove_student_from_all($username, $yearindex, $termindex) {
+    global $db;
+
+    $query =    "SELECT subject.SubjectIndex FROM subject INNER JOIN subjectstudent USING (SubjectIndex) " .
+                "WHERE subjectstudent.Username = '$username" .
+                "AND   subject.YearIndex       = $yearindex " .
+                "AND   subject.TermIndex       = $termindex";
+    $res =& $db->query($query);
+    if (DB::isError($res))
+        die($res->getDebugInfo()); // Check for errors in query
+
+    while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+        subject_remove_student($username, $row['SubjectIndex']);
+    }
+
+    return True;
+}
+
+function school_remove_student($username, $yearindex, $termindex) {
+    global $db
+
+    subject_remove_student_from_all($username, $yearindex, $termindex);
+    punishment_remove_student($username, $yearindex, $termindex);
+
+    $query =    "SELECT classterm.ClassTermIndex FROM " .
+                "       class INNER classterm USING (ClassIndex) " .
+                "             INNER JOIN classlist USING (ClassTermIndex) " .
+                "WHERE classlist.Username  = '$username " .
+                "AND   class.YearIndex     = $yearindex " .
+                "AND   classterm.TermIndex = $termindex";
+    $res =& $db->query($query);
+    if (DB::isError($res))
+        die($res->getDebugInfo()); // Check for errors in query
+
+    while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+        class_remove_student($username, $row['ClassTermIndex']);
+    }
+
+    remove_member_from_group($username, "activestudent-$yearindex");
+    return True;
 }
