@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/custom_queries/list.php (c) 2016 Jonathan Dieter
+ * admin/custom_queries/list.php (c) 2016-2017 Jonathan Dieter
  *
  * Show custom queries
  * ***************************************************************
@@ -41,6 +41,11 @@ $checkstrarray = array(
     array(
       "SELECT MakeupIndex AS `Index`, CONCAT(MakeupDate, ' by ', Title, ' ', FirstName, ' ', Surname) AS `Name` FROM makeup INNER JOIN user USING (Username) WHERE YearIndex=%year% ORDER BY MakeupDate DESC",
       "SELECT CONCAT(MakeupDate, ' by ', Title, ' ', FirstName, ' ', Surname) AS `Name` FROM makeup INNER JOIN user USING (Username) WHERE MakeupIndex='%index%'"
+    ),
+  "%attendance_date%" =>
+    array(
+      "SELECT Date AS `Index`, Date AS `Name` FROM attendancedone INNER JOIN subject USING (SubjectIndex) WHERE YearIndex=%year% AND TermIndex=%term% GROUP BY Date ORDER BY Date DESC",
+      "SELECT '%index%' AS `Name`"
     )
   );
 
@@ -267,6 +272,9 @@ if($type == "html") {
                         if(array_key_exists($fname, $fields) and $fields[$fname] == $row['Index']) {
                             $selected = " selected";
                             $found = True;
+                        }
+                        if(preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $row['Name'])) {
+                            $row['Name'] = date($dateformat, strtotime($row['Name']));
                         }
                         echo "        <option value='{$row['Index']}' $selected>{$row['Name']}</option>\n";
                     }

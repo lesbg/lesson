@@ -129,6 +129,7 @@ if ($is_admin) {
                     $_SESSION['post']['datesep'] = 'D';
             }
             $pwd2 = $row['Password2'];
+            $pwd  = $row['Password'];
             if(is_null($origpwd)) {
                 $origpwd = $row['OriginalPassword'];
             }
@@ -183,6 +184,7 @@ if ($is_admin) {
             }
         }
     } else {
+        $pwd = "";
         if($new_user_type != 'a') {
             if(!isset($_SESSION['post']['sname'])) $_SESSION['post']['sname'] = $new_fname;
             if($new_user_type == 'f') {
@@ -295,16 +297,16 @@ if ($is_admin) {
         echo "<input type='hidden' name='password' value='$origpwd' />";
     }
     echo "</td>\n";
-    if(!is_null($origpwd)) {
-        if($origpwd == "!!") {
-            echo "               <td colspan='2'><span name='passwd'><em>User login disabled</em></span></td>\n";
+    if(!is_null($pwd) and $origpwd != '!!') {
+        if(is_null($origpwd)) {
+            echo "               <td colspan='2'><span name='passwd'><em>Unknown because it was changed</em></span></td>\n";
         } elseif($origpwd == "username") {
             echo "               <td colspan='2'><span name='passwd'><em>Same as username</em></span></td>\n";
         } else {
             echo "               <td colspan='2'><span name='passwd'><h2>$origpwd</h2></span></td>\n";
         }
     } else {
-        echo "               <td colspan='2'><span name='passwd'><em>Unknown because it was changed</em></span></td>\n";
+        echo "               <td colspan='2'><span name='passwd'><em>User login disabled</em></span></td>\n";
     }
     echo "            </tr>\n";
     echo "            <tr>\n";

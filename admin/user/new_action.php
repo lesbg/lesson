@@ -51,19 +51,19 @@ if ($is_admin) {
         if(isset($_POST['password']) and strlen($_POST['password']) > 0 and $_POST['password'] != "!!") {
             if($_POST['password'] == 'username')
                 $_POST['password'] = $_POST['uname'];
-            $phash = password_hash($_POST['password'], PASSWORD_DEFAULT, []);
-            $passwd = safe($_POST['password']);
+            $phash = "'" . password_hash($_POST['password'], PASSWORD_DEFAULT, []) . "'";
+            $passwd = "'" . safe($_POST['password']) . "'";
         } else {
-            $phash = "!!";
-            $passwd = "!!";
+            $phash = "NULL";
+            $passwd = "NULL";
         }
 
         $query = "INSERT INTO user (Username, FirstName, Surname, Gender, DOB, House, Password, OriginalPassword, " .
                  "                  Permissions, Title, DateType, DateSeparator, " .
                  "                  DepartmentIndex) " .
                  "VALUES ('{$_POST['uname']}', '{$_POST['fname']}', '{$_POST['sname']}', " .
-                 "        '{$_POST['gender']}', {$_POST['DOB']}, {$_POST['house']}, '$phash', " .
-                 "        '$passwd', " .
+                 "        '{$_POST['gender']}', {$_POST['DOB']}, {$_POST['house']}, $phash, " .
+                 "        $passwd, " .
                  "        {$_POST['perms']}, {$_POST['title']}, " .
                  "        {$_POST['datetype']}, {$_POST['datesep']}, " .
                  "        {$_POST['department']})";

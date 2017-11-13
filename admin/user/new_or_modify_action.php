@@ -68,12 +68,14 @@ if (isset($_POST['newpass']) and !is_null($_POST['newpass'])) {
     if(isset($_GET['key'])) {
         $uname = safe(dbfuncInt2String($_GET['key']));
         if($origpwd != "!!") {
-            $phash = password_hash($origpwd, PASSWORD_DEFAULT, []);
+            $phash = "'" . password_hash($origpwd, PASSWORD_DEFAULT, []) . "'";
+            $wrorigpwd = "'$origpwd'";
         } else {
-            $phash = "!!";
+            $phash = "NULL";
+            $wrorigpwd = "NULL";
         }
 
-        $query = "UPDATE user SET Password='$phash', OriginalPassword='$origpwd' WHERE Username='$uname'";
+        $query = "UPDATE user SET Password=$phash, OriginalPassword=$wrorigpwd WHERE Username='$uname'";
         $aRes = & $db->query($query);
         if (DB::isError($aRes))
             die($aRes->getDebugInfo()); // Check for errors in query

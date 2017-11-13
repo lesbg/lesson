@@ -57,7 +57,7 @@ $query =    "SELECT * FROM " .
             "ORDER BY MakeupDate DESC";
 $res = &  $db->query($query);
 if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
+    die($res->getDebugInfo());
 
 if($res->numRows() == 0) {
     echo "      <p align='center'>There are no makeups.</p>\n";

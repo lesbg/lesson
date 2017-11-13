@@ -85,7 +85,8 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
     }
 
     $query = "SELECT user.FirstName, user.Surname, user.Username, newmem.Username AS NewUser, " .
-             "       specialmem.Username AS SpecialUser, user.OriginalPassword, classterm.ClassTermIndex, " .
+             "       specialmem.Username AS SpecialUser, user.Password, user.OriginalPassword, " .
+             "       classterm.ClassTermIndex, " .
              "       classlist.Conduct, classlist.Average, classlist.Rank, class.ClassName, " .
              "       COUNT(subjectstudent.SubjectIndex) AS SubjectCount, photo.YearIndex AS PhotoYearIndex, " .
              "       largeimage.FileIndex AS LargeFileIndex, smallimage.FileIndex AS SmallFileIndex " .
@@ -307,8 +308,8 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
                 if ($is_admin or $is_principal) {
                     if (is_null($row['OriginalPassword'])) {
                         echo "\"\",";
-                    } elseif ($row['OriginalPassword'] == "!!") {
-                        echo "\"!!\",";
+                    } elseif (is_null($row['OriginalPassword'])) {
+                        echo "NULL,";
                     } else {
                         echo "\"{$row['OriginalPassword']}\",";
                     }
@@ -351,13 +352,15 @@ if ($is_admin or $is_counselor or $is_hod or $is_principal) {
                 $photo = "<a href='$piclink'>$photo</a>";
                 echo "            <td>$photo</td>\n";
                 if ($is_admin or $is_principal) {
-                    if (is_null($row['OriginalPassword'])) {
-                        echo "            <td>&nbsp;</td>\n";
-                    } elseif ($row['OriginalPassword'] == "!!") {
+                    if (is_null($row['OriginalPassword']) and is_null($row['Password'])) {
                         echo "            <td><em><a title='Login disabled'>X</a></em></td>\n";
-                    } else {
+                    } elseif (!is_null($row['OriginalPassword'])){
                         echo "            <td><a title='Password needs to be changed'>C</a></td>\n";
+                    } else {
+                        echo "            <td>&nbsp;</td>\n";
                     }
+
+
                     if (!is_null($row['NewUser'])) {
                         echo "            <td>X</td>\n";
                     } else {

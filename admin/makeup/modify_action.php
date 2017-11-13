@@ -76,15 +76,15 @@ if ($_POST['action'] == "Delete") {
     $query = "DELETE makeup_user FROM makeup_user INNER JOIN makeup_assignment USING (MakeupAssignmentIndex) WHERE MakeupIndex=$makeup_index";
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
     $query = "DELETE FROM makeup_assignment WHERE MakeupIndex=$makeup_index";
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
     $query = "DELETE FROM makeup WHERE MakeupIndex=$makeup_index";
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 }
 
 if ($_POST['action'] != "Update" and $_POST['action'] != "Save") {
@@ -170,7 +170,7 @@ if($_POST['action'] == "Save") {
     $query = "SELECT Username FROM makeup WHERE MakeupIndex=$makeup_index";
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
     if(!$row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
         echo "</p><p align='center'>Error: Unable to find makeup!</p>\n";
         echo "      <p align='center'><a href='$nextLink'>Continue</a></p>\n"; // Link to next page
@@ -189,7 +189,7 @@ $query =    "REPLACE INTO makeup (MakeupIndex, OpenDate, CloseDate, MakeupDate, 
 
 $res = &  $db->query($query);
 if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
+    die($res->getDebugInfo());
 if($makeup_index == "NULL") {
     $query =    "SELECT MakeupIndex FROM makeup " .
                 "WHERE OpenDate='$open_date' " .
@@ -200,7 +200,7 @@ if($makeup_index == "NULL") {
                 "AND   Username='$makeup_username'";
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
     if(!$row = & $res->fetchRow(DB_FETCHMODE_ASSOC))
         die("New makeup not created");
 
@@ -213,7 +213,7 @@ foreach($_SESSION['makeup_assignment'] as $aidx) {
     $query = "SELECT AssignmentIndex FROM assignment WHERE AssignmentIndex=$aidx";
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
     if($res->numRows() == 0)
         continue;
 
@@ -222,20 +222,20 @@ foreach($_SESSION['makeup_assignment'] as $aidx) {
                 "AND   MakeupIndex=$makeup_index";
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
     if(!$row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
         $query =    "INSERT INTO makeup_assignment (MakeupIndex, AssignmentIndex) " .
                     "                       VALUES ($makeup_index, $aidx)";
         $res = &  $db->query($query);
         if (DB::isError($res))
-            die($res->getDebugInfo()); // Check for errors in query
+            die($res->getDebugInfo());
 
         $query =    "SELECT MakeupAssignmentIndex FROM makeup_assignment " .
                     "WHERE AssignmentIndex=$aidx " .
                     "AND   MakeupIndex=$makeup_index";
         $res = &  $db->query($query);
         if (DB::isError($res))
-            die($res->getDebugInfo()); // Check for errors in query
+            die($res->getDebugInfo());
         if(!$row = & $res->fetchRow(DB_FETCHMODE_ASSOC))
             die("Unable to add assignment to makeup");
     }
@@ -249,7 +249,7 @@ $query =    "SELECT MakeupAssignmentIndex, AssignmentIndex FROM makeup_assignmen
             "WHERE  MakeupIndex=$makeup_index";
 $res = &  $db->query($query);
 if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
+    die($res->getDebugInfo());
 
 while($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
     if(!in_array($row['AssignmentIndex'], $_SESSION['makeup_assignment']))

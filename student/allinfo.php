@@ -118,8 +118,8 @@ if ($is_admin or $is_hod or $is_counselor or $is_principal or $is_guardian or
 
     $query = "SELECT Title, Date, DueDate, assignment.AssignmentIndex, Description, DescriptionFileIndex, " .
              "       DescriptionFileType, AverageType, ShowAverage, Agenda, subject.Name AS SubjectName, " .
-             "       Uploadable, assignment.Weight, Score, Percentage, mark.Comment, " .
-             "       subjectstudent.Average AS StudentSubjectAverage, " .
+             "       Uploadable, assignment.Weight, Score, MakeupScore, Percentage, OriginalPercentage, " .
+             "       MakeupPercentage, mark.Comment, subjectstudent.Average AS StudentSubjectAverage, " .
              "       CanModify, CategoryName, subject.SubjectIndex " .
              "       FROM subject INNER JOIN assignment USING (SubjectIndex) INNER JOIN subjectstudent " .
              "       ON (subjectstudent.SubjectIndex = subject.SubjectIndex) LEFT OUTER JOIN mark ON " .
@@ -165,6 +165,7 @@ if ($is_admin or $is_hod or $is_counselor or $is_principal or $is_guardian or
         echo "            <th>Date</th>\n";
         echo "            <th>Due Date</th>\n";
         echo "            <th>Score</th>\n";
+        echo "            <th>Weight</th>\n";
         echo "            <th>Comment</th>\n";
         echo "         </tr>\n";
 
@@ -288,38 +289,13 @@ if ($is_admin or $is_hod or $is_counselor or $is_principal or $is_guardian or
             echo "            <td>$duedateinfo</td>\n";
 
             if ($row['Agenda'] == 1) {
-                echo "            <td colspan='2' align='center'><i>N/A</i></td>\n";
+                echo "            <td colspan='3' align='center'><i>N/A</i></td>\n";
             } else {
-                if ($row['AverageType'] == $AVG_TYPE_PERCENT) {
-                    if ($row['Score'] == $MARK_LATE) {
-                        if ($can_modify == 1) {
-                            echo "            <td>&nbsp;</td>\n";
-                        } else {
-                            echo "            <td>0%</td>\n";
-                        }
-                    } elseif ($row['Score'] == $MARK_ABSENT) {
-                        echo "            <td align='center'><i>Absent</i></td>\n";
-                    } elseif ($row['Score'] == $MARK_EXEMPT) {
-                        echo "            <td align='center'><i>Exempt</i></td>\n";
-                    } elseif (is_null($row['Score'])) {
-                        if ($can_modify == 1) {
-                            echo "            <td>&nbsp;</td>\n";
-                        } else {
-                            echo "            <td align='center'><i>Exempt</i></td>\n";
-                        }
-                    } else {
-                        $score = round($row['Percentage']);
-                        echo "            <td>$score%</td>\n";
-                    }
-                    if ($row['Score'] == $MARK_LATE) {
-                        if ($row['Comment'] == "" or is_null($row['Comment'])) {
-                            echo "            <td>Late</td>\n";
-                        } else {
-                            echo "            <td>{$row['Comment']}</td>\n";
-                        }
-                    } else {
-                        echo "            <td>{$row['Comment']}</td>\n";
-                    }
+                if ($row['AverageType'] == $AVG_TYPE_PERCENT or
+                     $average_type == $AVG_TYPE_GRADE) {
+                    echo format_makeup_average($can_modify, 0, "", "", $row['Percentage'], $row['OriginalPercentage'], $row['MakeupPercentage'], $row['Score'], $row['MakeupScore']);
+                    echo "            <td>{$row['Weight']}</td>\n";
+                    echo "            <td>{$row['Comment']}</td>\n";
                 } elseif ($row['AverageType'] == $AVG_TYPE_INDEX) {
                     if (! isset($row['AverageTypeIndex']) or
                              $row['AverageTypeIndex'] == "" or ! isset(

@@ -39,6 +39,8 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) { // Make sure user has perm
                        dbfuncString2Int("admin/subject/list.php");
     $subtypeListLink = "index.php?location=" .
                        dbfuncString2Int("admin/subjecttype/list.php");
+    $mkuptypListLink = "index.php?location=" .
+                       dbfuncString2Int("admin/makeuptype/list.php");
     $catListLink =     "index.php?location=" .
                        dbfuncString2Int("admin/category/list.php");
     $makeupLink =      "index.php?location=" .
@@ -91,6 +93,7 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) { // Make sure user has perm
     echo "      <p><a href='$counselorLink'>Counselor List</a></p>\n";
     echo "      <p><a href='$principalLink'>Principal List</a></p>\n";
     echo "      <p><a href='$subtypeListLink'>Subject Types List</a></p>\n";
+    echo "      <p><a href='$mkuptypListLink'>Makeup Types List</a></p>\n";
     echo "      <p><a href='$catListLink'>Category Types List</a></p>\n";
     echo "      <p><a href='$commentLink'>Comment List</a></p>\n";
     echo "      <p><a href='$proofLink'>Proofreader List</a></p>\n";

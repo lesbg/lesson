@@ -29,15 +29,15 @@ function &dbfuncConnect() {
     /* Set global parameters */
     global $DSN; // DSN to connect to database, stored in globals.php
     /* Connection to database */
-    $db = & DB::connect($DSN); // Initiate connection
+    $db = DB::connect($DSN); // Initiate connection
     if (DB::isError($db))
         die($db->getDebugInfo()); // Check for errors in connection
 
     $query = "SET NAMES 'utf8'";
-    $res = &  $db->query($query);
+    $res =& $db->query($query);
 
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     return $db;
 }
@@ -52,7 +52,7 @@ function &dbfuncConnectMaster() {
         $MASTER_DSN = $DSN;
 
     /* Connection to database */
-    $db = & DB::connect($MASTER_DSN); // Initiate connection
+    $db = DB::connect($MASTER_DSN); // Initiate connection
     if (DB::isError($db))
         die($db->getDebugInfo()); // Check for errors in connection
 
@@ -60,7 +60,7 @@ function &dbfuncConnectMaster() {
     $res = &  $db->query($query);
 
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     return $db;
 }
@@ -115,7 +115,7 @@ function &dbfuncGetFullName() {
     $res = & $db->query(
                     "SELECT FirstName, Surname FROM user WHERE Username = \"$username\"");
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) { // Get result of query
         $fullname = $row['FirstName'] . " " . $row['Surname']; // Store result of query in $fullname,
@@ -135,7 +135,7 @@ function dbfuncGetYearIndex() {
     $res = & $db->query(
                     "SELECT YearIndex FROM currentinfo ORDER BY InputDate DESC");
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     $row = & $res->fetchRow(DB_FETCHMODE_ASSOC); // Get result of query
     return $row['YearIndex']; // and return
@@ -150,7 +150,7 @@ function dbfuncGetPrintTotal() {
     $res = & $db->query(
                     "SELECT PrintTotal FROM currentinfo ORDER BY InputDate DESC");
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     $row = & $res->fetchRow(DB_FETCHMODE_ASSOC); // Get result of query
     if ($row['PrintTotal'] == 1)
@@ -168,14 +168,14 @@ function dbfuncGetDateFormat() {
     $userRes = & $db->query(
                         "SELECT DateType, DateSeparator FROM user WHERE Username=\"$username\"");
     if (DB::isError($userRes))
-        die($userRes->getDebugInfo()); // Check for errors in query
+        die($userRes->getDebugInfo());
     $userRow = & $userRes->fetchRow(DB_FETCHMODE_ASSOC); // Get result of query
 
     /* Run query to extract date format from "currentinfo" table */
     $globRes = & $db->query(
                         "SELECT DateType, DateSeparator FROM currentinfo ORDER BY InputDate DESC");
     if (DB::isError($globRes))
-        die($globRes->getDebugInfo()); // Check for errors in query
+        die($globRes->getDebugInfo());
     $globRow = & $globRes->fetchRow(DB_FETCHMODE_ASSOC); // Get result of query
 
     /* Get date format first from user table, then from currentinfo */
@@ -244,7 +244,7 @@ function dbfuncGetTermIndex($depindex) {
         $res = & $db->query(
                         "SELECT TermIndex FROM currentterm WHERE DepartmentIndex=$depindex");
         if (DB::isError($res))
-            die($res->getDebugInfo()); // Check for errors in query
+            die($res->getDebugInfo());
 
         $row = & $res->fetchRow(DB_FETCHMODE_ASSOC); // Get result of query
         return $row['TermIndex']; // and return
@@ -262,7 +262,7 @@ function dbfuncGetDepIndex() {
     $res = & $db->query(
                     "SELECT DepartmentIndex FROM user WHERE Username=\"$username\"");
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     $row = & $res->fetchRow(DB_FETCHMODE_ASSOC); // Get result of query
     $depindex = $row['DepartmentIndex']; // and return
@@ -275,7 +275,7 @@ function dbfuncGetDepIndex() {
                          "AND   class.YearIndex = $yearindex " .
                          "ORDER BY classterm.TermIndex DESC " . "LIMIT 1");
         if (DB::isError($res))
-            die($res->getDebugInfo()); // Check for errors in query
+            die($res->getDebugInfo());
         if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) { // Get result of query
             return $row['DepartmentIndex']; // and return
         } else {
@@ -400,19 +400,19 @@ function dbfuncString2Array($String) {
     }
     return $Return;
 }
-function &dbfuncArray2Int($array) {
+function dbfuncArray2Int($array) {
     $strValue = "";
     $strValue = dbfuncArray2String($array);
     return dbfuncString2Int($strValue);
 }
-function &dbfuncInt2Array($strValue) {
+function dbfuncInt2Array($strValue) {
     $strValue = dbfuncInt2String($strValue);
     $array = dbfuncString2Array($strValue);
     return $array;
 }
 
 /* Hash function to a safe combination of numbers and multi-case letters into a string */
-function &dbfuncInt2String($strValue) {
+function dbfuncInt2String($strValue) {
     return base64_decode($strValue);
 }
 
@@ -445,10 +445,10 @@ function start_log($page) {
                          "VALUES (\"$username\", $LOG_LOGIN, $LOG_LEVEL_ACCESS, \"$today\", " .
                          "\"$page\", \"$remote_host\", \"Password $password_number\")");
         if (DB::isError($res))
-            die($res->getDebugInfo()); // Check for errors in query
+            die($res->getDebugInfo());
         $res = & $db->query("SELECT LAST_INSERT_ID() AS LogIndex");
         if (DB::isError($res))
-            die($res->getDebugInfo()); // Check for errors in query
+            die($res->getDebugInfo());
         if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC) and $row['LogIndex'] != 0) { // Get new log index
             $_SESSION['LogIndex'] = $row['LogIndex'];
         } else {
@@ -460,7 +460,7 @@ function start_log($page) {
         $res = & $db->query(
                         "UPDATE log SET Session={$_SESSION['LogIndex']} WHERE LogIndex={$_SESSION['LogIndex']}");
         if (DB::isError($res))
-            die($res->getDebugInfo()); // Check for errors in query
+            die($res->getDebugInfo());
     }
 }
 
@@ -501,17 +501,17 @@ function log_event($log_level, $page, $code = NULL, $comment = NULL, $set_log_in
                                      "VALUES (\"$username\", $code, $log_level, $comment, \"$today\", " .
                                      "{$_SESSION['LogIndex']}, \"$page\", \"$remote_host\")");
                 if (DB::isError($res))
-                    die($res->getDebugInfo()); // Check for errors in query
+                    die($res->getDebugInfo());
             } else {
                 $res = &  $db->query(
                                 "INSERT INTO log (Username, Code, Level, Comment, Time, Page, RemoteHost) " .
                                  "VALUES (\"$username\", $code, $log_level, $comment, \"$today\", " .
                                  "\"$page\", \"$remote_host\")");
                 if (DB::isError($res))
-                    die($res->getDebugInfo()); // Check for errors in query
+                    die($res->getDebugInfo());
                 $res = & $db->query("SELECT LAST_INSERT_ID() AS LogIndex");
                 if (DB::isError($res))
-                    die($res->getDebugInfo()); // Check for errors in query
+                    die($res->getDebugInfo());
                 if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC) and $row['LogIndex'] != 0) { // Get new log index
                     $_SESSION['LogIndex'] = $row['LogIndex'];
                 } else {
@@ -522,7 +522,7 @@ function log_event($log_level, $page, $code = NULL, $comment = NULL, $set_log_in
                 $res = & $db->query(
                                 "UPDATE log SET Session={$_SESSION['LogIndex']} WHERE LogIndex={$_SESSION['LogIndex']}");
                 if (DB::isError($res))
-                    die($res->getDebugInfo()); // Check for errors in query
+                    die($res->getDebugInfo());
             }
         } else {
             $res = &  $db->query(
@@ -530,7 +530,7 @@ function log_event($log_level, $page, $code = NULL, $comment = NULL, $set_log_in
                              "VALUES (\"$username\", $code, $log_level, $comment, \"$today\", " .
                              "NULL, \"$page\", \"$remote_host\")");
             if (DB::isError($res))
-                die($res->getDebugInfo()); // Check for errors in query
+                die($res->getDebugInfo());
         }
     }
 }
@@ -568,7 +568,7 @@ function &dbfuncGetDir($assignment_index, $dirname, $username) {
                      "AND   year.YearIndex = subject.YearIndex " .
                      "AND   term.TermIndex = subject.TermIndex");
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
     if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) { // Get assignment
         $uname = str_replace($remove_array, "", $username);
         $year = str_replace($remove_array, "", "{$row['Year']}");
@@ -597,7 +597,7 @@ function dbfuncMkDir($assignment_index, $dirname) {
                      "AND   subject.SubjectIndex = assignment.SubjectIndex " .
                      "AND   subjectteacher.SubjectIndex = subject.SubjectIndex");
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
     while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) { // Get username
         $dir = & dbfuncGetDir($assignment_index, $dirname, $row['Username']);
         if (is_dir($dir)) {
@@ -631,7 +631,7 @@ function dbfuncMoveDir($assignment_index, $old_dirname, $new_dirname) {
                      "AND   subject.SubjectIndex = assignment.SubjectIndex " .
                      "AND   subjectteacher.SubjectIndex = subject.SubjectIndex");
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
     while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) { // Get username
         $old_dir = & dbfuncGetDir($assignment_index, $old_dirname, $row['Username']);
         $new_dir = & dbfuncGetDir($assignment_index, $new_dirname,
@@ -649,7 +649,7 @@ function dbfuncMoveDir($assignment_index, $old_dirname, $new_dirname) {
     }
     return $result;
 }
-function &getNamesFromList($namelist) {
+function getNamesFromList($namelist) {
     $total = count($namelist);
     $count = 0;
     $name_string = "";
@@ -672,98 +672,228 @@ function &getNamesFromList($namelist) {
         return trim($name_string);
     }
 }
+
+
+/* Class that contains all assignment information */
+class Assignment {
+    public $curve_type = null;
+    public $max = null;
+    public $ignore_zero = null;
+    public $top_mark = null;
+    public $bottom_mark = null;
+    public $student_max = null;
+    public $student_min = null;
+    public $makeup_type_index = null;
+    public $original_max = null;
+    public $target_max = null;
+
+    public function __construct($assignment_index) {
+        global $db;
+
+        /* Get assignment information */
+        $query =    "SELECT CurveType, Max, IgnoreZero, TopMark, BottomMark, StudentMax, " .
+                    "       StudentMin, MakeupTypeIndex, OriginalMax, TargetMax " .
+                    "       FROM assignment LEFT OUTER JOIN makeup_type USING (MakeupTypeIndex) " .
+                    "WHERE AssignmentIndex = $assignment_index";
+        $res = &  $db->query($query);
+        if (DB::isError($res))
+            die($res->getDebugInfo());
+
+        if (!$row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+            echo "ERROR: assignment has disappeared!";
+            exit(0);
+        }
+
+        $this->curve_type        = $row['CurveType'];
+        $this->max               = $row['Max'];
+        $this->ignore_zero       = $row['IgnoreZero'];
+        $this->top_mark          = $row['TopMark'];
+        $this->bottom_mark       = $row['BottomMark'];
+        $this->student_max       = $row['StudentMax'];
+        $this->student_min       = $row['StudentMin'];
+        $this->makeup_type_index = $row['MakeupTypeIndex'];
+        $this->original_max      = $row['OriginalMax'];
+        $this->target_max        = $row['TargetMax'];
+    }
+}
+
+/* Return null if no average, otherwise return average for score */
+function calculate_score_average($score, &$a) {
+    global $MARK_ABSENT;
+    global $MARK_EXEMPT;
+    global $MARK_LATE;
+
+    if(is_null($score) or $score == $MARK_ABSENT or $score == $MARK_EXEMPT)
+        return null;
+
+    if($score == $MARK_LATE)
+        return 0;
+
+    if($a->curve_type == 1) {
+        return round(($score / $a->student_max) * 100);
+    } elseif($a->curve_type == 2) {
+        if($score == 0 and $a->ignore_zero == 1)
+            return 0;
+
+        return round(((($a->top_mark - $a->bottom_mark) / ($a->student_max - $a->student_min)) * $score) +
+                     ((($a->top_mark * $a->student_min) - ($a->bottom_mark * $a->student_max)) /
+                      ($a->student_min - $a->student_max)));
+    } else { // Default is score out of maximum
+        if($a->max == 0)
+            return null;
+        else
+            return round(($score / $a->max) * 100);
+    }
+}
+
+class Mark {
+    public $average = null;
+    public $makeup_avg = null;
+    public $overall_avg = null;
+    public $score = null;
+    public $makeup_score = null;
+
+    public function __construct($score, $makeup_score, &$a) {
+        global $MARK_ABSENT;
+        global $MARK_EXEMPT;
+        global $MARK_LATE;
+
+        $this->score = $score;
+        $this->average = calculate_score_average($score, $a);
+
+        /* If makeups aren't enabled, set overall average and bail */
+        if(is_null($a->makeup_type_index)) {
+            $this->overall_avg = $this->average;
+            return;
+        }
+
+        $this->makeup_score = $makeup_score;
+        $this->makeup_avg = calculate_score_average($makeup_score, $a);
+
+        /* If either average is empty, set the other to be the overall average */
+        if(is_null($this->average)) {
+            $this->overall_avg = $this->makeup_avg;
+            return;
+        } elseif(is_null($this->makeup_avg)) {
+            $this->overall_avg = $this->average;
+            return;
+        }
+
+        /* If makeup has no effect, set overall to original average to avoid divide-by-zero */
+        if($a->original_max == $a->target_max or $this->average >= $a->target_max) {
+            $this->overall_avg = $this->average;
+            return;
+        }
+
+        /* If we're below the original max, then apply straight function */
+        if($this->average <= $a->original_max)
+            $mult = ($a->target_max - 100) / ($a->original_max - $a->target_max);
+        /* If we're above the original max, but below the target max, apply linear dropoff */
+        else
+            $mult = ($a->target_max - 100) / ($this->average - $a->target_max);
+
+        $this->overall_avg = round(($this->average*$mult + $this->makeup_avg) / ($mult + 1));
+    }
+}
+
 function update_marks($assignment_index) {
     global $db;
     global $MARK_LATE;
 
-    $assignment_index = safe($assignment_index);
+    $assignment_index = intval($assignment_index);
 
     /* Update assignment max and min score */
-    $query = "UPDATE assignment, (SELECT MAX(Score) AS MaxScore, MIN(Score) AS MinScore " .
-             "                    FROM mark, assignment " .
-             "                    WHERE mark.AssignmentIndex = $assignment_index " .
-             "                   AND   assignment.AssignmentIndex = $assignment_index " .
-             "                    AND   ((mark.Score >= 0 AND assignment.IgnoreZero = 0) " .
-             "                            OR (mark.Score > 0 AND assignment.IgnoreZero = 1)) " .
-             "                    AND   mark.Score IS NOT NULL " .
-             "                    GROUP BY mark.AssignmentIndex) AS score " .
-             "SET   assignment.StudentMax = score.MaxScore, " .
-             "      assignment.StudentMin = score.MinScore " .
-             "WHERE assignment.AssignmentIndex = $assignment_index ";
+    $query =    "UPDATE assignment, (SELECT MAX(Score) AS MaxScore, MIN(Score) AS MinScore " .
+                "                    FROM mark, assignment " .
+                "                    WHERE mark.AssignmentIndex = $assignment_index " .
+                "                    AND   assignment.AssignmentIndex = $assignment_index " .
+                "                    AND   ((mark.Score >= 0 AND assignment.IgnoreZero = 0) " .
+                "                            OR (mark.Score > 0 AND assignment.IgnoreZero = 1)) " .
+                "                    AND   mark.Score IS NOT NULL " .
+                "                    GROUP BY mark.AssignmentIndex) AS score " .
+                "SET   assignment.StudentMax = score.MaxScore, " .
+                "      assignment.StudentMin = score.MinScore " .
+                "WHERE assignment.AssignmentIndex = $assignment_index ";
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
-    /* Convert student's scores to percentages */
-    $query = "UPDATE mark SET Percentage = NULL " .
-             "WHERE  AssignmentIndex = $assignment_index ";
-    $res = &  $db->query($query);
-    if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+    $assignment = new Assignment($assignment_index);
 
-    $query = "UPDATE mark, " . " ((SELECT Score AS Percentage, Username " .
-             "   FROM mark " . "   WHERE Score < 0 " .
-             "   AND   Score IS NOT NULL " . "   AND   Score != $MARK_LATE " .
-             "   AND   AssignmentIndex = $assignment_index) " . "  UNION " .
-             "  (SELECT (mark.Score / assignment.Max) * 100 AS Percentage, mark.Username " .
-             "   FROM mark, assignment " . "   WHERE mark.Score >= 0 " .
-             "   AND   assignment.CurveType = 0 " .
-             "   AND   mark.AssignmentIndex = assignment.AssignmentIndex " .
-             "   AND   assignment.AssignmentIndex = $assignment_index) " .
-             "  UNION " .
-             "  (SELECT (mark.Score / assignment.StudentMax) * 100 AS Percentage, mark.Username " .
-             "   FROM mark, assignment " . "   WHERE mark.Score >= 0 " .
-             "   AND   assignment.CurveType = 1 " .
-             "   AND   mark.AssignmentIndex = assignment.AssignmentIndex " .
-             "   AND   assignment.AssignmentIndex = $assignment_index) " .
-             "  UNION " .
-             "  (SELECT (((assignment.TopMark - assignment.BottomMark) / (assignment.StudentMax - assignment.StudentMin)) * mark.Score) + ((assignment.TopMark * assignment.StudentMin - assignment.BottomMark * assignment.StudentMax) / (assignment.StudentMin - assignment.StudentMax)) AS Percentage, mark.Username " .
-             "   FROM mark, assignment " . "   WHERE assignment.CurveType = 2 " .
-             "   AND   ((mark.Score >= 0 AND assignment.IgnoreZero = 0) " .
-             "           OR (mark.Score > 0 AND assignment.IgnoreZero = 1)) " .
-             "   AND   mark.AssignmentIndex = assignment.AssignmentIndex " .
-             "   AND   assignment.AssignmentIndex = $assignment_index) " .
-             "  UNION " . "  (SELECT 0 AS Percentage, mark.Username " .
-             "   FROM mark, assignment " . "   WHERE assignment.CurveType = 2 " .
-             "   AND   mark.Score = 0 AND IgnoreZero = 1 " .
-             "   AND   mark.AssignmentIndex = assignment.AssignmentIndex " .
-             "   AND   assignment.AssignmentIndex = $assignment_index) " .
-             "  UNION " . "  (SELECT 0 AS Percentage, Username " .
-             "   FROM mark " . "   WHERE Score = $MARK_LATE " .
-             "   AND   AssignmentIndex = $assignment_index) " . " ) AS score " .
-             "SET mark.Percentage = score.Percentage " .
-             "WHERE mark.Username = score.Username " .
-             "AND   mark.AssignmentIndex = $assignment_index ";
+    /* Get all marks for assignment and calculate averages */
+    $query =    "SELECT MarkIndex, Username, Score, MakeupScore, Comment, AssignmentIndex FROM mark " .
+                "WHERE AssignmentIndex = $assignment_index";
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
+
+    if($res->numRows() > 0) {
+        $new_query =    "REPLACE INTO mark (MarkIndex, Username, AssignmentIndex, Score, Comment, " .
+                        "                   Percentage, OriginalPercentage, MakeupScore, " .
+                        "                   MakeupPercentage) " .
+                        "VALUES ";
+
+        while ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+            $mark = new Mark($row['Score'], $row['MakeupScore'], $assignment);
+            if(is_null($row['Username'])) {
+                $row['Username'] = "NULL";
+            } else {
+                $row['Username'] = "'" . safe($row['Username']) . "'";
+            }
+            if(is_null($row['Comment'])) {
+                $row['Comment'] = "NULL";
+            } else {
+                $row['Comment'] = "'" . safe($row['Comment']) . "'";
+            }
+            foreach(array('AssignmentIndex', 'Score', 'MakeupScore') as $item) {
+                if(is_null($row[$item]))
+                    $row[$item] = "NULL";
+            }
+            if(is_null($mark->score)) $mark->score = "NULL";
+            if(is_null($mark->makeup_score)) $mark->makeup_score = "NULL";
+            if(is_null($mark->average)) $mark->average = "NULL";
+            if(is_null($mark->overall_avg)) $mark->overall_avg = "NULL";
+            if(is_null($mark->makeup_avg)) $mark->makeup_avg = "NULL";
+
+            $new_query .=   "({$row['MarkIndex']}, {$row['Username']}, {$row['AssignmentIndex']}, " .
+                            " {$row['Score']}, {$row['Comment']}, {$mark->overall_avg}, " .
+                            " {$mark->average}, {$row['MakeupScore']}, {$mark->makeup_avg}),";
+        }
+        /* Replace last comma with semi-colon */
+        $new_query = substr_replace($new_query, ";", -1, 1);
+        /* Run query to update marks */
+        $res = &  $db->query($new_query);
+        if (DB::isError($res))
+            die($res->getDebugInfo());
+    }
 
     /* Calculate subject average for assignment */
     $query = "UPDATE assignment SET Average = -1 " .
              "WHERE AssignmentIndex = $assignment_index";
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     $query = "UPDATE assignment, " .
              "   (SELECT (SUM(Percentage) / COUNT(AssignmentIndex)) AS Average, " .
              "           COUNT(AssignmentIndex) AS Count FROM mark " .
              "    WHERE AssignmentIndex = $assignment_index " .
-             "    AND   Score >= 0 " . "    AND   Score IS NOT NULL " .
+             "    AND   Percentage >= 0 " .
+             "    AND   Percentage IS NOT NULL " .
              "    GROUP BY AssignmentIndex) AS score " .
              "SET assignment.Average = score.Average " .
              "WHERE assignment.AssignmentIndex = $assignment_index " .
              "AND   (score.Count > 0 AND score.Count IS NOT NULL) ";
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     /* Find subject index and update subject info */
     $query = "SELECT SubjectIndex FROM assignment " .
              "WHERE AssignmentIndex = $assignment_index ";
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
         update_subject($row['SubjectIndex']);
@@ -781,7 +911,7 @@ function update_marks($assignment_index) {
  * "AND class.YearIndex = $year_index " .
  * "AND classlist.Username = '$username'";
  * $res =& $db->query($query);
- * if(DB::isError($res)) die($res->getDebugInfo()); // Check for errors in query
+ * if(DB::isError($res)) die($res->getDebugInfo());
  *
  * if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
  * update_classterm($row['ClassIndex'], $term_index);
@@ -803,7 +933,7 @@ function update_classterm_from_subject($subject_index) {
              "GROUP BY classterm.ClassIndex";
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
         update_classterm($row['ClassTermIndex']);
@@ -819,7 +949,7 @@ function update_year_term($year_index, $term_index) {
              "AND   classterm.TermIndex  = $term_index";
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
         update_classterm($row['ClassTermIndex']);
@@ -838,7 +968,7 @@ function update_classterm($classtermindex) {
      * "AND classterm.ClassIndex = $class_index " .
      * "AND classterm.ClassTermIndex = classlist.ClassTermIndex ";
      * $res =& $db->query($query);
-     * if(DB::isError($res)) die($res->getDebugInfo()); // Check for errors in query
+     * if(DB::isError($res)) die($res->getDebugInfo());
      */
     $query = "SELECT Username, TRUNCATE((SUM(DistWeight * Average) / SUM(DistWeight)) + 0.5, 0) AS Avg " .
              "     FROM " .
@@ -866,7 +996,7 @@ function update_classterm($classtermindex) {
              "    ) AS ctgrade GROUP BY Username";
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
         if (is_null($row['Avg']))
@@ -877,7 +1007,7 @@ function update_classterm($classtermindex) {
                  "AND   classlist.ClassTermIndex = $classtermindex ";
         $nres = &  $db->query($query);
         if (DB::isError($nres))
-            die($nres->getDebugInfo()); // Check for errors in query
+            die($nres->getDebugInfo());
     }
 
     // Update class average
@@ -885,7 +1015,7 @@ function update_classterm($classtermindex) {
              "WHERE classterm.ClassTermIndex = $classtermindex ";
     $nres = &  $db->query($query);
     if (DB::isError($nres))
-        die($nres->getDebugInfo()); // Check for errors in query
+        die($nres->getDebugInfo());
 
     $query = "UPDATE classterm, " .
              " (SELECT ClassTermIndex, AVG(Average) AS ClassAverage " .
@@ -897,14 +1027,14 @@ function update_classterm($classtermindex) {
              "AND    classterm.ClassTermIndex = $classtermindex";
     $nres = &  $db->query($query);
     if (DB::isError($nres))
-        die($nres->getDebugInfo()); // Check for errors in query
+        die($nres->getDebugInfo());
 
     $query = "SELECT classlist.ClassListIndex, classlist.Username, classlist.Rank, classlist.Average FROM classlist " .
              "WHERE classlist.ClassTermIndex = $classtermindex " .
              "AND   classlist.Average        >= 0 " . "ORDER BY Average DESC";
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     /* Set class ranking */
     $rank = 1;
@@ -924,7 +1054,7 @@ function update_classterm($classtermindex) {
                  "WHERE ClassListIndex = {$row['ClassListIndex']}";
             $nres = &  $db->query($query);
             if (DB::isError($nres))
-                die($nres->getDebugInfo()); // Check for errors in query
+                die($nres->getDebugInfo());
         }
     }
 }
@@ -938,7 +1068,7 @@ function update_subject($subject_index) {
     $query = "SELECT AverageType, AverageTypeIndex FROM subject WHERE SubjectIndex = $subject_index";
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
     if (! ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC))) {
         return false;
     }
@@ -948,7 +1078,7 @@ function update_subject($subject_index) {
 
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     /* Calculate student's current average in subject */
     $query = "SELECT MAX(Average) AS Average, Username FROM " . "   ((SELECT" .
@@ -965,9 +1095,8 @@ function update_subject($subject_index) {
              "       AND   assignment.Agenda       = 0 " .
              "       AND   assignment.Hidden       = 0 " .
              "       AND   mark.AssignmentIndex    = assignment.AssignmentIndex " .
-             "       AND   (mark.Score >= 0 OR mark.Score = $MARK_LATE) " .
+             "       AND   mark.Percentage         >= 0 " .
              "       AND   assignment.Weight       > 0 " .
-             "       AND   mark.Score              IS NOT NULL" .
              "       GROUP BY subjectstudent.Username, category.CategoryIndex)" .
              "     AS category_total GROUP BY Username) " . "     UNION " .
              "    (SELECT -1 AS Average, Username FROM subjectstudent" .
@@ -975,21 +1104,21 @@ function update_subject($subject_index) {
              "    GROUP BY Username " . "    ORDER BY Username ";
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
     while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
         $query = "UPDATE subjectstudent SET Average={$row['Average']} " .
                  "WHERE SubjectIndex = $subject_index " .
                  "AND Username = '{$row['Username']}'";
         $nres = &  $db->query($query);
         if (DB::isError($nres))
-            die($nres->getDebugInfo()); // Check for errors in query
+            die($nres->getDebugInfo());
     }
     $query = "SELECT Username, Average, Rank FROM subjectstudent " .
              "WHERE SubjectIndex = $subject_index " . "AND   Average >= 0 " .
              "ORDER BY Average DESC";
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     /* Set subject ranking */
     $rank = 1;
@@ -1009,7 +1138,7 @@ function update_subject($subject_index) {
                  "AND Username = '{$row['Username']}'";
             $nres = &  $db->query($query);
             if (DB::isError($nres))
-                die($nres->getDebugInfo()); // Check for errors in query
+                die($nres->getDebugInfo());
         }
     }
 
@@ -1018,7 +1147,7 @@ function update_subject($subject_index) {
              "WHERE SubjectIndex = $subject_index";
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     $query = "UPDATE subject, " .
              "   (SELECT AVG(subjectstudent.Average) AS Average, " .
@@ -1031,7 +1160,7 @@ function update_subject($subject_index) {
              "AND   (score.Count > 0 AND score.Count IS NOT NULL)";
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     update_classterm_from_subject($subject_index);
 
@@ -1049,7 +1178,7 @@ function update_subject($subject_index) {
              "AND   subjectstudent.Username = score.Username";
         $res = &  $db->query($query);
         if (DB::isError($res))
-            die($res->getDebugInfo()); // Check for errors in query
+            die($res->getDebugInfo());
     }
     return true;
 }
@@ -1083,7 +1212,7 @@ function update_conduct_year_term($year, $term) {
  * "AND classterm.ClassListIndex = classlist.ClassListIndex " .
  * "AND classlist.ClassIndex = $class_index";
  * $res =& $db->query($query);
- * if(DB::isError($res)) die($res->getDebugInfo()); // Check for errors in query
+ * if(DB::isError($res)) die($res->getDebugInfo());
  *
  * $query = "SELECT classlist.Username, classlist.ClassListIndex, class.YearIndex, " .
  * " class_term.ConductType " .
@@ -1093,7 +1222,7 @@ function update_conduct_year_term($year, $term) {
  * "AND class_term.ClassIndex = $class_index " .
  * "AND class_term.TermIndex = $term_index";
  * $res =& $db->query($query);
- * if(DB::isError($res)) die($res->getDebugInfo()); // Check for errors in query
+ * if(DB::isError($res)) die($res->getDebugInfo());
  *
  * while($row =& $res->fetchRow(DB_FETCHMODE_ASSOC) and $row['ConductType'] == $CLASS_CONDUCT_TYPE_CALC) {
  * $query = "UPDATE classterm, " .
@@ -1125,7 +1254,7 @@ function update_conduct_year_term($year, $term) {
  * "WHERE classterm.ClassListIndex = '{$row['ClassListIndex']}' " .
  * "AND classterm.TermIndex = $term_index";
  * $nres =& $db->query($query);
- * if(DB::isError($nres)) die($nres->getDebugInfo()); // Check for errors in query
+ * if(DB::isError($nres)) die($nres->getDebugInfo());
  * }
  * }
  */
@@ -1154,7 +1283,7 @@ function update_conduct_mark($studentusername, $year = -1, $term = -1) {
              "GROUP BY subjectstudent.Username";
     $res = &  $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC) and $row['HasConduct'] == 1 and
          $row['TermConduct'] == 1) {
@@ -1170,7 +1299,7 @@ function update_conduct_mark($studentusername, $year = -1, $term = -1) {
                  "GROUP BY discipline.Username";
         $res = &  $db->query($query);
         if (DB::isError($res))
-            die($res->getDebugInfo()); // Check for errors in query
+            die($res->getDebugInfo());
 
         if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
             $score = $row['Score'];
@@ -1183,7 +1312,7 @@ function update_conduct_mark($studentusername, $year = -1, $term = -1) {
                  "AND   ClassTermIndex = $classterm";
         $res = &  $db->query($query);
         if (DB::isError($res))
-            die($res->getDebugInfo()); // Check for errors in query
+            die($res->getDebugInfo());
 
         $check_conduct = - 1;
         if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
@@ -1196,7 +1325,7 @@ function update_conduct_mark($studentusername, $year = -1, $term = -1) {
                  "AND   ClassTermIndex = $classterm";
             $res = &  $db->query($query);
             if (DB::isError($res))
-                die($res->getDebugInfo()); // Check for errors in query
+                die($res->getDebugInfo());
 
             $query = "UPDATE classterm, " .
                      " (SELECT ClassTermIndex, AVG(Conduct) AS ClassAverage " .
@@ -1207,7 +1336,7 @@ function update_conduct_mark($studentusername, $year = -1, $term = -1) {
                      "AND    classterm.ClassTermIndex = $classterm";
             $res = &  $db->query($query);
             if (DB::isError($res))
-                die($res->getDebugInfo()); // Check for errors in query
+                die($res->getDebugInfo());
         }
     } else {
         $classterm = $row['ClassTermIndex'];
@@ -1221,7 +1350,7 @@ function update_conduct_mark($studentusername, $year = -1, $term = -1) {
                  "AND   ClassTermIndex = $classterm";
         $res = &  $db->query($query);
         if (DB::isError($res))
-            die($res->getDebugInfo()); // Check for errors in query
+            die($res->getDebugInfo());
 
         $check_conduct = 100;
         if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
@@ -1233,13 +1362,13 @@ function update_conduct_mark($studentusername, $year = -1, $term = -1) {
                  "WHERE ClassTermIndex = $classterm";
             $res = &  $db->query($query);
             if (DB::isError($res))
-                die($res->getDebugInfo()); // Check for errors in query
+                die($res->getDebugInfo());
 
             $query = "UPDATE classterm SET Conduct=-1 " .
                      "WHERE ClassTermIndex = $classterm";
             $res = &  $db->query($query);
             if (DB::isError($res))
-                die($res->getDebugInfo()); // Check for errors in query
+                die($res->getDebugInfo());
         }
     }
 }
@@ -1807,7 +1936,7 @@ function class_remove_student($username, $classtermindex) {
                 "AND   ClassTermIndex = $classtermindex";
     $res =& $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     return True;
 }
@@ -1820,14 +1949,14 @@ function subject_remove_student($username, $subjectindex) {
                 "AND   mark.Username           = '$username'";
     $res =& $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     $query =    "DELETE FROM subjectstudent " .
                 "WHERE Username     = '$username' " .
                 "AND   SubjectIndex = $subjectindex";
     $res =& $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     return True;
 }
@@ -1841,7 +1970,7 @@ function punishment_remove_student($username, $yearindex, $termindex) {
                 "AND   disciplineweight.TermIndex = $termindex";
     $res =& $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     return True;
 }
@@ -1855,7 +1984,7 @@ function subject_remove_student_from_all($username, $yearindex, $termindex) {
                 "AND   subject.TermIndex       = $termindex";
     $res =& $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
         subject_remove_student($username, $row['SubjectIndex']);
@@ -1878,7 +2007,7 @@ function school_remove_student($username, $yearindex, $termindex) {
                 "AND   classterm.TermIndex = $termindex";
     $res =& $db->query($query);
     if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+        die($res->getDebugInfo());
 
     while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
         class_remove_student($username, $row['ClassTermIndex']);
@@ -1886,4 +2015,88 @@ function school_remove_student($username, $yearindex, $termindex) {
 
     remove_member_from_group($username, "activestudent-$yearindex");
     return True;
+}
+
+function format_average($average, $score=-99, $long=false, $can_modify=true) {
+    global $MARK_ABSENT;
+    global $MARK_EXEMPT;
+    global $MARK_LATE;
+
+    if($score != -99) {
+        if (is_null($score)) {
+            if(!$can_modify) {
+                if($long)
+                    return "<i>Exempt</i>";
+                else
+                    return "<i>E</i>";
+            } else {
+                return "&nbsp;";
+            }
+        } elseif ($score == $MARK_ABSENT) {
+            if($long)
+                return "<i>Absent</i>";
+            else
+                return "<i>A</i>";
+        } elseif ($score == $MARK_EXEMPT) {
+            if($long)
+                return "<i>Exempt</i>";
+            else
+                return "<i>E</i>";
+        } elseif ($score == $MARK_LATE) {
+            if(!$can_modify)
+                return "0%";
+            if($long)
+                return "<i>Late</i>";
+            else
+                return "<i>L</i>";
+        }
+    }
+
+    if(!is_null($average)) {
+        return $average . "%";
+    } else {
+        return "N/A";
+    }
+}
+
+function format_makeup_average($can_modify, $hidden, $alt, $alt_step, $overall_avg, $average, $makeup_avg, $score, $makeup_score) {
+    global $MARK_ABSENT;
+    global $MARK_EXEMPT;
+    global $MARK_LATE;
+
+    /* Check whether either mark hasn't been set and, if so, only show other mark*/
+    $same = false;
+    if(is_null($makeup_score)) {
+        $chk_score = $score;
+        $same = true;
+    } elseif(is_null($score)) {
+        $chk_score = $makeup_score;
+        $same = true;
+    } elseif($score < 0 and $score == $makeup_score) {
+        $chk_score = $makeup_score;
+        $same = true;
+    }
+
+    if($same) {
+        if($can_modify == 1 and $hidden == 0 and isset($alt_step) and $alt_step != "") {
+            if ($chk_score == $MARK_LATE) {
+                $alt = " class='late-$alt_step'";
+            } elseif(is_null($chk_score)) {
+                $alt = " class='unmarked-$alt_step'";
+            }
+        }
+    }
+    $retval =  "<td$alt nowrap>";
+
+    if($same) {
+        $overall_avg = format_average($overall_avg, $chk_score, true, $can_modify);
+    } else {
+        $average = format_average($average, $score, false, $can_modify);
+        $overall_avg = format_average($overall_avg, -99, false, $can_modify);
+        $makeup_avg = format_average($makeup_avg, $makeup_score, false, $can_modify);
+        $retval .= "<span style='float: right; font-size: 75%; white-space: nowrap; border-bottom-style: solid; border-bottom-width: thin'>$average&nbsp;<span style='border-left-style: solid; border-left-width: thin'>&nbsp;$makeup_avg</span></span><br/>\n";
+    }
+    $retval .= "<span style='float: right'>$overall_avg</span>";
+    $retval .= "</td>";
+    return $retval;
 }
