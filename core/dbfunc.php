@@ -970,9 +970,9 @@ function update_classterm($classtermindex) {
      * $res =& $db->query($query);
      * if(DB::isError($res)) die($res->getDebugInfo());
      */
-    $query = "SELECT Username, TRUNCATE((SUM(DistWeight * Average) / SUM(DistWeight)) + 0.5, 0) AS Avg " .
+    $query = "SELECT Username, ROUND(SUM(DistWeight * Average) / SUM(DistWeight)) AS Avg " .
              "     FROM " .
-             "    ((SELECT classlist.Username, subject.SubjectTypeIndex, AVG(TRUNCATE(subjectstudent.Average + 0.5, 0)) AS Average, " .
+             "    ((SELECT classlist.Username, subject.SubjectTypeIndex, AVG(ROUND(subjectstudent.Average)) AS Average, " .
              "             get_weight(subject.SubjectIndex, class.ClassIndex, classlist.Username) AS DistWeight " .
              "        FROM class INNER JOIN classterm USING (ClassIndex) " .
              "                   INNER JOIN classlist USING (ClassTermIndex) " .
@@ -1082,10 +1082,10 @@ function update_subject($subject_index) {
 
     /* Calculate student's current average in subject */
     $query = "SELECT MAX(Average) AS Average, Username FROM " . "   ((SELECT" .
-             "     TRUNCATE(((SUM((Mark / Weight) * CategoryWeight) / SUM(CategoryWeight)) * 100) + 0.5, 0) AS Average, Username FROM" .
+             "     ROUND((SUM(Mark) * CategoryWeight * 100) / (SUM(Weight) * SUM(CategoryWeight))) AS Average, Username FROM" .
              "      (SELECT" .
-             "        SUM(TRUNCATE(mark.Percentage + 0.5, 0) * assignment.Weight) AS Mark, " .
-             "        SUM(100 * assignment.Weight) AS Weight, " .
+             "        SUM(mark.Percentage * assignment.Weight) AS Mark, " .
+             "        SUM(assignment.Weight) * 100 AS Weight, " .
              "        IF(categorylist.Weight IS NULL, 1, categorylist.Weight) AS CategoryWeight, " .
              "        mark.Username FROM " .
              "          assignment INNER JOIN subjectstudent USING (SubjectIndex) " .
