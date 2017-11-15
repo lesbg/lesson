@@ -1082,7 +1082,7 @@ function update_subject($subject_index) {
 
     /* Calculate student's current average in subject */
     $query = "SELECT MAX(Average) AS Average, Username FROM " . "   ((SELECT" .
-             "     ROUND((SUM(Mark) * CategoryWeight * 100) / (SUM(Weight) * SUM(CategoryWeight))) AS Average, Username FROM" .
+             "     ROUND(SUM((Mark * CategoryWeight * 100) / Weight) / SUM(CategoryWeight)) AS Average, Username FROM" .
              "      (SELECT" .
              "        SUM(mark.Percentage * assignment.Weight) AS Mark, " .
              "        SUM(assignment.Weight) * 100 AS Weight, " .

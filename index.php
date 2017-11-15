@@ -190,16 +190,18 @@ if (dbfuncGetPermission($permissions, $PERM_ADMIN)) {
 // echo "$location - $password_number";
 include "$location"; // Switch to current page
 
+//update_year_term(14, 1);
 // update_conduct_year_term(1, 1);
                      // update_conduct_year_term(7, 1);
                      // update_year_term(9, 6);
 
-// $query = "SELECT SubjectIndex FROM subject WHERE YearIndex=9 AND TermIndex=6 AND AverageType=1 ";
-                     // $res =& $db->query($query);
-                     // if(DB::isError($res)) die($res->getDebugInfo()); // Check for errors in query
-                     // while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-                     // update_subject($row["SubjectIndex"]);
-                     // }
+
+/*$query = "SELECT SubjectIndex FROM subject WHERE YearIndex=14 AND TermIndex=1 AND AverageType=1 ";
+$res =& $db->query($query);
+if(DB::isError($res)) die($res->getDebugInfo());
+    while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+    update_subject($row["SubjectIndex"]);
+}*/
 
 /*
 $query = "SELECT FileIndex FROM filebuffer ORDER BY FileIndex";
