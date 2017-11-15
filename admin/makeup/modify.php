@@ -18,7 +18,7 @@ $link = "index.php?location=" .
 /* Get variables */
 if(isset($_GET['key'])) {
     $title = "Modify Makeup on " . htmlspecialchars(dbfuncInt2String($_GET['keyname']), ENT_QUOTES);
-    $makeup_index = safe(dbfuncInt2String($_GET['key']));
+    $makeup_index = intval(dbfuncInt2String($_GET['key']));
     $modify = True;
     $link .= "&amp;key="     . $_GET['key'] .
              "&amp;keyname=" . $_GET['keyname'];
@@ -260,6 +260,9 @@ if($category_index > 0) {
 
 
         $aidx = $row['AssignmentIndex'];
+
+        if($row['Average'] < 0)
+            $row['Average'] = 'N/A';
 
         echo "                     <tr$alt>\n";
         echo "                        <td><input type='hidden' name='hid_$aidx' value='1'/><input type='checkbox' id='cbox_$aidx' name='cbox_$aidx' $checked /></td>\n";
