@@ -35,7 +35,44 @@ if (isset($_POST['category_index']) and $_POST['category_index'] != "") {
     $_POST['category_index'] = -1;
 }
 
+if (isset($_POST['makeup_type_index']) and $_POST['makeup_type_index'] != "") {
+    $_POST['makeup_type_index'] = intval($_POST['makeup_type_index']);
+} else {
+    $_POST['makeup_type_index'] = -1;
+}
+
+if(isset($_POST['automatic_ml']) and $_POST['automatic_ml'] == 'on') {
+    $_POST['automatic_ml'] = 1;
+} else {
+    if(!isset($_POST['mandatory_lower']) and isset($_POST['ml_hidden']))
+        $_POST['mandatory_lower'] = $_POST['ml_hidden'];
+    $_POST['automatic_ml'] = 0;
+}
+if(isset($_POST['automatic_ol']) and $_POST['automatic_ol'] == 'on') {
+    $_POST['automatic_ol'] = 1;
+} else {
+    if(!isset($_POST['optional_lower']) and isset($_POST['ol_hidden']))
+        $_POST['optional_lower'] = $_POST['ol_hidden'];
+    $_POST['automatic_ol'] = 0;
+}
+
+if($_POST['makeup_type_index'] > 0) {
+    $query =    "SELECT OriginalMax, TargetMax FROM makeup_type " .
+                "WHERE MakeupTypeIndex = {$_POST['makeup_type_index']} ";
+    $res = &  $db->query($query);
+    if (DB::isError($res))
+        die($res->getDebugInfo());
+
+    if($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+        if($_POST['automatic_ml'] == 1)
+            $_POST['mandatory_lower'] = $row['OriginalMax'];
+        if($_POST['automatic_ol'] == 1)
+            $_POST['optional_lower'] = $row['TargetMax'];
+    }
+}
+
 if(!isset($_SESSION['makeup_assignment']))
+
     $_SESSION['makeup_assignment'] = array();
 
 foreach($_POST as $key => $value) {
@@ -51,7 +88,7 @@ foreach($_POST as $key => $value) {
     }
 }
 
-if ($_POST['action'] == "Update filters" or $_POST['action'] == "Select all" or $_POST['action'] == "Deselect all") {
+if ($_POST['action'] == "Update filters" or $_POST['action'] == "Select all" or $_POST['action'] == "Deselect all" or $_POST['action'] == "" or !isset($_POST['action'])) {
     if ($_POST['action'] == "Select all")
         $check_all = True;
     if ($_POST['action'] == "Deselect all")
@@ -183,21 +220,18 @@ if($_POST['action'] == "Save") {
 }
 
 $query =    "REPLACE INTO makeup (MakeupIndex, OpenDate, CloseDate, MakeupDate, " .
-            "                     MandatoryLower, OptionalLower, Username, YearIndex) " .
+            "                     MandatoryLower, AutomaticMandatoryLower, " .
+            "                     OptionalLower, AutomaticOptionalLower, Username, " .
+            "                     YearIndex) " .
             "             VALUES ($makeup_index, '$open_date', '$close_date', '$makeup_date', " .
-            "                     $mandatory_lower, $optional_lower, '$makeup_username', $yearindex) ";
+            "                     $mandatory_lower, {$_POST['automatic_ml']}, $optional_lower, " .
+            "                     {$_POST['automatic_ol']}, '$makeup_username', $yearindex) ";
 
 $res = &  $db->query($query);
 if (DB::isError($res))
     die($res->getDebugInfo());
 if($makeup_index == "NULL") {
-    $query =    "SELECT MakeupIndex FROM makeup " .
-                "WHERE OpenDate='$open_date' " .
-                "AND   CloseDate='$close_date' " .
-                "AND   MakeupDate='$makeup_date' " .
-                "AND   MandatoryLower=$mandatory_lower " .
-                "AND   OptionalLower=$optional_lower " .
-                "AND   Username='$makeup_username'";
+    $query =    "SELECT LAST_INSERT_ID() AS MakeupIndex";
     $res = &  $db->query($query);
     if (DB::isError($res))
         die($res->getDebugInfo());
