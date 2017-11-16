@@ -40,7 +40,7 @@ if(isset($_GET['key'])) {
 }
 
 $use_extra_css = true;
-$extra_js = "assignment.js";
+$extra_js = "assignment-v2.js";
 
 include "core/settermandyear.php";
 
