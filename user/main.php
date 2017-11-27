@@ -391,7 +391,7 @@ if ($res->numRows() > 0) {
                                 "");
     echo "      <p align='center'>$hwbutton $thwbutton $allbutton</p>";
 
-    echo "      <table align='center' border='1'>\n"; // Table headers
+    echo "      <table align='center' border='1' style='max-width: 70%'>\n"; // Table headers
     echo "         <tr>\n";
     echo "            <th>Subject</th>\n";
     echo "            <th>Teacher(s)</th>\n";
@@ -414,7 +414,7 @@ if ($res->numRows() > 0) {
                      dbfuncString2Int($row['Name']) . "&amp;key2name=" .
                      dbfuncString2Int($fullname); // Get link to class
         echo "         <tr$alt>\n";
-        echo "            <td><a href='$namelink'>{$row['Name']}</a></td>\n";
+        echo "            <td nowrap><a href='$namelink'>{$row['Name']}</a></td>\n";
         echo "            <td>";
 
         /* Get information about teacher(s) */
