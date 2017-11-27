@@ -104,7 +104,7 @@ if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
     }
 }
 
-if (isset($_SERVER['REMOTE_HOST']) and strtolower(substr($_SERVER['REMOTE_HOST'], - strlen($LOCAL_HOSTS))) == strtolower($LOCAL_HOSTS)) {
+if ($LOCAL_HOSTS == "" or (isset($_SERVER['REMOTE_HOST']) and strtolower(substr($_SERVER['REMOTE_HOST'], - strlen($LOCAL_HOSTS))) == strtolower($LOCAL_HOSTS))) {
     $is_local = TRUE;
 } else {
     $is_local = FALSE;
@@ -135,14 +135,6 @@ $activestudent = dbfuncIsActiveStudent();
 $activeteacher = dbfuncIsActiveTeacher();
 $phone_prefix = dbfuncGetPhonePrefix();
 $phone_RLZ = dbfuncGetPhoneRLZ();
-
-if (isset($_SERVER['REMOTE_HOST']) and
-     strtolower(substr($_SERVER['REMOTE_HOST'], - strlen($LOCAL_HOSTS))) ==
-     strtolower($LOCAL_HOSTS)) {
-    $is_local = TRUE;
-} else {
-    $is_local = FALSE;
-}
 
 $password_number = $_SESSION['password_number'];
 
