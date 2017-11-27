@@ -258,7 +258,7 @@ function get_path_from_id($id) {
             $outpath = substr($outfile, 0, strrpos($outfile, '/'));
             //echo "$outfile  $outpath";
             if(!file_exists($outpath))
-                mkdir($outpath, 0700, TRUE);
+                mkdir($outpath, 0770, TRUE);
             $handle = fopen($outfile, 'w') or die('Unable to open file for writing.');
             $data = gzuncompress(base64_decode($nrow['Data']));
             fwrite($handle, $data);
