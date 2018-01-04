@@ -26,7 +26,7 @@ if (isset($_GET['key2'])) {
 }
 
 $use_extra_css = true;
-$extra_js = "report.js";
+$extra_js = "report-v2.js";
 
 include "core/settermandyear.php";
 include "header.php"; // Show header
