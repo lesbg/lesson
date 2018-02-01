@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * teacher/assignment/modify_action.php (c) 2004-2007, 2016-2017 Jonathan Dieter
+ * teacher/assignment/modify_action.php (c) 2004-2007, 2016-2018 Jonathan Dieter
  *
  * Sanitize assignment and run query to change grades
  * ***************************************************************
@@ -565,8 +565,8 @@ if ($agenda == "0") {
             }
         } else {
             if($score != "NULL" or $comment != "NULL") {
-                $query =    "INSERT INTO mark (MarkIndex, Username, AssignmentIndex, " .
-                            "Score, MakeupScore, Comment) VALUES ('', '{$row['Username']}', " .
+                $query =    "INSERT INTO mark (Username, AssignmentIndex, " .
+                            "Score, MakeupScore, Comment) VALUES ('{$row['Username']}', " .
                             "$assignment_index, $score, $makeup_score, $comment)";
                 $update = & $db->query($query);
                 if (DB::isError($update)) {
