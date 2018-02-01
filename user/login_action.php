@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * user/login_action.php (c) 2015 Jonathan Dieter
+ * user/login_action.php (c) 2015, 2018 Jonathan Dieter
  *
  * Validate login
  * ***************************************************************
@@ -14,15 +14,15 @@ if(!isset($_POST['username']) || !isset($_POST['password'])) {
     exit(0);
 }
 
-$username = safe($_POST['username']);
+$username = $_POST['username'];
 
-$query = "SELECT Username, OriginalPassword, Password, Password2 FROM user " .
-         "WHERE Username = '$username' ";
-$res = &  $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-
-if (! $row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+$query = $pdb->prepare(
+    "SELECT Username, OriginalPassword, Password, Password2 FROM user " .
+    "WHERE Username = :username "
+);
+$query->execute(['username' => $username]);
+$row = $query->fetch();
+if (!$row) {
     $error = True;
 
     $_SESSION['failcount'] += 1;
@@ -38,7 +38,7 @@ if (! $row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
 
 /* Set username to canonical username */
 $_POST['username'] = $row['Username'];
-$username = safe($_POST['username']);
+$username = $_POST['username'];
 
 $good_pw = False;
 if(password_verify($_POST['password'], $row['Password'])) {
@@ -59,10 +59,9 @@ if(password_verify($_POST['password'], $row['Password'])) {
         $pval = "Password2";
     }
     $phash = password_hash($_POST['password'], PASSWORD_DEFAULT, ['cost' => "15"]);
-    $query = "UPDATE user SET $pval='$phash' WHERE Username='$username'";
-    $res = &  $db->query($query);
-    if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+    $pdb->prepare(
+        "UPDATE user SET $pval=:phash WHERE Username=:username"
+    )->execute(['phash' => $phash, 'username' => $username]);
 
     log_event($LOG_LEVEL_ACCESS, "user/login_action.php",
                 $LOG_LOGIN,

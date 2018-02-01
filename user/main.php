@@ -48,52 +48,30 @@ if($activestudent or $activeteacher) {
 }
 
 $is_staff = False;
-/* If we're supposed to proofread reports this term, show link */
-/*
- * $query = "SELECT user.Username " .
- * " FROM department, user, class, class_term, classterm " .
- * "WHERE user.Username = classlist.Username " .
- * "AND classterm.TermIndex = class_term.TermIndex " .
- * "AND classterm.ClassListIndex = classlist.ClassListIndex " .
- * "AND classterm.ReportProofread = 1 " .
- * "AND classterm.ReportProofDone = 0 " .
- * "AND class_term.ClassIndex = classlist.ClassIndex " .
- * "AND class_term.CanDoReport = 1 " .
- * "AND class.ClassIndex = classlist.ClassIndex " .
- * "AND class.YearIndex = $yearindex " .
- * "AND class_term.TermIndex = $termindex " .
- * "AND department.DepartmentIndex = class.DepartmentIndex " .
- * "AND department.ProofreaderUsername = '$username' ";
- * $res =& $db->query($query);
- * if(DB::isError($res)) die($res->getDebugInfo()); // Check for errors in query
- *
- * if($row =& $res->fetchRow(DB_FETCHMODE_ASSOC)) {
- * $prLink = "index.php?location=" . dbfuncString2Int("teacher/report/proofread_list.php");
- * echo " <p><a href='$prLink'>Proofread reports</a></p>\n";
- * }
- */
 
 /* If user is a class teacher and there are class reports ready, show link */
-$query = "SELECT class.ClassIndex, class.ClassName, " .
-         "       classterm.CanDoReport, MIN(classlist.ReportDone) AS ReportDone " .
-         "       FROM class, classterm, classlist " .
-         "WHERE class.ClassTeacherUsername = '$username' " .
-         "AND   class.YearIndex            = $yearindex " .
-         "AND   classterm.ClassIndex       = class.ClassIndex " .
-         "AND   classterm.TermIndex        = $termindex " .
-         "AND   classlist.ClassTermIndex   = classterm.ClassTermIndex " .
-         "GROUP BY class.ClassIndex";
-$res = &  $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
+$query = $pdb->prepare(
+    "SELECT class.ClassIndex, class.ClassName, " .
+     "       classterm.CanDoReport, MIN(classlist.ReportDone) AS ReportDone " .
+     "       FROM class, classterm, classlist " .
+     "WHERE class.ClassTeacherUsername = :username " .
+     "AND   class.YearIndex            = :yearindex " .
+     "AND   classterm.ClassIndex       = class.ClassIndex " .
+     "AND   classterm.TermIndex        = :termindex " .
+     "AND   classlist.ClassTermIndex   = classterm.ClassTermIndex " .
+     "GROUP BY class.ClassIndex"
+);
+$query->execute(['username' => $username, 'yearindex' => $yearindex,
+                 'termindex' => $termindex]);
 
-while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) and
-         ($row['CanDoReport'] or $row['ReportDone']) ) {
-    $clLink = "index.php?location=" .
-             dbfuncString2Int("teacher/report/class_list.php") . "&amp;key=" .
-             dbfuncString2Int($row['ClassIndex']) . "&amp;keyname=" .
-             dbfuncString2Int($row['ClassName']);
-    echo "      <p><a href='$clLink'>Class reports for {$row['ClassName']}</a></p>\n";
+foreach ( $query as $row ) {
+    if($row['CanDoReport'] or $row['ReportDone']) {
+        $clLink = "index.php?location=" .
+                 dbfuncString2Int("teacher/report/class_list.php") . "&amp;key=" .
+                 dbfuncString2Int($row['ClassIndex']) . "&amp;keyname=" .
+                 dbfuncString2Int($row['ClassName']);
+        echo "      <p><a href='$clLink'>Class reports for {$row['ClassName']}</a></p>\n";
+    }
 }
 
 /* If user is responsible for any books, show book link */
@@ -118,24 +96,24 @@ if($activestudent or $activestudent) {
 // }
 
 /* If user is a hod, show class list hyperlink */
-$res = &  $db->query("SELECT Username FROM hod " . "WHERE Username='$username'");
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-
-if ($res->numRows() > 0) {
+$query = $pdb->prepare(
+    "SELECT Username FROM hod WHERE Username=:username"
+);
+$query->execute(['username' => $username]);
+$row = $query->fetch();
+if ($row) {
     $is_staff = True;
     $clLink = "index.php?location=" . dbfuncString2Int("admin/class/list.php");
     echo "      <p><a href='$clLink'>Class list</a></p>\n";
 }
 
 /* If user is a counselor, show class list hyperlink and support teachers hyperlink */
-$query =    "SELECT Username FROM counselorlist " .
-            "WHERE Username='$username'";
-$res = &  $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-
-if ($res->numRows() > 0) {
+$query = $pdb->prepare(
+    "SELECT Username FROM counselorlist WHERE Username=:username"
+);
+$query->execute(['username' => $username]);
+$row = $query->fetch();
+if ($row) {
     $is_staff = True;
     $clLink = "index.php?location=" . dbfuncString2Int("admin/class/list.php");
     $supportLink = "index.php?location=" .
@@ -148,38 +126,41 @@ if ($res->numRows() > 0) {
 }
 
 /* If user is an active teacher, show Casenotes and Punishments history hyperlinks */
-$query = "SELECT user.FirstName, user.Surname, user.Username FROM " .
-        "       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
-        "            INNER JOIN groups USING (GroupID) " .
-        "WHERE user.Username='$username' " .
-        "AND   groups.GroupTypeID='activeteacher' " .
-        "AND   groups.YearIndex=$yearindex " .
-        "ORDER BY user.Username";
-$nrs = &  $db->query($query);
-if (DB::isError($nrs))
-    die($nrs->getDebugInfo()); // Check for errors in query
-if ($nrs->numRows() > 0) {
+$query = $pdb->prepare(
+    "SELECT user.FirstName, user.Surname, user.Username FROM " .
+    "       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
+    "            INNER JOIN groups USING (GroupID) " .
+    "WHERE user.Username=:username " .
+    "AND   groups.GroupTypeID='activeteacher' " .
+    "AND   groups.YearIndex=:yearindex " .
+    "ORDER BY user.Username"
+);
+$query->execute(['username' => $username, 'yearindex' => $yearindex]);
+$row = $query->fetch();
+if($row) {
     $is_staff = True;
-    $nrs = &  $db->query(
-                    "SELECT WorkerUsername FROM casenotenew " .
-                         "WHERE  WorkerUsername = '$username'");
-    if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+
     $wlLink = "index.php?location=" .
          dbfuncString2Int("teacher/casenote/watchlist/list.php");
 
-    if ($nrs->numRows() > 0) {
-        $cr = $nrs->numRows();
-        echo "      <p><b><a href='$wlLink'>New Casenotes ($cr)</a></b></p>\n";
+    $query = $pdb->prepare(
+        "SELECT COUNT(1) AS RowCount FROM casenotenew " .
+        "WHERE  WorkerUsername = :username"
+    );
+    $query->execute(['username' => $username]);
+    $row = $query->fetch();
+    if ($row and $row['RowCount'] > 0) {
+        echo "      <p><b><a href='$wlLink'>New Casenotes (${row['RowCount']})</a></b></p>\n";
     } else {
         echo "      <p><a href='$wlLink'>New Casenotes (0)</a></p>\n";
     }
 
-    $query = "SELECT Permissions FROM disciplineperms WHERE Username='$username'";
-    $res = &  $db->query($query);
-    if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
-    if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+    $query = $pdb->prepare(
+        "SELECT Permissions FROM disciplineperms WHERE Username=:username"
+    );
+    $query->execute(['username' => $username]);
+    $row = $query->fetch();
+    if ($row) {
         $perm = $row['Permissions'];
     } else {
         $perm = $DEFAULT_PUN_PERM;
@@ -198,19 +179,20 @@ if ($nrs->numRows() > 0) {
     echo "      <p><a href='$disclink'>Issued Punishments</a></p>\n";
 }
 
-$query =    "SELECT CASE WHEN CURDATE() <= MAX(makeup.MakeupDate) THEN 2 " .
-            "            WHEN makeup.MakeupDate IS NOT NULL THEN 1 END AS Requested " .
-            "FROM makeup_user " .
-            "   INNER JOIN makeup_assignment " .
-            "       ON (makeup_user.Username='$username' " .
-            "           AND makeup_assignment.MakeupAssignmentIndex=makeup_user.MakeupAssignmentIndex) " .
-            "   INNER JOIN makeup " .
-            "       ON (makeup.YearIndex=$yearindex " .
-            "           AND makeup.MakeupIndex=makeup_assignment.MakeupIndex) ";
-$nrs = &  $db->query($query);
-if (DB::isError($nrs))
-    die($nrs->getDebugInfo()); // Check for errors in query
-if ($row = & $nrs->fetchRow(DB_FETCHMODE_ASSOC)) {
+$query = $pdb->prepare(
+    "SELECT CASE WHEN CURDATE() <= MAX(makeup.MakeupDate) THEN 2 " .
+    "            WHEN makeup.MakeupDate IS NOT NULL THEN 1 END AS Requested " .
+    "FROM makeup_user " .
+    "   INNER JOIN makeup_assignment " .
+    "       ON (makeup_user.Username=:username " .
+    "           AND makeup_assignment.MakeupAssignmentIndex=makeup_user.MakeupAssignmentIndex) " .
+    "   INNER JOIN makeup " .
+    "       ON (makeup.YearIndex=:yearindex " .
+    "           AND makeup.MakeupIndex=makeup_assignment.MakeupIndex) "
+);
+$query->execute(['username' => $username, 'yearindex' => $yearindex]);
+$row = $query->fetch();
+if ($row) {
     if(!is_null($row['Requested'])) {
         $makeup_link = "index.php?location=" .
                     dbfuncString2Int("student/makeups.php") .
@@ -239,8 +221,8 @@ if($is_staff or $is_admin) {
                     "                 INNER JOIN familylist USING (Username) " .
                     "                 INNER JOIN user USING (Username) " .
                     "                 INNER JOIN familylist AS familylist2 ON (familylist.FamilyCode=familylist2.FamilyCode) " .
-                    "WHERE class.YearIndex             = $yearindex " .
-                    "AND   familylist2.Username        = '$username' " .
+                    "WHERE class.YearIndex             = :yearindex " .
+                    "AND   familylist2.Username        = :username " .
                     "AND   familylist2.Guardian        = 1 " .
                     "GROUP BY user.Username " .
                     "ORDER BY class.Grade DESC, user.FirstName, user.Surname, user.Username";
@@ -256,20 +238,19 @@ if($is_staff or $is_admin) {
                     "               INNER JOIN user USING (Username) " .
                     "               INNER JOIN familylist AS familylist2 ON (familylist.FamilyCode=familylist2.FamilyCode) " .
                     "WHERE subject.ShowInList          = 1 " .
-                    "AND   subject.YearIndex           = $yearindex " .
-                    "AND   class.YearIndex             = $yearindex " .
+                    "AND   subject.YearIndex           = :yearindex " .
+                    "AND   class.YearIndex             = subject.YearIndex " .
                     "AND   classterm.TermIndex         = currentterm.TermIndex " .
-                    "AND   familylist2.Username        = '$username' " .
+                    "AND   familylist2.Username        = :username " .
                     "AND   familylist2.Guardian        = 1 " .
                     "GROUP BY user.Username " .
                     "ORDER BY class.Grade DESC, user.FirstName, user.Surname, user.Username";
     }
-    $nrs = &  $db->query($query);
-
-    if (DB::isError($nrs))
-        die($nrs->getDebugInfo()); // Check for errors in query
+    $query = $pdb->prepare($query);
+    $query->execute(['username' => $username, 'yearindex' => $yearindex]);
+    $row = $query->fetch();
     /* If user is a support teacher for at least one student, show student information */
-    if ($nrs->numRows() > 0) {
+    if ($row) {
         $childlink = "index.php?location=" .
                 dbfuncString2Int("parent/list_children.php");
         echo "      <p><a href='$childlink'>My children</a></p>\n";
@@ -278,16 +259,15 @@ if($is_staff or $is_admin) {
 
 if($yearindex == $currentyear) {
     /* Check whether teacher is taking attendance for a punishment */
-    $query = "SELECT disciplinetype.DisciplineType, disciplinedate.DisciplineTypeIndex " .
-             "       FROM disciplinedate, disciplinetype " .
-             "WHERE disciplinedate.Username = '$username' " .
-             "AND   disciplinedate.DisciplineTypeIndex = disciplinetype.DisciplineTypeIndex " .
-             "AND   disciplinedate.Done=0";
-    $res = &  $db->query($query);
-    if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-
-    while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+    $query = $pdb->prepare(
+        "SELECT disciplinetype.DisciplineType, disciplinedate.DisciplineTypeIndex " .
+        "       FROM disciplinedate, disciplinetype " .
+        "WHERE disciplinedate.Username = :username " .
+        "AND   disciplinedate.DisciplineTypeIndex = disciplinetype.DisciplineTypeIndex " .
+        "AND   disciplinedate.Done=0"
+    );
+    $query->execute(['username' => $username]);
+    foreach($query as $row) {
         $link = "index.php?location=" .
                  dbfuncString2Int("teacher/punishment/date/modify.php") . "&amp;type=" .
                  dbfuncString2Int($row['DisciplineTypeIndex']) . "&amp;next=" .
@@ -300,35 +280,39 @@ if($yearindex == $currentyear) {
 
     $date = date("Y-m-d");
     $datestring = "today";
-    /* Check whether teacher is taking attendance for a subject */
-    $query = "SELECT subject.Name, period.PeriodIndex, " .
-             "       subject.SubjectIndex FROM timetable, period, subject, subjectteacher " .
-             "WHERE  subject.YearIndex           = $yearindex " .
-             "AND    subject.TermIndex           = $termindex " .
-             "AND    subject.DepartmentIndex     = $depindex " .
-             "AND    subjectteacher.SubjectIndex = subject.SubjectIndex " .
-             "AND    subjectteacher.Username     = '$username' " .
-             "AND    timetable.SubjectIndex      = subject.SubjectIndex " .
-             "AND    timetable.DayIndex          = DAYOFWEEK(\"$date\") - 1 " .
-             "AND    period.PeriodIndex          = timetable.PeriodIndex " .
-             "AND    period.Period               = 1 " . "ORDER BY subject.Name";
-    $res = &  $db->query($query);
-    if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
+    $query = $pdb->prepare(
+        "SELECT subject.Name, period.PeriodIndex, " .
+        "       subject.SubjectIndex FROM timetable, period, subject, subjectteacher " .
+        "WHERE  subject.YearIndex           = :yearindex " .
+        "AND    subject.TermIndex           = :termindex " .
+        "AND    subject.DepartmentIndex     = :depindex " .
+        "AND    subjectteacher.SubjectIndex = subject.SubjectIndex " .
+        "AND    subjectteacher.Username     = :username " .
+        "AND    timetable.SubjectIndex      = subject.SubjectIndex " .
+        "AND    timetable.DayIndex          = DAYOFWEEK(:date) - 1 " .
+        "AND    period.PeriodIndex          = timetable.PeriodIndex " .
+        "AND    period.Period               = 1 " .
+        "ORDER BY subject.Name"
+    );
+    $query->execute(['username' => $username, 'yearindex' => $yearindex,
+                     'termindex' => $termindex, 'depindex' => $depindex,
+                     'date' => $date]);
 
-    $count = $res->numRows();
-    while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+    foreach($query as $row) {
         $boldst = "";
         $boldend = "";
 
-        $query = "SELECT AttendanceDoneIndex FROM attendancedone " .
-                 "WHERE SubjectIndex={$row['SubjectIndex']} " .
-                 "AND   PeriodIndex={$row['PeriodIndex']} " . "AND   Date=\"$date\"";
-        $nres = &  $db->query($query);
-        if (DB::isError($nres))
-            die($nres->getDebugInfo()); // Check for errors in query
-
-        if ($nres->numRows() == 0) {
+        $query = $pdb->prepare(
+            "SELECT AttendanceDoneIndex FROM attendancedone " .
+            "WHERE SubjectIndex=:subjectindex " .
+            "AND   PeriodIndex=:periodindex " .
+            "AND   Date=:date"
+        );
+        $query->execute(['subjectindex' => $row['SubjectIndex'],
+                         'periodindex' => $row['PeriodIndex'],
+                         'date' => $date]);
+        $row = $query->fetch();
+        if (!$row) {
             $boldst = "<strong>";
             $boldend = "</strong>";
         }
@@ -341,9 +325,9 @@ if($yearindex == $currentyear) {
                  dbfuncString2Int(
                                 "index.php?location=" .
                                  dbfuncString2Int("user/main.php"));
-        if ($count != 1) {
+        if ($query->rowCount() > 1)
             $extra = " for {$row['Name']}";
-        }
+
         echo "$boldst<p><a href='$link'>Attendance$extra</a></p>$boldend\n";
     }
 }

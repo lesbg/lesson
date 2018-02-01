@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * user/dochangepassword.php (c) 2005 Jonathan Dieter
+ * user/dochangepassword.php (c) 2005, 2018 Jonathan Dieter
  *
  * Change password for user, or cancel if that's what was chosen
  * ***************************************************************
@@ -38,25 +38,25 @@ if ($_POST["action"] == "Ok") { // If ok was pressed, try to change password
     $good_pw = False;
 
     /* Check whether old MD5 password is correct */
-    $res = & $db->query(
-                    "SELECT Username FROM user " .
-                     "WHERE Username = '$username' " .
-                     "AND   $pass_str = MD5('{$_POST['old']}')");
-    if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
-
-    if ($res->NumRows() > 0) {
+    $query = $pdb->prepare(
+        "SELECT Username FROM user " .
+        "WHERE Username = :username " .
+        "AND   $pass_str = MD5(:old_pw)"
+    );
+    $query->execute(['old_pw' => $_POST['old'], 'username' => $username]);
+    $row = $query->fetch();
+    if ($row) {
         $good_pw = True;
     }
 
     /* Check whether old password_hash password is correct */
-    $res = & $db->query(
-            "SELECT $pass_str FROM user " .
-            "WHERE Username = '$username' ");
-    if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
-
-    if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC) && password_verify($_POST['old'], $row[$pass_str])) {
+    $query = $pdb->prepare(
+        "SELECT $pass_str FROM user " .
+        "WHERE Username = :username "
+    );
+    $query->execute(['username' => $username]);
+    $row = $query->fetch();
+    if ($row && password_verify($_POST['old'], $row[$pass_str])) {
         $good_pw = True;
     }
 
@@ -64,17 +64,17 @@ if ($_POST["action"] == "Ok") { // If ok was pressed, try to change password
         if (strlen($_POST["new"]) >= 6) {
             if ($_POST["new"] == $_POST["confirmnew"]) {
                 $phash = password_hash($_POST['new'], PASSWORD_DEFAULT, ['cost' => "15"]);
-                $res = & $db->query(
-                                "UPDATE user SET $pass_str = '$phash' " .
-                                     "WHERE Username = '$username'");
+                $pdb->prepare(
+                    "UPDATE user SET $pass_str = :phash " .
+                    "WHERE Username = :username"
+                )->execute(['phash' => $phash, 'username' => $username]);
                 if (DB::isError($res))
                     die($res->getDebugInfo()); // Check for errors in query
                 if($pass_str == "Password") {
-                    $res = & $db->query(
-                                    "UPDATE user SET OriginalPassword=NULL " .
-                                         "WHERE Username = '$username'");
-                    if (DB::isError($res))
-                        die($res->getDebugInfo()); // Check for errors in query
+                    $pdb->prepare(
+                        "UPDATE user SET OriginalPassword=NULL " .
+                        "WHERE Username = :username"
+                    )->execute(['username' => $username]);
                 }
                 echo "done.</p>\n";
                 unset($_SESSION['samepass']);

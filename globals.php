@@ -17,6 +17,10 @@ $MAX_LOW_MARKS = 3000; // Maximum number of low marks to show without a
                        // warning
 
 $DSN = "mysql://user@example.com/lesson"; // DSN to connect to database
+$PDO_DSN = "mysql:host=example.com;dbname=lesson;charset=utf8"; // DSN to connect to database
+$PDO_USER = "user";
+$PDO_PWD = "password";
+
 $LOG_LEVEL = $LOG_LEVEL_TEACHER; // Set log level. See core/constants.php for more details
 $LOGS_PER_PAGE = 100; // Number of logs to show per page
 $LOCAL_HOSTS = ".example.local"; // Domain of local hosts

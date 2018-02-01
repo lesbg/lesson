@@ -28,6 +28,7 @@ function redirect($url, $code=302) {
 function &dbfuncConnect() {
     /* Set global parameters */
     global $DSN; // DSN to connect to database, stored in globals.php
+
     /* Connection to database */
     $db = DB::connect($DSN); // Initiate connection
     if (DB::isError($db))
@@ -42,6 +43,20 @@ function &dbfuncConnect() {
     return $db;
 }
 
+/* Connect to database specified by global variable $dsn */
+function &dbfuncPDOConnect() {
+    /* Set global parameters */
+    global $PDO_DSN; // PDO DSN to connect to database, stored in globals.php
+    global $PDO_USER; // PDO database user, stored in globals.php
+    global $PDO_PWD; // PDO database password, stored in globals.php
+
+    /* Connection to database using PDO */
+    $pdb = new PDO($PDO_DSN, $PDO_USER, $PDO_PWD);
+    $pdb->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+    $pdb->setAttribute( PDO::ATTR_EMULATE_PREPARES, false );
+
+    return $pdb;
+}
 /* Connect to database specified by global variable $MASTER_DSN */
 function &dbfuncConnectMaster() {
     /* Set global parameters */

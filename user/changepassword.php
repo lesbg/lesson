@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * user/changepassword.php (c) 2005 Jonathan Dieter
+ * user/changepassword.php (c) 2005, 2018 Jonathan Dieter
  *
  * Show form for user to change password.
  * ***************************************************************
@@ -15,17 +15,18 @@ $link = "index.php?location=" . dbfuncString2Int("user/dochangepassword.php") .
                         "index.php?location=" .
                          dbfuncString2Int("user/main.php"));
 
-$res = & $db->query(
-                "SELECT user.FirstName, user.Surname, user.OriginalPassword FROM user " .
-                 "WHERE user.Username = '$username'");
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
+$query = $pdb->prepare(
+    "SELECT user.FirstName, user.Surname, user.OriginalPassword FROM user " .
+    "WHERE user.Username = :username"
+);
+$query->execute(['username' => $username ]);
 
 include "header.php"; // Show header
 
 include "user/wordlist.php";
 
-if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+$row = $query->fetch();
+if ($row) {
     if (isset($error) and $error) {
         echo "      <p align='center' class='error'>You cannot choose your username as a password!</p>\n";
     }

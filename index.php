@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * index.php (c) 2004-2005, 2015-2017 Jonathan Dieter
+ * index.php (c) 2004-2005, 2015-2018 Jonathan Dieter
  *
  * Central script that runs by default. This script includes
  * any child scripts that need to be run. Thus, as far as the
@@ -17,7 +17,15 @@ require_once "DB.php"; // Get DB class
 include "core/dbfunc.php"; // Get database connection functions
 include "core/filefunc.php"; // Include file functions
 
-$db = & dbfuncConnect(); // Connect to database and store in $db
+function topException($exception) {
+    echo "<b>Exception:</b> " . $exception->getMessage();
+    throw $exception;
+}
+
+set_exception_handler('topException');
+
+$db  = & dbfuncConnect(); // Connect to database and store in $db
+$pdb = & dbfuncPDOConnect(); // Connect to database and store in $db
 
 session_name("LESSONSESSION");
 session_start();
