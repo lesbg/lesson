@@ -1,14 +1,14 @@
 <?php
 /**
  * ***************************************************************
- * user/timetable.php (c) 2007, 2016 Jonathan Dieter
+ * user/timetable.php (c) 2007, 2016, 2018 Jonathan Dieter
  *
  * Show user's timetable
  * ***************************************************************
  */
 
 /* Get variables */
-$ttusername = safe(dbfuncInt2String($_GET['key']));
+$ttusername = dbfuncInt2String($_GET['key']);
 $ttname = dbfuncInt2String($_GET['keyname']);
 if (isset($_GET['key2']))
     $type = dbfuncInt2String($_GET['key2']);
@@ -17,62 +17,54 @@ else
 $title = "Timetable for $ttname";
 
 if ($type == "c")
-    $query = "SELECT DepartmentIndex FROM class WHERE ClassIndex=$ttusername";
+    $query = $pdb->prepare(
+        "SELECT DepartmentIndex FROM class WHERE ClassIndex=?"
+    );
 else
-    $query = "SELECT DepartmentIndex FROM user WHERE Username='$ttusername'";
-$res = &  $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo());
-$row = & $res->fetchRow(DB_FETCHMODE_ASSOC);
-$depindex = $row['DepartmentIndex'];
-if (is_null($depindex)) {
-    $query = "SELECT class.DepartmentIndex FROM class, classterm, classlist " .
-             "WHERE  classlist.Username = '$ttusername' " .
-             "AND    classterm.ClassTermIndex = classlist.ClassTermIndex " .
-             "AND    classterm.TermIndex = $termindex " .
-             "AND    class.ClassIndex = classterm.ClassIndex " .
-             "AND    class.YearIndex = $yearindex";
-    $res = &  $db->query($query);
-    if (DB::isError($res))
-        die($res->getDebugInfo());
-    $row = & $res->fetchRow(DB_FETCHMODE_ASSOC);
+    $query = $pdb->prepare(
+        "SELECT DepartmentIndex FROM user WHERE Username=?"
+    );
+$query->execute([$ttusername]);
+$row = $query->fetch();
+
+if ($row) {
     $depindex = $row['DepartmentIndex'];
-}
-if (is_null($depindex)) {
-    $query = "SELECT DepartmentIndex FROM department " .
-             "ORDER BY DepartmentIndex " . "LIMIT 1";
-    $res = &  $db->query($query);
-    if (DB::isError($res))
-        die($res->getDebugInfo());
-    $row = & $res->fetchRow(DB_FETCHMODE_ASSOC);
-    $depindex = $row['DepartmentIndex'];
+} else {
+    $query = $pdb->prepare(
+        "SELECT class.DepartmentIndex FROM class, classterm, classlist " .
+        "WHERE  classlist.Username = :ttusername " .
+        "AND    classterm.ClassTermIndex = classlist.ClassTermIndex " .
+        "AND    classterm.TermIndex = :termindex " .
+        "AND    class.ClassIndex = classterm.ClassIndex " .
+        "AND    class.YearIndex = :yearindex"
+    );
+    $query->execute(['ttusername' => $ttusername, 'termindex' => $termindex,
+                     'yearindex' => $yearindex]);
+    $row = $query->fetch();
+    if($row) {
+        $depindex = $row['DepartmentIndex'];
+    } else {
+        $query = $pdb->prepare(
+            "SELECT DepartmentIndex FROM department " .
+            "ORDER BY DepartmentIndex LIMIT 1"
+        );
+        $query->execute();
+        $row = $query->fetch();
+        $depindex = $row['DepartmentIndex'];
+    }
 }
 
-$query = "SELECT TimetableVersion FROM currentterm WHERE DepartmentIndex=$depindex";
-$res = &  $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo());
-$row = & $res->fetchRow(DB_FETCHMODE_ASSOC);
+$query = $pdb->prepare(
+    "SELECT TimetableVersion FROM currentterm WHERE DepartmentIndex=:depindex"
+);
+$query->execute(['depindex' => $depindex]);
+$row = $query->fetch();
 
 if (! is_null($row['TimetableVersion']) and $row['TimetableVersion'] != "") {
     $subtitle = $row['TimetableVersion'];
 }
 
-/* Check whether current user is student's guardian */
-$query =    "SELECT familylist.Username FROM " .
-        "    familylist INNER JOIN familylist AS familylist2 ON (familylist.FamilyCode=familylist2.FamilyCode) " .
-        "WHERE familylist.Username         = '$ttusername' " .
-        "AND   familylist2.Username        = '$username' " .
-        "AND   familylist2.Guardian        = 1 ";
-$res = &  $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-
-if ($res->numRows() > 0) {
-    $is_guardian = true;
-} else {
-    $is_guardian = false;
-}
+$is_guardian = check_guardian($ttusername, $username);
 
 include "header.php"; // Show header
 include "core/settermandyear.php";
@@ -82,29 +74,31 @@ if (($username == $ttusername or $is_admin or $is_guardian) and $type != "c") {
     /* Get student list */
     include "core/titletermyear.php";
 
-    $query =    "SELECT Username FROM user INNER JOIN groupgenmem USING (Username) " .
-                "     INNER JOIN groups USING (GroupID) " .
-                "WHERE user.Username='$ttusername' " .
-                "AND   groups.GroupTypeID='activeteacher' " .
-                "AND   groups.YearIndex=$yearindex ";
-    $nrs = &  $db->query($query);
-    if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
-    if ($nrs->numRows() > 0) {
+    $query = $pdb->prepare(
+        "SELECT Username FROM user INNER JOIN groupgenmem USING (Username) " .
+        "     INNER JOIN groups USING (GroupID) " .
+        "WHERE user.Username=:ttusername " .
+        "AND   groups.GroupTypeID='activeteacher' " .
+        "AND   groups.YearIndex=:yearindex "
+    );
+    $query->execute(['ttusername' => $ttusername, 'yearindex' => $yearindex]);
+    $row = $query->fetch();
+    if ($row) {
         if ($type == NULL)
             $type = "t";
         $tttype = $type;
         include "svg/timetable.svg.php";
     }
-    $query =    "SELECT Username FROM user INNER JOIN groupgenmem USING (Username) " .
-                "     INNER JOIN groups USING (GroupID) " .
-                "WHERE user.Username='$ttusername' " .
-                "AND   groups.GroupTypeID='activestudent' " .
-                "AND   groups.YearIndex=$yearindex ";
-    $nrs = &  $db->query($query);
-    if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
-    if ($nrs->numRows() > 0) {
+    $query = $pdb->prepare(
+        "SELECT Username FROM user INNER JOIN groupgenmem USING (Username) " .
+        "     INNER JOIN groups USING (GroupID) " .
+        "WHERE user.Username='$ttusername' " .
+        "AND   groups.GroupTypeID='activestudent' " .
+        "AND   groups.YearIndex=$yearindex "
+    );
+    $query->execute(['ttusername' => $ttusername, 'yearindex' => $yearindex]);
+    $row = $query->fetch();
+    if ($row) {
         if ($type == NULL)
             $type = "s";
         $tttype = $type;
