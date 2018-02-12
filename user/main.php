@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * user/main.php (c) 2004-2016 Jonathan Dieter
+ * user/main.php (c) 2004-2018 Jonathan Dieter
  *
  * Initial page that shows what classes the user is in, if they
  * are a student or what classes they teach if they are a teacher
@@ -339,23 +339,23 @@ echo "         <p><a href='$link'>Connect to Telegram</a></p>\n";
 echo "      </div>\n";
 
 /* Get classes */
-$studentusername = $username;
-$query = "SELECT subject.Name, subject.SubjectIndex, subject.Period, " .
-         "       subject.ShowAverage, subjectstudent.Average, subject.AverageType, " .
-         "       subject.AverageTypeIndex FROM subject, subjectstudent " .
-         "WHERE subjectstudent.SubjectIndex = subject.SubjectIndex " .
-         "AND   subject.ShowInList          = 1 " .
-         "AND   subject.YearIndex           = $yearindex " .
-         "AND   subject.TermIndex           = $termindex " .
-         "AND   subjectstudent.Username     = '$studentusername' " .
-         "ORDER BY subject.Period, subject.Name";
-$res = & $db->query($query);
-
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
+$query = $pdb->prepare(
+    "SELECT subject.Name, subject.SubjectIndex, subject.Period, " .
+    "       subject.ShowAverage, subjectstudent.Average, subject.AverageType, " .
+    "       subject.AverageTypeIndex FROM subject, subjectstudent " .
+    "WHERE subjectstudent.SubjectIndex = subject.SubjectIndex " .
+    "AND   subject.ShowInList          = 1 " .
+    "AND   subject.YearIndex           = :yearindex " .
+    "AND   subject.TermIndex           = :termindex " .
+    "AND   subjectstudent.Username     = :username " .
+    "ORDER BY subject.Period, subject.Name"
+);
+$query->execute(['yearindex' => $yearindex, 'termindex' => $termindex,
+                 'username' => $username]);
+$data = $query->fetchAll();
 
 /* If user is a student in at least one subject, print out class table */
-if ($res->numRows() > 0) {
+if ($data) {
     include "student/lateinfo.php";
 
     /* First give option to show all assignments */
@@ -384,7 +384,7 @@ if ($res->numRows() > 0) {
 
     /* For each subject, print a row with the subject name and teacher(s) */
     $alt_count = 0;
-    while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+    foreach($data as $row) {
         $alt_count += 1;
         if ($alt_count % 2 == 0) {
             $alt = " class='alt'";
@@ -402,20 +402,20 @@ if ($res->numRows() > 0) {
         echo "            <td>";
 
         /* Get information about teacher(s) */
-        $teacherRes = & $db->query(
-                                "SELECT user.Title, user.FirstName, user.Surname FROM user, subjectteacher " .
-                                 "WHERE subjectteacher.SubjectIndex = {$row['SubjectIndex']} " .
-                                          /*"AND   subjectteacher.Show         = '1' " .*/
-                                          "AND   user.Username               = subjectteacher.Username");
-        if (DB::isError($teacherRes))
-            die($teacherRes->getDebugInfo()); // Check for errors in query
-        if ($teacherRow = & $teacherRes->fetchRow(DB_FETCHMODE_ASSOC)) {
+        $query = $pdb->prepare(
+            "SELECT user.Title, user.FirstName, user.Surname FROM user, subjectteacher " .
+            "WHERE subjectteacher.SubjectIndex = :subjectindex " .
+            "AND   user.Username = subjectteacher.Username " .
+            "ORDER BY user.Surname"
+        );
+        $query->execute(['subjectindex' => $row['SubjectIndex']]);
+        $first = True;
+        foreach($query as $teacherRow) {
+            if(!$first)
+                echo "<br>\n";
+            else
+                $first = False;
             echo "{$teacherRow['Title']} {$teacherRow['FirstName']} {$teacherRow['Surname']}";
-
-            /* If there's more than one teacher, separate with commas */
-            while ( $teacherRow = & $teacherRes->fetchRow(DB_FETCHMODE_ASSOC) ) {
-                echo ", {$teacherRow['Title']} {$teacherRow['FirstName']} {$teacherRow['Surname']}";
-            }
         }
         echo "            </td>\n"; // Table footers
         $average_type = $row['AverageType'];
@@ -430,14 +430,16 @@ if ($res->numRows() > 0) {
                         $average = round($row['Average']);
                         echo "            <td>$average%</td>\n";
                     } elseif ($average_type == $AVG_TYPE_INDEX or
-                             $average_type == $AVG_TYPE_GRADE) {
-                        $query = "SELECT Input, Display FROM nonmark_index " .
-                         "WHERE NonmarkTypeIndex = $average_type_index " .
-                         "AND   NonmarkIndex     = {$row['Average']}";
-                        $sres = & $db->query($query);
-                        if (DB::isError($sres))
-                            die($sres->getDebugInfo()); // Check for errors in query
-                        if ($srow = & $sres->fetchRow(DB_FETCHMODE_ASSOC)) {
+                              $average_type == $AVG_TYPE_GRADE) {
+                        $query = $pdb->prepare(
+                            "SELECT Input, Display FROM nonmark_index " .
+                            "WHERE NonmarkTypeIndex = :average_type_index " .
+                            "AND   NonmarkIndex     = :average"
+                        );
+                        $query->execute(['average_type_index' => $average_type_index,
+                                         'average' => $row['Average']]);
+                        $srow = $query->fetch();
+                        if ($srow) {
                             $average = $srow['Display'];
                         } else {
                             $average = "?";
@@ -456,18 +458,19 @@ if ($res->numRows() > 0) {
     }
     echo "      </table>\n"; // End of table
 
-    $query =    "SELECT disciplinedate.PunishDate, disciplinetype.DisciplineType, " .
-                "       discipline.Date, discipline.Comment, IF(PunishDate=CURDATE(), 1, 0) AS Today " .
-                "       FROM discipline INNER JOIN disciplinedate USING (DisciplineDateIndex) " .
-                "                       INNER JOIN disciplinetype USING (DisciplineTypeIndex) " .
-                "WHERE disciplinedate.Done = 0 " .
-                "AND   discipline.DisciplineDateIndex IS NOT NULL " .
-                "AND   discipline.Username='$username' " .
-                "ORDER BY disciplinedate.PunishDate, discipline.Date, discipline.DisciplineIndex";
-    $dRes = &   $db->query($query);
-    if (DB::isError($dRes))
-        die($dRes->getDebugInfo()); // Check for errors in query
-    if($dRes->numRows() > 0) {
+    $query = $pdb->prepare(
+        "SELECT disciplinedate.PunishDate, disciplinetype.DisciplineType, " .
+        "       discipline.Date, discipline.Comment, IF(PunishDate=CURDATE(), 1, 0) AS Today " .
+        "       FROM discipline INNER JOIN disciplinedate USING (DisciplineDateIndex) " .
+        "                       INNER JOIN disciplinetype USING (DisciplineTypeIndex) " .
+        "WHERE disciplinedate.Done = 0 " .
+        "AND   discipline.DisciplineDateIndex IS NOT NULL " .
+        "AND   discipline.Username=:username " .
+        "ORDER BY disciplinedate.PunishDate, discipline.Date, discipline.DisciplineIndex"
+    );
+    $query->execute(['username' => $username]);
+    $pdata = $query->fetchAll();
+    if($pdata) {
         echo "      <p></p>\n";
         echo "      <table align='center' border='1'>\n"; // Table headers
         echo "         <tr>\n";
@@ -477,9 +480,8 @@ if ($res->numRows() > 0) {
         echo "            <th>Infraction date</th>\n";
         echo "         </tr>\n";
 
-        /* For each subject, print a row with the subject name and teacher(s) */
         $alt_count = 0;
-        while ( $row = & $dRes->fetchRow(DB_FETCHMODE_ASSOC) ) {
+        foreach($pdata as $prow) {
             $alt_count += 1;
             if ($alt_count % 2 == 0) {
                 $alt = " class='alt'";
@@ -487,18 +489,18 @@ if ($res->numRows() > 0) {
                 $alt = " class='std'";
             }
 
-            if($row['Today'] == 1) {
+            if($prow['Today'] == 1) {
                 $emph = "<strong>";
                 $unemph = "</strong>";
             } else {
                 $emph = "";
                 $unemph = "";
             }
-            $pundate = date($dateformat, strtotime($row['PunishDate']));
-            $infr_date = date($dateformat, strtotime($row['Date']));
-            $comment = htmlspecialchars($row['Comment'], ENT_QUOTES);
+            $pundate = date($dateformat, strtotime($prow['PunishDate']));
+            $infr_date = date($dateformat, strtotime($prow['Date']));
+            $comment = htmlspecialchars($prow['Comment'], ENT_QUOTES);
             echo "         <tr$alt>\n";
-            echo "            <td>$emph{$row['DisciplineType']}$unemph</td>\n";
+            echo "            <td>$emph{$prow['DisciplineType']}$unemph</td>\n";
             echo "            <td>$emph$pundate$unemph</td>\n";
             echo "            <td>$emph$comment$unemph</td>\n";
             echo "            <td>$emph$infr_date$unemph</td>\n";
@@ -511,21 +513,22 @@ if ($res->numRows() > 0) {
     $disclink = "index.php?location=" . dbfuncString2Int("student/discipline.php") .
                  "&amp;key=" . dbfuncString2Int($username) . "&amp;keyname=" .
                  dbfuncString2Int($fullname);
-    $query = "SELECT classlist.Conduct FROM classlist, classterm, class " .
-             "WHERE  classlist.Username = '$username' " .
-             "AND    classlist.ClassTermIndex = classterm.ClassTermindex " .
-             "AND    classterm.TermIndex = $termindex " .
-             "AND    classterm.ClassIndex = class.ClassIndex " .
-             "AND    class.YearIndex = $yearindex ";
-    $conductRes = &   $db->query($query);
-    if (DB::isError($conductRes))
-        die($conductRes->getDebugInfo()); // Check for errors in query
-    if ($conductRow = & $conductRes->fetchrow(DB_FETCHMODE_ASSOC) and
-         $conductRow['Conduct'] != "") {
-        $conduct = $conductRow['Conduct'];
+    $query = $pdb->prepare(
+        "SELECT ROUND(classlist.Conduct) AS Conduct FROM classlist, classterm, class " .
+        "WHERE  classlist.Username = :username " .
+        "AND    classlist.ClassTermIndex = classterm.ClassTermindex " .
+        "AND    classterm.TermIndex = :termindex " .
+        "AND    classterm.ClassIndex = class.ClassIndex " .
+        "AND    class.YearIndex = :yearindex"
+    );
+    $query->execute(['username' => $username, 'termindex' => $termindex,
+                     'yearindex' => $yearindex]);
+    $crow = $query->fetch();
+    if ($crow and $crow['Conduct'] != "") {
+        $conduct = $crow['Conduct'];
         if ($conduct < 0)
             $conduct = 0;
-        if(is_null($conductRow['Conduct'])) {
+        if(is_null($crow['Conduct'])) {
             $conduct = "N/A";
         } else {
             $conduct = "$conduct%";
@@ -536,35 +539,47 @@ if ($res->numRows() > 0) {
 }
 
 /* Get subject information for current teacher */
-$query = "SELECT Name, SubjectIndex, Average, MAX(StudentCount) AS StudentCount, MIN(ReportDone) AS ReportDone, ClassIndex, CanDoReport, MAX(SubjectTeacher) AS SubjectTeacher FROM " .
-         "       ((SELECT subject.Name, subject.SubjectIndex, subject.Average, COUNT(subjectstudent.Username) AS StudentCount, MIN(subjectstudent.ReportDone) AS ReportDone, subject.ClassIndex, subject.CanDoReport, 1 AS SubjectTeacher " .
-         "         FROM subject " .
-         "         LEFT OUTER JOIN subjectstudent USING (SubjectIndex), subjectteacher " .
-         "         WHERE subjectteacher.SubjectIndex = subject.SubjectIndex " .
-         "         AND subject.YearIndex = $yearindex " .
-         "         AND subject.TermIndex = $termindex " .
-         "         AND subjectteacher.Username = '$username' " .
-         "         AND subject.ShowInList = 1 " .
-         "         GROUP BY subject.SubjectIndex) " . "        UNION " .
-         "        (SELECT subject.Name, subject.SubjectIndex, subject.Average, COUNT(subjectstudent.Username) AS StudentCount, MIN(subjectstudent.ReportDone) AS ReportDone, subject.ClassIndex, subject.CanDoReport, 0 AS SubjectTeacher " .
-         "         FROM subject " .
-         "         INNER JOIN subjectstudent USING (SubjectIndex) " .
-         "         INNER JOIN classlist USING (Username) " .
-         "         INNER JOIN classterm ON (classterm.ClassTermIndex=classlist.ClassTermIndex AND classterm.TermIndex=subject.TermIndex) " .
-         "         INNER JOIN class ON (class.ClassIndex=classterm.ClassIndex AND class.YearIndex=subject.YearIndex) " .
-         "         INNER JOIN support_class ON (classterm.ClassTermIndex=support_class.ClassTermIndex) " .
-         "         WHERE support_class.Username = '$username' " .
-         "         AND subject.YearIndex = $yearindex " .
-         "         AND subject.TermIndex = $termindex " .
-         "         AND subject.ShowInList = 1 " .
-         "         GROUP BY subject.SubjectIndex)) AS subject_list " .
-         "GROUP BY SubjectIndex " . "ORDER BY Name, SubjectIndex ";
-$nrs = &  $db->query($query);
-if (DB::isError($nrs))
-    die($nrs->getDebugInfo()); // Check for errors in query
+$query = $pdb->prepare(
+    "SELECT Name, SubjectIndex, Average, MAX(StudentCount) AS StudentCount, " .
+    "       MIN(ReportDone) AS ReportDone, ClassName, ClassIndex, CanDoReport, " .
+    "       MAX(SubjectTeacher) AS SubjectTeacher FROM " .
+    "       ((SELECT subject.Name, subject.SubjectIndex, subject.Average, " .
+    "                COUNT(subjectstudent.Username) AS StudentCount, " .
+    "                MIN(subjectstudent.ReportDone) AS ReportDone, class.ClassName, " .
+    "                subject.ClassIndex, subject.CanDoReport, 1 AS SubjectTeacher " .
+    "         FROM subject " .
+    "         LEFT OUTER JOIN subjectstudent USING (SubjectIndex) " .
+    "         LEFT OUTER JOIN class USING (ClassIndex), subjectteacher " .
+    "         WHERE subjectteacher.SubjectIndex = subject.SubjectIndex " .
+    "         AND subject.YearIndex = :yearindex " .
+    "         AND subject.TermIndex = :termindex " .
+    "         AND subjectteacher.Username = :username " .
+    "         AND subject.ShowInList = 1 " .
+    "         GROUP BY subject.SubjectIndex) " .
+    "        UNION " .
+    "        (SELECT subject.Name, subject.SubjectIndex, subject.Average, " .
+    "                COUNT(subjectstudent.Username) AS StudentCount, " .
+    "                MIN(subjectstudent.ReportDone) AS ReportDone, class.ClassName, " .
+    "                subject.ClassIndex, subject.CanDoReport, 0 AS SubjectTeacher " .
+    "         FROM subject " .
+    "         INNER JOIN subjectstudent USING (SubjectIndex) " .
+    "         INNER JOIN classlist USING (Username) " .
+    "         INNER JOIN classterm ON (classterm.ClassTermIndex=classlist.ClassTermIndex AND classterm.TermIndex=subject.TermIndex) " .
+    "         INNER JOIN class ON (class.ClassIndex=classterm.ClassIndex AND class.YearIndex=subject.YearIndex) " .
+    "         INNER JOIN support_class ON (classterm.ClassTermIndex=support_class.ClassTermIndex) " .
+    "         WHERE support_class.Username = :username " .
+    "         AND subject.YearIndex = :yearindex " .
+    "         AND subject.TermIndex = :termindex " .
+    "         AND subject.ShowInList = 1 " .
+    "         GROUP BY subject.SubjectIndex)) AS subject_list " .
+    "GROUP BY SubjectIndex " . "ORDER BY Name, SubjectIndex "
+);
+$query->execute(['username' => $username, 'termindex' => $termindex,
+                 'yearindex' => $yearindex]);
+$data = $query->fetchAll();
 
 /* If user teaches at least one subject, print out teacher table */
-if ($nrs->numRows() > 0) {
+if ($data) {
     echo "      <table align='center' border='1'>\n"; // Table headers
     echo "         <tr>\n";
     echo "            <th>Subject</th>\n";
@@ -574,7 +589,7 @@ if ($nrs->numRows() > 0) {
 
     /* For each class, print a row with the subject name and number of students */
     $alt_count = 0;
-    while ( $row = & $nrs->fetchRow(DB_FETCHMODE_ASSOC) ) {
+    foreach($data as $row) {
         $alt_count += 1;
         if ($alt_count % 2 == 0) {
             $alt = " class='alt'";
@@ -600,19 +615,12 @@ if ($nrs->numRows() > 0) {
             echo "$reportbutton&nbsp;";
         }
         if ($row['ClassIndex'] != NULL) {
-            $query = "SELECT ClassName FROM class WHERE ClassIndex={$row['ClassIndex']}";
-            $trs = &  $db->query($query);
-            if (DB::isError($trs))
-                die($trs->getDebugInfo()); // Check for errors in query
-
-            if ($trow = & $trs->fetchRow(DB_FETCHMODE_ASSOC)) {
-                $ttlink = "index.php?location=" . dbfuncString2Int("user/timetable.php") .
-                         "&amp;key=" . dbfuncString2Int($row['ClassIndex']) . "&amp;keyname=" .
-                         dbfuncString2Int($trow['ClassName']) . "&amp;key2=" .
-                         dbfuncString2Int("c"); // Get link to report
-                $ttbutton = dbfuncGetButton($ttlink, "T", "small", "edit", "Class timetable");
-                echo "$ttbutton&nbsp;";
-            }
+            $ttlink = "index.php?location=" . dbfuncString2Int("user/timetable.php") .
+                     "&amp;key=" . dbfuncString2Int($row['ClassIndex']) . "&amp;keyname=" .
+                     dbfuncString2Int($row['ClassName']) . "&amp;key2=" .
+                     dbfuncString2Int("c"); // Get link to report
+            $ttbutton = dbfuncGetButton($ttlink, "T", "small", "edit", "Class timetable");
+            echo "$ttbutton&nbsp;";
         }
         if ($row['StudentCount'] != NULL and $row['StudentCount'] > 0) {
             $namelink = "index.php?location=" .
@@ -638,27 +646,28 @@ if ($nrs->numRows() > 0) {
 }
 
 /* Get subject information for support teacher */
-$query = "SELECT class.ClassName, class.ClassIndex, COUNT(support.StudentUsername) AS StudentCount " .
-         "       FROM user, support, class, classterm, classlist, groupgenmem, groups " .
-         "WHERE support.WorkerUsername   = '$username' " .
-         "AND   user.Username            = support.WorkerUsername " .
-         "AND   groupgenmem.Username     = user.Username " .
-         "AND   groups.GroupID           = groupgenmem.GroupID " .
-         "AND   groups.GroupTypeID       = 'supportteacher' " .
-         "AND   groups.YearIndex         = $yearindex " .
-         "AND   support.StudentUsername  = classlist.Username " .
-         "AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
-         "AND   classterm.TermIndex      = $termindex " .
-         "AND   classterm.ClassIndex     = class.ClassIndex " .
-         "AND   class.YearIndex          = $yearindex " .
-         "GROUP BY class.ClassName " .
-         "ORDER BY class.Grade, class.ClassName, class.ClassIndex";
-$nrs = &  $db->query($query);
+$query = $pdb->prepare(
+    "SELECT class.ClassName, class.ClassIndex, COUNT(support.StudentUsername) AS StudentCount " .
+    "       FROM user, support, class, classterm, classlist, groupgenmem, groups " .
+    "WHERE support.WorkerUsername   = :username " .
+    "AND   user.Username            = support.WorkerUsername " .
+    "AND   groupgenmem.Username     = user.Username " .
+    "AND   groups.GroupID           = groupgenmem.GroupID " .
+    "AND   groups.GroupTypeID       = 'supportteacher' " .
+    "AND   groups.YearIndex         = :yearindex " .
+    "AND   support.StudentUsername  = classlist.Username " .
+    "AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+    "AND   classterm.TermIndex      = :termindex " .
+    "AND   classterm.ClassIndex     = class.ClassIndex " .
+    "AND   class.YearIndex          = groups.YearIndex " .
+    "GROUP BY class.ClassName " .
+    "ORDER BY class.Grade, class.ClassName, class.ClassIndex"
+);
+$query->execute(['username' => $username, 'termindex' => $termindex,
+                 'yearindex' => $yearindex]);
+$data = $query->fetchAll();
 
-if (DB::isError($nrs))
-    die($nrs->getDebugInfo()); // Check for errors in query
-    /* If user is a support teacher for at least one student, show student information */
-if ($nrs->numRows() > 0) {
+if ($data) {
     echo "      <table align='center' border='1'>\n"; // Table headers
     echo "         <tr>\n";
     echo "            <th>Class</th>\n";
@@ -667,7 +676,7 @@ if ($nrs->numRows() > 0) {
 
     /* For each class, print a row with the subject name and number of students */
     $alt_count = 0;
-    while ( $row = & $nrs->fetchRow(DB_FETCHMODE_ASSOC) ) {
+    foreach($data as $row) {
         $alt_count += 1;
         if ($alt_count % 2 == 0) {
             $alt = " class='alt'";
@@ -691,44 +700,49 @@ if ($nrs->numRows() > 0) {
 if(!$is_staff and !$is_admin) {
     /* Only show class if we're looking at future years */
     if($yearindex > $currentyear) {
-        $query =    "SELECT user.Username, user.FirstName, user.Surname, NULL AS SubjectCount, grade.GradeName AS ClassName, NULL AS TermIndex FROM " .
-                    "       classlist INNER JOIN classterm USING (ClassTermIndex) " .
-                    "                 INNER JOIN term ON (classterm.TermIndex=term.TermIndex AND term.TermNumber=1) " .
-                    "                 INNER JOIN class ON (classterm.ClassIndex=class.ClassIndex) " .
-                    "                 INNER JOIN grade USING (Grade) " .
-                    "                 INNER JOIN familylist USING (Username) " .
-                    "                 INNER JOIN user USING (Username) " .
-                    "                 INNER JOIN familylist AS familylist2 ON (familylist.FamilyCode=familylist2.FamilyCode) " .
-                    "WHERE class.YearIndex             = $yearindex " .
-                    "AND   familylist2.Username        = '$username' " .
-                    "AND   familylist2.Guardian        = 1 " .
-                    "GROUP BY user.Username " .
-                    "ORDER BY class.Grade DESC, user.FirstName, user.Surname, user.Username";
+        $query = $pdb->prepare(
+            "SELECT user.Username, user.FirstName, user.Surname, NULL AS SubjectCount, " .
+            "       grade.GradeName AS ClassName, NULL AS TermIndex FROM " .
+            "       classlist INNER JOIN classterm USING (ClassTermIndex) " .
+            "                 INNER JOIN term ON (classterm.TermIndex=term.TermIndex AND term.TermNumber=1) " .
+            "                 INNER JOIN class ON (classterm.ClassIndex=class.ClassIndex) " .
+            "                 INNER JOIN grade USING (Grade) " .
+            "                 INNER JOIN familylist USING (Username) " .
+            "                 INNER JOIN user USING (Username) " .
+            "                 INNER JOIN familylist AS familylist2 ON (familylist.FamilyCode=familylist2.FamilyCode) " .
+            "WHERE class.YearIndex             = :yearindex " .
+            "AND   familylist2.Username        = :username " .
+            "AND   familylist2.Guardian        = 1 " .
+            "GROUP BY user.Username " .
+            "ORDER BY class.Grade DESC, user.FirstName, user.Surname, user.Username"
+        );
     } else {
-        $query =    "SELECT user.Username, user.FirstName, user.Surname, COUNT(subject.SubjectIndex) AS SubjectCount, class.ClassName, classterm.TermIndex FROM " .
-                    "       subject INNER JOIN subjectstudent USING (SubjectIndex) " .
-                    "               INNER JOIN classlist USING (Username) " .
-                    "               INNER JOIN currentterm USING (TermIndex) " .
-                    "               INNER JOIN classterm USING (ClassTermIndex) " .
-                    "               INNER JOIN class ON (classterm.ClassIndex=class.ClassIndex) " .
-                    "               INNER JOIN familylist USING (Username) " .
-                    "               INNER JOIN user USING (Username) " .
-                    "               INNER JOIN familylist AS familylist2 ON (familylist.FamilyCode=familylist2.FamilyCode) " .
-                    "WHERE subject.ShowInList          = 1 " .
-                    "AND   subject.YearIndex           = $yearindex " .
-                    "AND   class.YearIndex             = $yearindex " .
-                    "AND   classterm.TermIndex         = currentterm.TermIndex " .
-                    "AND   familylist2.Username        = '$username' " .
-                    "AND   familylist2.Guardian        = 1 " .
-                    "GROUP BY user.Username " .
-                    "ORDER BY class.Grade DESC, user.FirstName, user.Surname, user.Username";
+        $query = $pdb->prepare(
+            "SELECT user.Username, user.FirstName, user.Surname, COUNT(subject.SubjectIndex) AS SubjectCount, " .
+            "       class.ClassName, classterm.TermIndex FROM " .
+            "       subject INNER JOIN subjectstudent USING (SubjectIndex) " .
+            "               INNER JOIN classlist USING (Username) " .
+            "               INNER JOIN currentterm USING (TermIndex) " .
+            "               INNER JOIN classterm USING (ClassTermIndex) " .
+            "               INNER JOIN class ON (classterm.ClassIndex=class.ClassIndex) " .
+            "               INNER JOIN familylist USING (Username) " .
+            "               INNER JOIN user USING (Username) " .
+            "               INNER JOIN familylist AS familylist2 ON (familylist.FamilyCode=familylist2.FamilyCode) " .
+            "WHERE subject.ShowInList          = 1 " .
+            "AND   subject.YearIndex           = :yearindex " .
+            "AND   class.YearIndex             = subject.YearIndex " .
+            "AND   classterm.TermIndex         = currentterm.TermIndex " .
+            "AND   familylist2.Username        = :username " .
+            "AND   familylist2.Guardian        = 1 " .
+            "GROUP BY user.Username " .
+            "ORDER BY class.Grade DESC, user.FirstName, user.Surname, user.Username"
+        );
     }
-    $nrs = &  $db->query($query);
+    $query->execute(['username' => $username, 'yearindex' => $yearindex]);
+    $data = $query->fetchAll();
 
-    if (DB::isError($nrs))
-        die($nrs->getDebugInfo()); // Check for errors in query
-    /* If user is a support teacher for at least one student, show student information */
-    if ($nrs->numRows() > 0) {
+    /* If user has children and is not a teacher, show child information */
+    if ($data) {
         echo "      <table align='center' border='1'>\n"; // Table headers
         echo "         <tr>\n";
         echo "            <th>Child</th>\n";
@@ -738,7 +752,7 @@ if(!$is_staff and !$is_admin) {
 
         /* For each class, print a row with the subject name and number of students */
         $alt_count = 0;
-        while ( $row = & $nrs->fetchRow(DB_FETCHMODE_ASSOC) ) {
+        foreach($data as $row) {
             $alt_count += 1;
             if ($alt_count % 2 == 0) {
                 $alt = " class='alt'";
