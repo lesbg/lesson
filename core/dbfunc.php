@@ -51,30 +51,30 @@ function &dbfuncPDOConnect() {
     global $PDO_PWD; // PDO database password, stored in globals.php
 
     /* Connection to database using PDO */
-    $pdb = new PDO($PDO_DSN, $PDO_USER, $PDO_PWD);
-    $pdb->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+    $db = new PDO($PDO_DSN, $PDO_USER, $PDO_PWD);
+    $db->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 
-    return $pdb;
+    return $db;
 }
 /* Connect to database specified by global variable $MASTER_DSN */
 function &dbfuncConnectMaster() {
     /* Set global parameters */
+    global $PDO_DSN; // PDO DSN to connect to database, stored in globals.php
+    global $PDO_USER; // PDO database user, stored in globals.php
+    global $PDO_PWD; // PDO database password, stored in globals.php
     global $MASTER_DSN; // DSN to connect to database, stored in globals.php
-    global $DSN;
+    global $MASTER_USER;
+    global $MASTER_PWD;
 
-    if(!isset($MASTER_DSN) or is_null($MASTER_DSN))
-        $MASTER_DSN = $DSN;
+    if(!isset($MASTER_DSN) or is_null($MASTER_DSN)) {
+        $MASTER_DSN = $PDO_DSN;
+        $MASTER_USER = $PDO_USER;
+        $MASTER_PWD = $PDO_PWD;
+    }
 
-    /* Connection to database */
-    $db = DB::connect($MASTER_DSN); // Initiate connection
-    if (DB::isError($db))
-        die($db->getDebugInfo()); // Check for errors in connection
-
-    $query = "SET NAMES 'utf8'";
-    $res = &  $db->query($query);
-
-    if (DB::isError($res))
-        die($res->getDebugInfo());
+    /* Connection to database using PDO */
+    $db = new PDO($PDO_DSN, $PDO_USER, $PDO_PWD);
+    $db->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 
     return $db;
 }
