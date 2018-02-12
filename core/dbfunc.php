@@ -53,7 +53,6 @@ function &dbfuncPDOConnect() {
     /* Connection to database using PDO */
     $pdb = new PDO($PDO_DSN, $PDO_USER, $PDO_PWD);
     $pdb->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
-    $pdb->setAttribute( PDO::ATTR_EMULATE_PREPARES, false );
 
     return $pdb;
 }
