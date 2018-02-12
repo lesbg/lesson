@@ -3,13 +3,15 @@
 
 /**
  * ***************************************************************
- * core/dbfunc.php (c) 2004-2017 Jonathan Dieter
+ * core/dbfunc.php (c) 2004-2018 Jonathan Dieter
  *
  * Functions for connecting to the database, plus miscellaneous
  * functions for getting permissions and munging of location
  * strings to ints
  * ***************************************************************
  */
+
+include "core/permfunc.php"; // Get database connection functions
 
 /* Escape strings so they are safe to enter into a database */
 function safe($instring) {
