@@ -2094,7 +2094,7 @@ function format_makeup_average($can_modify, $hidden, $alt, $alt_step, $overall_a
     }
 
     if($same) {
-        if($can_modify == 1 and $hidden == 0 and isset($alt_step) and $alt_step != "") {
+        if($can_modify and $hidden == 0 and isset($alt_step) and $alt_step != "") {
             if ($chk_score == $MARK_LATE) {
                 $alt = " class='late-$alt_step'";
             } elseif(is_null($chk_score)) {
@@ -2116,3 +2116,54 @@ function format_makeup_average($can_modify, $hidden, $alt, $alt_step, $overall_a
     $retval .= "</td>";
     return $retval;
 }
+
+function get_nonmark_input($index, $type_index=NULL) {
+    global $pdb;
+
+    if(!is_null($type_index)) {
+        $query = $pdb->prepare(
+            "SELECT Input FROM nonmark_index " .
+            "WHERE NonmarkTypeIndex = :type_index " .
+            "AND   NonmarkIndex     = :index"
+        );
+        $query->execute(['type_index' => $type_index, 'index' => $index]);
+    } else {
+        $query = $pdb->prepare(
+            "SELECT Input FROM nonmark_index " .
+            "WHERE NonmarkIndex     = :index"
+        );
+        $query->execute(['index' => $index]);
+    }
+    $row = $query->fetch();
+    if(!$row) {
+        return NULL;
+    } else {
+        return $row['Input'];
+    }
+}
+
+function get_nonmark_display($index, $type_index=NULL) {
+    global $pdb;
+
+    if(!is_null($type_index)) {
+        $query = $pdb->prepare(
+            "SELECT Display FROM nonmark_index " .
+            "WHERE NonmarkTypeIndex = :type_index " .
+            "AND   NonmarkIndex     = :index"
+        );
+        $query->execute(['type_index' => $type_index, 'index' => $index]);
+    } else {
+        $query = $pdb->prepare(
+            "SELECT Display FROM nonmark_index " .
+            "WHERE NonmarkIndex     = :index"
+        );
+        $query->execute(['index' => $index]);
+    }
+    $row = $query->fetch();
+    if(!$row) {
+        return NULL;
+    } else {
+        return $row['Display'];
+    }
+}
+

@@ -46,3 +46,67 @@ function check_teacher_assignment($username, $assignment_index) {
         return false;
     }
 }
+
+/* Check whether user teaches subject */
+function check_teacher_subject($username, $subject_index) {
+    global $pdb;
+
+    $query = $pdb->prepare(
+        "SELECT subjectteacher.Username FROM subjectteacher " .
+         "WHERE subjectteacher.SubjectIndex = :subject_index " .
+         "AND   subjectteacher.Username     = :username"
+    );
+    $query->execute(['username' => $username, 'subject_index' => $subject_index]);
+    $row = $query->fetch();
+    if ($row) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/* Check whether teacher is a support teacher for a subject */
+function check_support_teacher_subject($username, $subject_index) {
+    global $pdb;
+
+    $query = $pdb->prepare(
+        "SELECT support_class.Username " .
+        "         FROM subject " .
+        "         INNER JOIN subjectstudent USING (SubjectIndex) " .
+        "         INNER JOIN classlist USING (Username) " .
+        "         INNER JOIN classterm ON " .
+        "           (classterm.ClassTermIndex=classlist.ClassTermIndex " .
+        "            AND classterm.TermIndex=subject.TermIndex) " .
+        "         INNER JOIN class ON " .
+        "           (class.ClassIndex=classterm.ClassIndex " .
+        "            AND class.YearIndex=subject.YearIndex) " .
+        "         INNER JOIN support_class ON " .
+        "           (classterm.ClassTermIndex=support_class.ClassTermIndex) " .
+        "         WHERE support_class.Username = :username " .
+        "         AND subject.SubjectIndex = :subject_index"
+    );
+    $query->execute(['username' => $username, 'subject_index' => $subject_index]);
+    $row = $query->fetch();
+    if ($row) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/* Get punishment permissions */
+function get_punishment_permissions($username) {
+    global $pdb;
+    global $DEFAULT_PUN_PERM;
+
+    $query = $pdb->prepare(
+        "SELECT Permissions FROM disciplineperms WHERE Username=:username"
+    );
+    $query->execute(['username' => $username]);
+    $row = $query->fetch();
+    if ($row) {
+        return $row['Permissions'];
+    } else {
+        return $DEFAULT_PUN_PERM;
+    }
+}
