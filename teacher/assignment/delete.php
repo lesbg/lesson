@@ -1,86 +1,72 @@
 <?php
 /**
  * ***************************************************************
- * teacher/assignment/delete.php (c) 2004-2007 Jonathan Dieter
+ * teacher/assignment/delete.php (c) 2004-2007, 2018 Jonathan Dieter
  *
  * Delete assignment from database
  * ***************************************************************
  */
 
 /* Get variables */
-$assignmentindex = safe(dbfuncInt2String($_GET['key']));
+$assignment_index = dbfuncInt2String($_GET['key']);
 $nextLink = dbfuncInt2String($_GET['next']);
 
-if ($_POST['action'] == "Yes, delete assignment") {
-    $title = "LESSON - Deleting Assignment";
-    $noJS = true;
-    $noHeaderLinks = true;
-
-    include "core/settermandyear.php";
-    include "header.php";
-
-    /* Check whether user is authorized to change scores */
-    $res = & $db->query(
-                    "SELECT subjectteacher.Username FROM subjectteacher, assignment " .
-                     "WHERE subjectteacher.SubjectIndex = assignment.SubjectIndex " .
-                     "AND   assignment.AssignmentIndex  = $assignmentindex " .
-                     "AND   subjectteacher.Username     = '$username'");
-    if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
-
-    if ($res->numRows() > 0 or $is_admin) {
-        $asr = &  $db->query(
-                        "SELECT subject.Name, assignment.Title, subject.SubjectIndex " .
-                             "       FROM assignment, subject " .
-                             "WHERE assignment.AssignmentIndex  = $assignmentindex " .
-                             "AND   subject.SubjectIndex        = assignment.SubjectIndex");
-        if (DB::isError($asr))
-            die($asr->getDebugInfo()); // Check for errors in query
-        $aRow = & $asr->fetchRow(DB_FETCHMODE_ASSOC);
-
-        $res = &  $db->query(
-                        "DELETE FROM mark " . // Delete all marks for assignment
-                         "WHERE AssignmentIndex  = $assignmentindex ");
-        if (DB::isError($res))
-            die($res->getDebugInfo()); // Check for errors in query
-
-        $res = &  $db->query(
-                        "DELETE FROM assignment " . // Delete assignment
-                         "WHERE AssignmentIndex  = $assignmentindex ");
-        if (DB::isError($res))
-            die($res->getDebugInfo()); // Check for errors in query
-
-        echo "      <p align='center'>Assignment successfully deleted.</p>\n";
-        echo "      <p align='center'><a href='$nextLink'>Continue</a></p>\n";
-
-        update_subject($aRow['SubjectIndex']);
-
-        log_event($LOG_LEVEL_TEACHER, "teacher/deleteassignment", $LOG_TEACHER,
-                "Deleted assignment ({$aRow['Title']}) in {$aRow['Name']}.");
-    } else {
-        /* Get subject name and log unauthorized access attempt */
-        $asr = &  $db->query(
-                        "SELECT subject.Name, assignment.Title FROM assignment, subject " .
-                         "WHERE assignment.AssignmentIndex  = $assignmentindex " .
-                         "AND   subject.SubjectIndex        = assignment.SubjectIndex");
-        if (DB::isError($asr))
-            die($asr->getDebugInfo()); // Check for errors in query
-        if ($aRow = & $asr->fetchRow(DB_FETCHMODE_ASSOC)) {
-            log_event($LOG_LEVEL_ERROR, "teacher/assignment/delete.php",
-                    $LOG_DENIED_ACCESS,
-                    "Tried to remove assignment ({$aRow['Title']} in {$aRow['Name']}.");
-            echo "      <p>You do not have the authority to remove this assignment.  " .
-                 "<a href='$nextLink'>Click here to continue</a>.</p>\n";
-        } else {
-            log_event($LOG_LEVEL_EVERYTHING, "teacher/assignment/delete.php",
-                    $LOG_ERROR, "Tried to remove non-existent assignment.");
-            echo "      <p>This assignment has already been deleted.  " .
-                 "<a href='$nextLink'>Click here to continue</a>.</p>\n";
-        }
-    }
-} else {
+if ($_POST['action'] != "Yes, delete assignment") {
     redirect($nextLink);
+    exit(0);
 }
 
+$title = "LESSON - Deleting Assignment";
+$noJS = true;
+$noHeaderLinks = true;
+
+include "core/settermandyear.php";
+include "header.php";
+
+/* Get subject name, assignment title and subject index for assignment */
+$query = $pdb->prepare(
+    "SELECT subject.Name, assignment.Title, assignment.SubjectIndex FROM assignment, subject " .
+    "WHERE assignment.AssignmentIndex  = :assignment_index " .
+    "AND   subject.SubjectIndex        = assignment.SubjectIndex"
+);
+$query->execute(['assignment_index' => $assignment_index]);
+$row = $query->fetch();
+
+if (!check_teacher_assignment($username, $assignment_index) and !$is_admin) {
+    if ($row) {
+        log_event($LOG_LEVEL_ERROR, "teacher/assignment/delete.php",
+                $LOG_DENIED_ACCESS,
+                "Tried to remove assignment ({$row['Title']} in {$row['Name']}.");
+        echo "      <p>You do not have the authority to remove this assignment.  " .
+             "<a href='$nextLink'>Click here to continue</a>.</p>\n";
+    } else {
+        log_event($LOG_LEVEL_EVERYTHING, "teacher/assignment/delete.php",
+                $LOG_ERROR, "Tried to remove non-existent assignment.");
+        echo "      <p>This assignment has already been deleted.  " .
+             "<a href='$nextLink'>Click here to continue</a>.</p>\n";
+    }
+    include "footer.php";
+    exit(0);
+}
+
+/* Delete all marks for assignment */
+$pdb->prepare(
+    "DELETE FROM mark " .
+    "WHERE AssignmentIndex = :assignment_index"
+)->execute(['assignment_index' => $assignment_index]);
+
+/* Delete assignment */
+$pdb->prepare(
+    "DELETE FROM assignment " .
+    "WHERE AssignmentIndex = :assignment_index"
+)->execute(['assignment_index' => $assignment_index]);
+
+echo "      <p align='center'>Assignment successfully deleted.</p>\n";
+echo "      <p align='center'><a href='$nextLink'>Continue</a></p>\n";
+
+update_subject($row['SubjectIndex']);
+
+log_event($LOG_LEVEL_TEACHER, "teacher/deleteassignment", $LOG_TEACHER,
+        "Deleted assignment ({$row['Title']}) in {$row['Name']}.");
+
 include "footer.php";
-?>
