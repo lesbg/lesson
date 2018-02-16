@@ -55,7 +55,6 @@ function &dbfuncPDOConnect() {
     /* Connection to database using PDO */
     $db = new PDO($PDO_DSN, $PDO_USER, $PDO_PWD);
     $db->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
-
     return $db;
 }
 /* Connect to database specified by global variable $MASTER_DSN */
@@ -77,7 +76,6 @@ function &dbfuncConnectMaster() {
     /* Connection to database using PDO */
     $db = new PDO($PDO_DSN, $PDO_USER, $PDO_PWD);
     $db->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
-
     return $db;
 }
 
@@ -2167,3 +2165,41 @@ function get_nonmark_display($index, $type_index=NULL) {
     }
 }
 
+function get_nonmark_index($input, $type_index) {
+    global $pdb;
+
+    $query = $pdb->prepare(
+        "SELECT NonmarkIndex FROM nonmark_index " .
+        "WHERE NonmarkTypeIndex = :type_index " .
+        "AND   Input            = :input"
+    );
+    $query->execute(['type_index' => $type_index, 'input' => $input]);
+
+    $row = $query->fetch();
+    if(!$row) {
+        return NULL;
+    } else {
+        return $row['NonmarkIndex'];
+    }
+}
+
+function get_next_term($termindex, $depindex) {
+    global $pdb;
+    $next_termindex = NULL;
+
+    $query = $pdb->prepare(
+        "SELECT TermIndex FROM term WHERE DepartmentIndex = :depindex " .
+        "ORDER BY TermNumber"
+    );
+    $query->execute(['depindex' => $depindex]);
+    foreach($query as $row) {
+        if ($row['TermIndex'] == $termindex) {
+            $row = $query->fetch();
+            if($row) {
+                $next_termindex = $row['TermIndex'];
+            }
+            break;
+        }
+    }
+    return $next_termindex;
+}

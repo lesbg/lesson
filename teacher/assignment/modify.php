@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * teacher/assignment/modify.php (c) 2004-2007, 2016-2017 Jonathan Dieter
+ * teacher/assignment/modify.php (c) 2004-2007, 2016-2018 Jonathan Dieter
  *
  * Show marks for already created assignment and allow teacher to
  * change them.
@@ -18,7 +18,7 @@ if(isset($_GET['agenda']) and intval(dbfuncInt2String($_GET['agenda'])) != 0) {
 
 if(isset($_GET['key'])) {
     $title = dbfuncInt2String($_GET['keyname']);
-    $assignmentindex = intval(dbfuncInt2String($_GET['key']));
+    $assignment_index = dbfuncInt2String($_GET['key']);
     $link = "index.php?location=" .
             dbfuncString2Int("teacher/assignment/modify_action.php") .
             "&amp;key=" . $_GET['key'] . "&amp;agenda=" .
@@ -30,7 +30,7 @@ if(isset($_GET['key'])) {
         $title = "New agenda item";
     else
         $title = "New assignment";
-    $subjectindex = intval(dbfuncInt2String($_GET['key2']));
+    $subject_index = dbfuncInt2String($_GET['key2']);
     $link = "index.php?location=" .
             dbfuncString2Int("teacher/assignment/modify_action.php") .
             "&amp;key2=" . $_GET['key2'] . "&amp;agenda=" .
@@ -44,37 +44,44 @@ $extra_js = "assignment-v2.js";
 
 include "core/settermandyear.php";
 
-/* Check whether user is authorized to change scores */
 if($new) {
-    $query =    "SELECT subjectteacher.Username FROM subjectteacher " .
-                "WHERE subjectteacher.SubjectIndex = $subjectindex " .
-                "AND   subjectteacher.Username     = '$username' ";
-} else {
-    $query =    "SELECT subjectteacher.Username FROM subjectteacher, assignment " .
-                "WHERE subjectteacher.SubjectIndex = assignment.SubjectIndex " .
-                "AND   assignment.AssignmentIndex = $assignmentindex " .
-                "AND   subjectteacher.Username     = '$username' ";
-}
-$res = & $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo());
+    $is_teacher = check_teacher_subject($username, $subject_index);
 
-if ($res->numRows() == 0 and !$is_admin) {
-    /* Get subject name and log unauthorized access attempt */
+    $query = $pdb->prepare(
+        "SELECT subject.SubjectIndex, subject.AverageType, subject.AverageTypeIndex, " .
+        "       subject.Name " .
+        "       FROM subject " .
+        "WHERE subject.SubjectIndex = :subject_index"
+    );
+    $query->execute(['subject_index' => $subject_index]);
+} else {
+    $is_teacher = check_teacher_assignment($username, $assignment_index);
+
+    $query = $pdb->prepare(
+        "SELECT subject.SubjectIndex, subject.AverageType, subject.AverageTypeIndex, " .
+        "       subject.Name " .
+        "       FROM subject INNER JOIN assignment USING (SubjectIndex) " .
+        "WHERE assignment.AssignmentIndex = :assignment_index"
+    );
+    $query->execute(['assignment_index' => $assignment_index]);
+}
+$subject = $query->fetch();
+if(!$subject) {
+    include "header.php";
+
     if($new) {
-        $query =    "SELECT subject.Name FROM subject " .
-                    "WHERE subject.SubjectIndex        = $subjectindex";
+        echo "      <p>The subject you're trying to create an assignment for doesn't exist</p>\n";
     } else {
-        $query =    "SELECT subject.Name FROM assignment, subject " .
-                    "WHERE assignment.AssignmentIndex  = $assignmentindex " .
-                    "AND   subject.SubjectIndex        = assignment.SubjectIndex";
+        echo "      <p>The assignment you're trying to modify doesn't exist</p>\n";
     }
-    $res = &  $db->query($query);
-    if (DB::isError($res))
-        die($res->getDebugInfo());
-    $row = & $res->fetchRow(DB_FETCHMODE_ASSOC);
+    echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";
+    include "footer.php";
+    exit(0);
+}
+
+if (!$is_teacher and !$is_admin) {
     log_event($LOG_LEVEL_ERROR, "teacher/assignment/modify.php", $LOG_DENIED_ACCESS,
-            "Tried to modify assignment for {$row['Name']}.");
+            "Tried to modify assignment for {$subject['Name']}.");
 
     /* Print error message */
     include "header.php";
@@ -85,72 +92,63 @@ if ($res->numRows() == 0 and !$is_admin) {
     exit(0);
 }
 
-if($new) {
-    $query =    "SELECT subject.SubjectIndex, subject.AverageType, subject.AverageTypeIndex, " .
-                "       subject.Name " .
-                "       FROM subject " .
-                "WHERE subject.SubjectIndex = $subjectindex";
-} else {
-    $query =    "SELECT subject.SubjectIndex, subject.AverageType, subject.AverageTypeIndex, " .
-                "       subject.Name " .
-                "       FROM subject INNER JOIN assignment USING (SubjectIndex) " .
-                "WHERE assignment.AssignmentIndex = $assignmentindex";
-}
-$res = &  $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-$row = & $res->fetchRow(DB_FETCHMODE_ASSOC);
-
-$subjectindex = $row['SubjectIndex'];
-$subjectname = $row['Name'];
-$average_type = $row['AverageType'];
-$average_type_index = $row['AverageTypeIndex'];
+$subject_index = $subject['SubjectIndex'];
+$subject_name = $subject['Name'];
+$average_type = $subject['AverageType'];
+$average_type_index = $subject['AverageTypeIndex'];
+if(!is_null($average_type))
+    $average_type = intval($average_type);
+if(!is_null($average_type_index))
+    $average_type_index = intval($average_type_index);
 
 if(!$new) {
     /* Get assignment info */
-    $query = "SELECT assignment.Title, assignment.Description, assignment.Max, " .
-             "       assignment.DescriptionFileType, assignment.DescriptionFileIndex, " .
-             "       assignment.TopMark, assignment.BottomMark, assignment.CurveType, " .
-             "       assignment.Weight, assignment.Date, assignment.CategoryListIndex, " .
-             "       assignment.DueDate, assignment.Hidden, assignment.IgnoreZero, " .
-             "       assignment.Uploadable, assignment.UploadName, assignment.MakeupTypeIndex, " .
-             "       makeup_type.OriginalMax, makeup_type.TargetMax " .
-             "       FROM assignment LEFT OUTER JOIN makeup_type USING (MakeupTypeIndex) " .
-             "WHERE assignment.AssignmentIndex  = $assignmentindex ";
-    $asr = &  $db->query($query);
-    if (DB::isError($asr))
-        die($asr->getDebugInfo());
-    $aRow = & $asr->fetchRow(DB_FETCHMODE_ASSOC);
+    $query = $pdb->prepare(
+        "SELECT assignment.Title, assignment.Description, assignment.Max, " .
+        "       assignment.DescriptionFileType, assignment.DescriptionFileIndex, " .
+        "       assignment.TopMark, assignment.BottomMark, assignment.CurveType, " .
+        "       assignment.Weight, assignment.Date, assignment.CategoryListIndex, " .
+        "       assignment.DueDate, assignment.Hidden, assignment.IgnoreZero, " .
+        "       assignment.Uploadable, assignment.UploadName, assignment.MakeupTypeIndex, " .
+        "       makeup_type.OriginalMax, makeup_type.TargetMax " .
+        "       FROM assignment LEFT OUTER JOIN makeup_type USING (MakeupTypeIndex) " .
+        "WHERE assignment.AssignmentIndex  = :assignment_index "
+    );
+    $query->execute(['assignment_index' => $assignment_index]);
+    $aRow = $query->fetch();
 
     /* Check whether this is the current term, and if it isn't, whether the next term is open */
     if ($termindex != $currentterm) {
-        $query = "SELECT TermIndex FROM term WHERE DepartmentIndex = $depindex ORDER BY TermNumber";
-        $sres = & $db->query($query);
-        if (DB::isError($sres))
-            die($sres->getDebugInfo());
-        while ( $srow = & $sres->fetchRow(DB_FETCHMODE_ASSOC) ) {
-            if ($srow['TermIndex'] == $termindex) {
-                if ($srow = & $sres->fetchRow(DB_FETCHMODE_ASSOC)) {
-                    $next_termindex = $srow['TermIndex'];
-                } else {
-                    $next_termindex = NULL;
-                }
-            }
-        }
+        $next_termindex = get_next_term($termindex, $depindex);
         if (! is_null($next_termindex)) {
-            $query = "SELECT subject.SubjectIndex FROM subject, subjectteacher " .
-                     "WHERE subject.Name         = '$subjectname' " .
-                     "AND   subject.SubjectIndex = subjectteacher.SubjectIndex " .
-                     "AND   subject.TermIndex    = $next_termindex " .
-                     "AND   subject.YearIndex    = $yearindex " .
-                     "AND   subject.CanModify    = 1 ";
-            if (! $is_admin) {
-                $query .= "AND subjectteacher.Username = '$username'";
+            if($is_admin) {
+                $squery = $pdb->prepare(
+                    "SELECT subject.SubjectIndex FROM subject " .
+                    "WHERE subject.Name         = :subject_name " .
+                    "AND   subject.TermIndex    = :next_termindex " .
+                    "AND   subject.YearIndex    = :yearindex " .
+                    "AND   subject.CanModify    = 1"
+                );
+                $squery->execute(['subject_name' => $subject_name,
+                                 'next_termindex' => $next_termindex,
+                                 'yearindex' => $yearindex]);
+            } else {
+                $squery = $pdb->prepare(
+                    "SELECT subject.SubjectIndex FROM subject, subjectteacher " .
+                    "WHERE subject.Name         = :subject_name " .
+                    "AND   subject.SubjectIndex = subjectteacher.SubjectIndex " .
+                    "AND   subject.TermIndex    = :next_termindex " .
+                    "AND   subject.YearIndex    = :yearindex " .
+                    "AND   subject.CanModify    = 1 " .
+                    "AND   subjectteacher.Username = :username"
+                );
+                $squery->execute(['subject_name' => $subject_name,
+                                 'next_termindex' => $next_termindex,
+                                 'yearindex' => $yearindex,
+                                 'username' => $username]);
             }
-            $sres = & $db->query($query);
-            if (DB::isError($sres))
-                die($sres->getDebugInfo());
-            if ($srow = & $sres->fetchRow(DB_FETCHMODE_ASSOC)) {
+            $srow = $squery->fetch();
+            if ($srow) {
                 $next_subjectindex = $srow['SubjectIndex'];
             } else {
                 $next_subjectindex = NULL;
@@ -161,7 +159,11 @@ if(!$new) {
     }
 
     $top_mark = $aRow['TopMark'];
+    if(!is_null($top_mark))
+        $top_mark = floatval($top_mark);
     $bottom_mark = $aRow['BottomMark'];
+    if(!is_null($bottom_mark))
+        $bottom_mark = floatval($bottom_mark);
     $dateinfo = date($dateformat, strtotime($aRow['Date']));
     if (isset($aRow['DueDate'])) {
         $duedateinfo = date($dateformat, strtotime($aRow['DueDate']));
@@ -170,8 +172,11 @@ if(!$new) {
     }
     $assignment_title = htmlspecialchars($aRow['Title'], ENT_QUOTES);
     $curve_type = $aRow['CurveType'];
-
+    if(!is_null($curve_type))
+        $curve_type = intval($curve_type);
     $ignore_zero = $aRow['IgnoreZero'];
+    if(!is_null($ignore_zero))
+        $ignore_zero = intval($ignore_zero);
     if(!is_null($aRow['DescriptionFileType'])) {
         $descr_file_type = $aRow['DescriptionFileType'];
     } else {
@@ -179,9 +184,17 @@ if(!$new) {
     }
     $descr_file_index = $aRow['DescriptionFileIndex'];
     $hidden = $aRow['Hidden'];
+    if(!is_null($hidden))
+        $hidden = intval($hidden);
     $uploadable = $aRow['Uploadable'];
+    if(!is_null($uploadable))
+        $uploadable = intval($uploadable);
     $max = $aRow['Max'];
+    if(!is_null($max))
+        $max = floatval($max);
     $weight = $aRow['Weight'];
+    if(!is_null($weight))
+        $weight = floatval($weight);
     $category_list_index = $aRow['CategoryListIndex'];
     $makeup_type_index = $aRow['MakeupTypeIndex'];
     $description = $aRow['Description'];
@@ -204,18 +217,18 @@ if(!$new) {
 }
 
 if ($average_type == $AVG_TYPE_INDEX and !is_null($average_type_index)) {
-    $query = "SELECT Input, Display FROM nonmark_index " .
-         "WHERE  NonmarkTypeIndex=$average_type_index ";
-    $res = &  $db->query($query);
-    if (DB::isError($res))
-        die($res->getDebugInfo());
-
-    if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+    $query = $pdb->prepare(
+        "SELECT Input, Display FROM nonmark_index " .
+        "WHERE  NonmarkTypeIndex=:average_type_index "
+    );
+    $query->execute(['average_type_index' => $average_type_index]);
+    $row = $query->fetch();
+    if($row) {
         $input = strtoupper($row['Input']);
-        $ainput_array = "'{$row['Input']}'";
+        $ainput_array = "'$input'";
         $adisplay_array = "'{$row['Display']}'";
-        while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-            $input = strtoupper($srow['Input']);
+        foreach($query as $row) {
+            $input = strtoupper($row['Input']);
             $ainput_array .= ", '$input'";
             $adisplay_array .= ", '{$row['Display']}'";
         }
@@ -233,7 +246,7 @@ if ($ignore_zero == 1) {
     $ignorezero0 = "";
 }
 
-if ($descr_file_type != "") {
+if (!is_null($descr_file_type) and $descr_file_type != "") {
     $descrtype0 = "";
     $descrtype1 = "checked";
 } else {
@@ -267,10 +280,10 @@ if ($uploadable == 1) {
     $uploadablechk = "";
 }
 
-$subtitle = $subjectname;
+$subtitle = $subject_name;
 
 log_event($LOG_LEVEL_EVERYTHING, "teacher/assignment/modify.php", $LOG_TEACHER,
-        "Viewed assignment ($title) for $subjectname.");
+        "Viewed assignment ($title) for $subject_name.");
 
 include "header.php"; // Show header
 
@@ -287,16 +300,15 @@ if ($average_type == $AVG_TYPE_INDEX) {
     echo "         var average_input_array    = new Array($ainput_array);\n";
     echo "         var average_display_array  = new Array($adisplay_array);\n";
 } else {
-    $query =    "SELECT MakeupTypeIndex, OriginalMax, TargetMax FROM makeup_type " .
-                "ORDER BY MakeupType";
-    $res =& $db->query($query);
-
-    if (DB::isError($res))
-        die($res->getDebugInfo());
-    if ($res->numRows() > 0) {
+    $query = $pdb->query(
+        "SELECT MakeupTypeIndex, OriginalMax, TargetMax FROM makeup_type " .
+        "ORDER BY MakeupType"
+    );
+    $data = $query->fetchAll();
+    if ($data) {
         echo "         var makeup_dict = {\n";
         $first = true;
-        while ($row =& $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+        foreach($data as $row) {
             if(!$first) {
                 echo ",\n";
             } else {
@@ -354,23 +366,24 @@ echo "            </tr>\n";
 if(!$is_agenda) {
     if ($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
         /* Get category info */
-        $query =    "SELECT category.CategoryName, categorylist.CategoryListIndex, " .
-                     "       categorylist.Weight, categorylist.TotalWeight FROM category, " .
-                     "       categorylist, subject " .
-                     "WHERE subject.SubjectIndex        = $subjectindex " .
-                     "AND   categorylist.SubjectIndex   = subject.SubjectIndex " .
-                     "AND   category.CategoryIndex      = categorylist.CategoryIndex " .
-                     "ORDER BY category.CategoryName";
-        $res = &  $db->query($query);
-        if (DB::isError($res))
-            die($res->getDebugInfo());
-        if ($res->numRows() > 0) {
+        $query = $pdb->prepare(
+            "SELECT category.CategoryName, categorylist.CategoryListIndex, " .
+            "       categorylist.Weight, categorylist.TotalWeight FROM category, " .
+            "       categorylist, subject " .
+            "WHERE subject.SubjectIndex        = :subject_index " .
+            "AND   categorylist.SubjectIndex   = subject.SubjectIndex " .
+            "AND   category.CategoryIndex      = categorylist.CategoryIndex " .
+            "ORDER BY category.CategoryName"
+        );
+        $query->execute(['subject_index' => $subject_index]);
+        $data = $query->fetchAll();
+        if ($data) {
             echo "            <tr>\n";
             echo "               <td>Category:</td>\n";
             echo "               <td colspan='2'>\n";
             echo "                  <select name='category' tabindex='8'>\n";
             $selected = "";
-            while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+            foreach($data as $row) {
                 $percentage = sprintf("%01.1f",
                                     ($row['Weight'] * 100) / $row['TotalWeight']);
                 $selected = "";
@@ -383,13 +396,12 @@ if(!$is_agenda) {
             echo "               </td>\n";
             echo "            </tr>\n";
         }
-        $query =    "SELECT MakeupTypeIndex, MakeupType FROM makeup_type " .
-                    "ORDER BY MakeupType";
-        $res =& $db->query($query);
-
-        if (DB::isError($res))
-            die($res->getDebugInfo());
-        if ($res->numRows() > 0) {
+        $query = $pdb->query(
+            "SELECT MakeupTypeIndex, MakeupType FROM makeup_type " .
+            "ORDER BY MakeupType"
+        );
+        $data = $query->fetchAll();
+        if ($data) {
             echo "            <tr>\n";
             echo "               <td>Makeup type:</td>\n";
             echo "               <td colspan='2'>\n";
@@ -402,7 +414,7 @@ if(!$is_agenda) {
             echo "                     <option value='NULL'$selected>" .
                      "<i>None</i></option>\n";
 
-            while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+            foreach($data as $row) {
                 $selected = "";
                 if ($makeup_type_index == $row['MakeupTypeIndex'])
                     $selected = " selected";
@@ -489,49 +501,54 @@ if($is_agenda) {
 echo "         <p></p>\n";
 
 if($new) {
-    $query =    "SELECT user.FirstName, user.Surname, user.Username, NULL AS Score, NULL AS Comment, " .
-                "       NULL AS MakeupScore, NULL AS Percentage, NULL AS MakeupPercentage, " .
-                "       NULL AS OriginalPercentage, query.ClassOrder " .
-                "       FROM subjectstudent LEFT OUTER JOIN" .
-                "       (SELECT classlist.ClassOrder, classlist.Username " .
-                "               FROM class, classterm, classlist, subject " .
-                "        WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
-                "        AND   classterm.TermIndex = subject.TermIndex " .
-                "        AND   class.ClassIndex = classterm.ClassIndex " .
-                "        AND   class.YearIndex = subject.YearIndex " .
-                "        AND   subject.SubjectIndex       = $subjectindex) AS query " .
-                "       ON subjectstudent.Username = query.Username, " .
-                "       user " .
-                "WHERE user.Username               = subjectstudent.Username " .
-                "AND   subjectstudent.SubjectIndex = $subjectindex " .
-                "ORDER BY user.FirstName, user.Surname, user.Username";
+    $query = $pdb->prepare(
+        "SELECT user.FirstName, user.Surname, user.Username, NULL AS Score, NULL AS Comment, " .
+        "       NULL AS MakeupScore, NULL AS Percentage, NULL AS MakeupPercentage, " .
+        "       NULL AS OriginalPercentage, query.ClassOrder " .
+        "       FROM subjectstudent LEFT OUTER JOIN" .
+        "       (SELECT classlist.ClassOrder, classlist.Username " .
+        "               FROM class, classterm, classlist, subject " .
+        "        WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
+        "        AND   classterm.TermIndex = subject.TermIndex " .
+        "        AND   class.ClassIndex = classterm.ClassIndex " .
+        "        AND   class.YearIndex = subject.YearIndex " .
+        "        AND   subject.SubjectIndex       = :subject_index) AS query " .
+        "       ON subjectstudent.Username = query.Username, " .
+        "       user " .
+        "WHERE user.Username               = subjectstudent.Username " .
+        "AND   subjectstudent.SubjectIndex = :subject_index " .
+        "ORDER BY user.FirstName, user.Surname, user.Username"
+    );
+    $query->execute(['subject_index' => $subject_index]);
 } else {
-    $query =    "SELECT user.FirstName, user.Surname, user.Username, mark.Score, mark.Comment, " .
-                "       mark.MakeupScore, mark.Percentage, mark.MakeupPercentage, mark.OriginalPercentage, " .
-                "       query.ClassOrder FROM subjectstudent LEFT OUTER JOIN" .
-                "       (SELECT classlist.ClassOrder, classlist.Username " .
-                "               FROM class, classterm, classlist, subject " .
-                "        WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
-                "        AND   classterm.TermIndex = subject.TermIndex " .
-                "        AND   class.ClassIndex = classterm.ClassIndex " .
-                "        AND   class.YearIndex = subject.YearIndex " .
-                "        AND   subject.SubjectIndex       = $subjectindex) AS query " .
-                "       ON subjectstudent.Username = query.Username, " .
-                "       user LEFT OUTER JOIN mark ON (mark.AssignmentIndex = $assignmentindex " .
-                "                                           AND mark.Username = user.Username) " .
-                "WHERE user.Username               = subjectstudent.Username " .
-                "AND   subjectstudent.SubjectIndex = $subjectindex " .
-                "ORDER BY user.FirstName, user.Surname, user.Username";
+    $query = $pdb->prepare(
+        "SELECT user.FirstName, user.Surname, user.Username, mark.Score, mark.Comment, " .
+        "       mark.MakeupScore, mark.Percentage, mark.MakeupPercentage, mark.OriginalPercentage, " .
+        "       query.ClassOrder FROM subjectstudent LEFT OUTER JOIN" .
+        "       (SELECT classlist.ClassOrder, classlist.Username " .
+        "               FROM class, classterm, classlist, subject " .
+        "        WHERE classlist.ClassTermIndex = classterm.ClassTermIndex " .
+        "        AND   classterm.TermIndex = subject.TermIndex " .
+        "        AND   class.ClassIndex = classterm.ClassIndex " .
+        "        AND   class.YearIndex = subject.YearIndex " .
+        "        AND   subject.SubjectIndex       = :subject_index) AS query " .
+        "       ON subjectstudent.Username = query.Username, " .
+        "       user LEFT OUTER JOIN mark ON (mark.AssignmentIndex = :assignment_index " .
+        "                                           AND mark.Username = user.Username) " .
+        "WHERE user.Username               = subjectstudent.Username " .
+        "AND   subjectstudent.SubjectIndex = :subject_index " .
+        "ORDER BY user.FirstName, user.Surname, user.Username"
+    );
+    $query->execute(['subject_index' => $subject_index,
+                     'assignment_index' => $assignment_index]);
 }
-$res = &  $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo());
+$data = $query->fetchAll();
 
 /* Print scores and comments */
 $makeupObjCounter = 0;
 $tabC = 25;
 $order = 1;
-if ($res->numRows() > 0) {
+if ($data) {
     echo "         <table align='center' border='1'>\n";
     echo "            <tr>\n";
     echo "               <th>&nbsp;</th>\n";
@@ -554,10 +571,10 @@ if ($res->numRows() > 0) {
     $alt_count = 0;
 
     $tabS = $tabC;
-    $tabM = $tabC + ($res->numRows()*2);
-    $tabC = $tabC + ($res->numRows()*4);
+    $tabM = $tabC + (count($data)*2);
+    $tabC = $tabC + (count($data)*4);
 
-    while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+    foreach($data as $row) {
         $tabS += 1;
         $tabM += 1;
         $tabC += 1;
@@ -598,23 +615,19 @@ if ($res->numRows() > 0) {
                 $row['Score'] = "";
                 $avg = "N/A";
             } else {
-                $query = "SELECT Input, Display FROM nonmark_index " .
-                         "WHERE NonmarkTypeIndex = $average_type_index " .
-                         "AND   NonmarkIndex     = {$row['Score']}";
-                $sres = & $db->query($query);
-                if (DB::isError($sres))
-                    die($sres->getDebugInfo());
-                if ($srow = & $sres->fetchRow(DB_FETCHMODE_ASSOC)) {
-                    $row['Score'] = $srow['Input'];
-                    $avg = $srow['Display'];
+                $input = get_nonmark_input($row['Score'], $average_type_index);
+                $display = get_nonmark_display($row['Score'], $average_type_index);
+
+                if(!is_null($display)) {
+                    $row['Score'] = $input;
+                    $avg = $display;
                 } else {
                     $row['Score'] = "";
                     $avg = "N/A";
                 }
             }
         }
-        $row['Comment'] = htmlspecialchars($row['Comment'],
-                                           ENT_QUOTES);
+        $row['Comment'] = htmlspecialchars($row['Comment'], ENT_QUOTES);
 
         echo "            <tr$alt id='row_{$row['Username']}'>\n";
         echo "               <td>$order</td>\n";

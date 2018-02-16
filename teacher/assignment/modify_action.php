@@ -39,67 +39,50 @@ if (! isset($_POST['agenda']) or $_POST['agenda'] == 0) {
     $agenda = "1";
 }
 
-if ($_POST["action"] == "Save") {
-    $subjectindex = intval(dbfuncInt2String($_GET['key2']));
-    $query = "SELECT subject.AverageType, subject.AverageTypeIndex " .
-             "       FROM subject " .
-             "WHERE subject.SubjectIndex = $subjectindex";
-    $res = &  $db->query($query);
-    if (DB::isError($res))
-        die($res->getDebugInfo());
-    $row = & $res->fetchRow(DB_FETCHMODE_ASSOC);
 
-    $average_type = $row['AverageType'];
-    $average_type_index = $row['AverageTypeIndex'];
+if ($_POST["action"] == "Save") {
+    $subject_index = dbfuncInt2String($_GET['key2']);
+    $is_teacher = check_teacher_subject($username, $subject_index);
+
+    $query = $pdb->prepare(
+        "SELECT subject.SubjectIndex, subject.AverageType, subject.AverageTypeIndex, " .
+        "       subject.Name " .
+        "       FROM subject " .
+        "WHERE subject.SubjectIndex = :subject_index"
+    );
+    $query->execute(['subject_index' => $subject_index]);
     $new = true;
 } else {
-    $assignment_index = intval(dbfuncInt2String($_GET['key']));
+    $assignment_index = dbfuncInt2String($_GET['key']);
+    $is_teacher = check_teacher_assignment($username, $assignment_index);
 
-    $query = "SELECT subject.SubjectIndex, subject.AverageType, subject.AverageTypeIndex " .
-             "       FROM subject INNER JOIN assignment USING (SubjectIndex) " .
-             "WHERE assignment.AssignmentIndex = $assignment_index";
-    $res = &  $db->query($query);
-    if (DB::isError($res))
-        die($res->getDebugInfo());
-    $row = & $res->fetchRow(DB_FETCHMODE_ASSOC);
-
-    $subjectindex = $row['SubjectIndex'];
-    $average_type = $row['AverageType'];
-    $average_type_index = $row['AverageTypeIndex'];
+    $query = $pdb->prepare(
+        "SELECT subject.SubjectIndex, subject.AverageType, subject.AverageTypeIndex, " .
+        "       subject.Name " .
+        "       FROM subject INNER JOIN assignment USING (SubjectIndex) " .
+        "WHERE assignment.AssignmentIndex = :assignment_index"
+    );
+    $query->execute(['assignment_index' => $assignment_index]);
     $new = false;
 }
 
-/* Check whether user is authorized to change scores */
-if($new) {
-    $query =    "SELECT subjectteacher.Username FROM subjectteacher " .
-                "WHERE subjectteacher.SubjectIndex = $subjectindex " .
-                "AND   subjectteacher.Username     = '$username' ";
-} else {
-    $query =    "SELECT subjectteacher.Username FROM subjectteacher, assignment " .
-                "WHERE subjectteacher.SubjectIndex = assignment.SubjectIndex " .
-                "AND   assignment.AssignmentIndex = $assignment_index " .
-                "AND   subjectteacher.Username     = '$username' ";
-}
-$res = & $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo());
+$subject = $query->fetch();
+if(!$subject) {
+    include "header.php";
 
-/* Check whether user is authorized to change scores */
-if ($res->numRows() == 0 and !$is_admin) {
     if($new) {
-        $query =    "SELECT subject.Name FROM subject " .
-                    "WHERE subject.SubjectIndex        = $subjectindex";
+        echo "      <p>The subject you're trying to create an assignment for doesn't exist</p>\n";
     } else {
-        $query =    "SELECT subject.Name FROM assignment, subject " .
-                    "WHERE assignment.AssignmentIndex  = $assignment_index " .
-                    "AND   subject.SubjectIndex        = assignment.SubjectIndex";
+        echo "      <p>The assignment you're trying to modify doesn't exist</p>\n";
     }
-    $res = &  $db->query($query);
-    if (DB::isError($res))
-        die($res->getDebugInfo());
-    $row = & $res->fetchRow(DB_FETCHMODE_ASSOC);
-    log_event($LOG_LEVEL_ERROR, "teacher/assignment/modify_action.php",
-              $LOG_DENIED_ACCESS, "Tried to modify marks for an assignment in {$row['Name']}.");
+    echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";
+    include "footer.php";
+    exit(0);
+}
+
+if (!$is_teacher and !$is_admin) {
+    log_event($LOG_LEVEL_ERROR, "teacher/assignment/modify_action.php", $LOG_DENIED_ACCESS,
+            "Tried to modify assignment for {$subject['Name']}.");
 
     /* Print error message */
     include "header.php";
@@ -110,6 +93,15 @@ if ($res->numRows() == 0 and !$is_admin) {
     exit(0);
 }
 
+$subject_index = $subject['SubjectIndex'];
+$subject_name = $subject['Name'];
+$average_type = $subject['AverageType'];
+$average_type_index = $subject['AverageTypeIndex'];
+if(!is_null($average_type))
+    $average_type = intval($average_type);
+if(!is_null($average_type_index))
+    $average_type_index = intval($average_type_index);
+
 /* Check whether or not a title was included and set title to "No title" if it wasn't included */
 if (! isset($_POST['title']) or $_POST['title'] == "") {
     echo "</p>\n      <p>Title not entered, setting to 'No title'.</p>\n      <p>"; // Print error message
@@ -119,18 +111,16 @@ if (! isset($_POST['title']) or $_POST['title'] == "") {
 /* Check whether or not a description was included and set it properly if it was */
 if ($_POST['descr_type'] == '0') {
     if ($_POST['descr'] == "") {
-        $descr = "NULL";
+        $descr = null;
     } else {
-        $descr = safe(htmlize_comment($_POST['descr']));
-        $descr = "'$descr'";
+        $descr = htmlize_comment($_POST['descr']);
     }
-    $descr_id = "NULL";
-    $descr_file_type = "NULL";
+    $descr_id = null;
+    $descr_file_type = null;
 } else {
-    if (! isset($_FILES['descr_upload']) or
-         $_FILES['descr_upload']['error'] != UPLOAD_ERR_OK) {
-        $descr_id = "NULL";
-        $descr_file_type = "NULL";
+    if (! isset($_FILES['descr_upload']) or $_FILES['descr_upload']['error'] != UPLOAD_ERR_OK) {
+        $descr_id = null;
+        $descr_file_type = null;
 
         if (! isset($_FILES['descr_upload']['error'])) {
             $error = "Error when attempting to upload file";
@@ -148,24 +138,20 @@ if ($_POST['descr_type'] == '0') {
             $error = "Error when attempting to upload file";
         }
         if ($error) {
-            print
-            "</p><p align='center' class='error'>$error.  Description will be blank.</p><p align='center'>\n";
+            print "</p><p align='center' class='error'>$error.  Description will be blank.</p><p align='center'>\n";
         }
     } else {
-        $descr_file_type = safe($_FILES['descr_upload']['type']);
+        $descr_file_type = $_FILES['descr_upload']['type'];
         if ($descr_file_type != "application/pdf") {
-            print
-            "</p><p align='center' class='error'>Uploaded file is not a PDF document.  Description will be blank.</p><p align='center'>\n";
-            $descr_file_type = "NULL";
-            $descr_id = "NULL";
+            print "</p><p align='center' class='error'>Uploaded file is not a PDF document.  Description will be blank.</p><p align='center'>\n";
+            $descr_file_type = null;
+            $descr_id = null;
         } else {
             $descr_file = $_FILES['descr_upload']['tmp_name'];
-
-            $descr_id = "'" . get_id_from_upload($_FILES['descr_upload']) . "'";
-            $descr_file_type = "'$descr_file_type'";
+            $descr_id = get_id_from_upload($_FILES['descr_upload']);
         }
     }
-    $descr = "NULL";
+    $descr = null;
 }
 
 /* Check whether or not the date was set, and set it to today if it wasn't */
@@ -175,7 +161,6 @@ if (! isset($_POST['date']) or $_POST['date'] == "") { // Make sure date is in c
 } else {
     $_POST['date'] = & dbfuncCreateDate($_POST['date']);
 }
-$_POST['date'] = "'" . $_POST['date'] . "'";
 
 /* Check whether or not the due date was set, and set it to NULL if it wasn't */
 if (! isset($_POST['duedate']) or $_POST['duedate'] == "") { // Make sure date is in correct format.
@@ -184,14 +169,15 @@ if (! isset($_POST['duedate']) or $_POST['duedate'] == "") { // Make sure date i
         "</p><p align='center' class='error'>Due date not entered in agenda item, defaulting to tomorrow.</p><p align='center'>\n";
         $_POST['duedate'] = "DATE(DATE_ADD(NOW(), INTERVAL 1 DAY))";
     } else {
-        $_POST['duedate'] = "NULL";
+        $_POST['duedate'] = null;
     }
 } else {
-    $_POST['duedate'] = & dbfuncCreateDate(safe($_POST['duedate']));
-    $_POST['duedate'] = "'" . $_POST['duedate'] . "'";
+    $_POST['duedate'] = & dbfuncCreateDate($_POST['duedate']);
 }
 
-if ($_POST['makeuptype'] != "NULL") {
+if ($_POST['makeuptype'] == "NULL") {
+    $_POST['makeuptype'] = null;
+} else {
     $_POST['makeuptype'] = intval($_POST['makeuptype']);
 }
 
@@ -223,13 +209,11 @@ if ($_POST['uploadable'] == "on") {
             "@",
             "`"
     );
-    $upload_name = str_replace($remove_array, "", safe($_POST["title"]));
+    $upload_name = str_replace($remove_array, "", $_POST["title"]);
 } else {
     $_POST['uploadable'] = "0";
-    $upload_name = "NULL";
+    $upload_name = null;
 }
-
-$title = safe($_POST['title']);
 
 /* Check whether maximum score was included, and set to 0 if it wasn't */
 if ($agenda == "0") {
@@ -252,7 +236,7 @@ if ($agenda == "0") {
                 echo "</p>\n      <p>Top mark must be a number between 0 and 100...setting to 100.</p>\n      <p>";
                 $_POST['top_mark'] = "100";
             } else {
-                $_POST['top_mark'] = "NULL";
+                $_POST['top_mark'] = null;
             }
         } else {
             if ($_POST['top_mark'] != "0") {
@@ -274,7 +258,7 @@ if ($agenda == "0") {
                 echo "</p>\n      <p>Bottom mark must be a number between 0 and 100...setting to 0.</p>\n      <p>";
                 $_POST['bottom_mark'] = "0";
             } else {
-                $_POST['bottom_mark'] = "NULL";
+                $_POST['bottom_mark'] = null;
             }
         } else {
             if ($_POST['bottom_mark'] != "0") {
@@ -297,7 +281,7 @@ if ($agenda == "0") {
 
         /* Check category */
         if (! isset($_POST['category']) or $_POST['category'] == "") {
-            $_POST['category'] = "NULL"; /* Check whether user is authorized to change scores */
+            $_POST['category'] = null;
         } else {
             settype($_POST['category'], "double");
             settype($_POST['category'], "string");
@@ -321,152 +305,166 @@ if ($agenda == "0") {
 }
 
 if ($_POST['action'] == "Move this assignment to next term") {
-    $next_subjectindex = intval($_POST['next_subject']);
-    $query = "UPDATE assignment SET SubjectIndex=$next_subjectindex " .
-             "WHERE AssignmentIndex = $assignment_index";
-    $res = &  $db->query($query);
-    if (DB::isError($res))
-        die($res->getDebugInfo());
+    $next_subjectindex = $_POST['next_subject'];
+    $query = $pdb->prepare(
+        "UPDATE assignment SET SubjectIndex = :next_subjectindex " .
+        "WHERE AssignmentIndex = :assignment_index"
+    )->execute(['next_subjectindex' => $next_subjectindex,
+                     'assignment_index' => $assignment_index]);
 
-    update_subject($subjectindex);
+    update_subject($subject_index);
 
-    $subjectindex = $next_subjectindex;
+    $subject_index = $next_subjectindex;
 }
 
 if (($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) and
-     (! isset($_POST['category']) or $_POST['category'] == "NULL")) {
-    $query =    "SELECT categorylist.CategoryListIndex FROM category, " .
-                "       categorylist " .
-                "WHERE categorylist.SubjectIndex = $subjectindex " .
-                "AND   category.CategoryIndex = categorylist.CategoryIndex " .
-                "ORDER BY category.CategoryName";
-    $res = &  $db->query($query);
-    if (DB::isError($res))
-        die($res->getDebugInfo());
-    if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+     (! isset($_POST['category']) or is_null($_POST['category']))) {
+    $query = $pdb->prepare(
+        "SELECT categorylist.CategoryListIndex FROM category, " .
+        "       categorylist " .
+        "WHERE categorylist.SubjectIndex = :subject_index " .
+        "AND   category.CategoryIndex = categorylist.CategoryIndex " .
+        "ORDER BY category.CategoryName"
+    );
+    $query->execute(['subject_index' => $subject_index]);
+    $row = $query->fetch();
+    if ($row) {
         $_POST['category'] = $row['CategoryListIndex'];
     } else {
-        $_POST['category'] = "NULL";
+        $_POST['category'] = null;
     }
-}
-
-if ($_POST['uploadable'] == 1 and !$new) {
-    $upload_name = "$upload_name ($assignment_index)";
-    $query =    "SELECT UploadName, Uploadable FROM assignment WHERE AssignmentIndex = $assignment_index";
-    $res = & $db->query($query);
-    if (DB::isError($res))
-        die($res->getDebugInfo());
-    if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-        if ($row['Uploadable'] != 0) {
-            if ($row['UploadName'] != $upload_name) {
-                dbfuncMoveDir($assignment_index, $row['UploadName'],
-                            $upload_name);
-            }
-        }
-    }
-    $upload_name = "'$upload_name'";
 }
 
 /* Set assignment information */
 if($new) {
-    $query =        "INSERT INTO assignment (Title, Description, DescriptionFileIndex, " .
-                    "                        DescriptionFileType, Date, DueDate, ";
+    $query =
+        "INSERT INTO assignment (Title, Description, DescriptionFileIndex, " .
+        "                        DescriptionFileType, Date, DueDate, " .
+        "                        Hidden, Agenda,  ";
     if (($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) and $agenda == "0") {
         $query .=   "                        Max, CategoryListIndex, CurveType, " .
                     "                        TopMark, BottomMark, Weight, " .
                     "                        IgnoreZero, MakeupTypeIndex, ";
     }
-    $query .=       "                        Hidden, Agenda, " .
-                    "                        SubjectIndex, Uploadable) " .
-                    "VALUES ('$title' , $descr, $descr_id, $descr_file_type, " .
-                    "        {$_POST['date']}, {$_POST['duedate']}, ";
+    $query .=
+        "                        Uploadable, SubjectIndex) " .
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ";
     if (($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) and $agenda == "0") {
-        $query .=   "        {$_POST['max']}, {$_POST['category']}, {$_POST['curve_type']}, " .
-                    "        {$_POST['top_mark']}, {$_POST['bottom_mark']}, {$_POST['weight']}, " .
-                    "        {$_POST['ignore_zero']}, {$_POST['makeuptype']}, ";
+        $query .=
+            "        ?, ?, ?, ?, ?, ?, ?, ?, ";
     }
-    $query .=       "        {$_POST['hidden']}, $agenda, $subjectindex, " .
-                    "        {$_POST['uploadable']})";
+    $query .=
+        "        ?, ?)";
+
 } else {
-    $query =        "UPDATE assignment SET Title = '$title', Description = $descr, " .
-                    "       DescriptionFileIndex = $descr_id, DescriptionFileType = $descr_file_type, " .
-                    "       Date = {$_POST['date']}, DueDate = {$_POST['duedate']}, " .
-                    "       UploadName = {$upload_name}, Uploadable = {$_POST['uploadable']}, ";
+    $query =        "UPDATE assignment SET Title = ?, Description = ?, " .
+                    "       DescriptionFileIndex = ?, DescriptionFileType = ?, " .
+                    "       Date = ?, DueDate = ?, Hidden = ?, Agenda = ?, ";
     if (($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) and $agenda == "0") {
-        $query .=   "       CurveType = {$_POST['curve_type']}, TopMark = {$_POST['top_mark']}, " .
-                    "       BottomMark = {$_POST['bottom_mark']}, Weight = {$_POST['weight']}, " .
-                    "       CategoryListIndex = {$_POST['category']}, Max = {$_POST['max']}, " .
-                    "       IgnoreZero = {$_POST['ignore_zero']}, MakeupTypeIndex = {$_POST['makeuptype']}, ";
+        $query .=   "       Max = ?, CategoryListIndex = ?, CurveType = ?, " .
+                    "       TopMark = ?, BottomMark = ?, Weight = ?, " .
+                    "       IgnoreZero = ?, MakeupTypeIndex = ?, ";
     }
-    $query .=       "       Hidden = {$_POST['hidden']}, Agenda = $agenda " .
-                    "WHERE AssignmentIndex = $assignment_index";
+    $query .=       "       Uploadable = ? " .
+                    "WHERE AssignmentIndex = ?";
 }
-$aRes = & $db->query($query);
-if (DB::isError($aRes))
-    die($aRes->getDebugInfo());
-
-/* If new assignment, get assignment index */
+$exec_array = [
+    $_POST['title'], $descr, $descr_id, $descr_file_type, $_POST['date'],
+    $_POST['duedate'], $_POST['hidden'], $agenda
+];
+if (($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) and $agenda == "0") {
+    $exec_array = array_merge($exec_array, [
+        $_POST['max'], $_POST['category'], $_POST['curve_type'],
+        $_POST['top_mark'], $_POST['bottom_mark'], $_POST['weight'],
+        $_POST['ignore_zero'], $_POST['makeuptype']
+    ]);
+}
+$exec_array = array_merge($exec_array, [
+    $_POST['uploadable']
+]);
 if($new) {
-    $aRes = & $db->query("SELECT LAST_INSERT_ID() AS AssignmentIndex");
-    if (DB::isError($aRes))
-        die($aRes->getDebugInfo());
+    $exec_array = array_merge($exec_array, [
+        $subject_index
+    ]);
+} else {
+    $exec_array = array_merge($exec_array, [
+        $assignment_index
+    ]);
+}
+$pdb->prepare($query)->execute($exec_array);
 
-    if ($aRow = & $aRes->fetchRow(DB_FETCHMODE_ASSOC) and $aRow['AssignmentIndex'] != 0) {
-        $assignment_index = $aRow['AssignmentIndex'];
-    } else {
+if($new) {
+    $assignment_index = $pdb->lastInsertId('AssignmentIndex');
+
+    if (!$assignment_index) {
         echo "Error creating new assignment</p>\n";
         include "footer.php";
-        die();
+        exit(0);
     }
 }
 
+if ($_POST['uploadable'] == 1) {
+    $upload_name = "$upload_name ($assignment_index)";
+    if(!$new) {
+        $query = $pdb->prepare(
+            "SELECT UploadName, Uploadable FROM assignment " .
+            "WHERE AssignmentIndex = :assignment_index"
+        );
+        $query->execute(['assignment_index' => $assignment_index]);
+        $row = $query->fetch();
+        if ($row) {
+            if ($row['Uploadable'] != 0 and $row['UploadName'] != $upload_name) {
+                dbfuncMoveDir($assignment_index, $row['UploadName'], $upload_name);
+            }
+        }
+    }
+}
+
+$pdb->prepare(
+    "UPDATE assignment SET UploadName=:upload_name " .
+    "WHERE AssignmentIndex = :assignment_index"
+)->execute(['upload_name' => $upload_name,
+            'assignment_index' => $assignment_index]);
+
 if ($_POST['action'] == "Convert to agenda item") {
-    $query =    "UPDATE assignment SET Agenda=1 " .
-                "WHERE AssignmentIndex = $assignment_index";
-    $nres = &  $db->query($query);
-    if (DB::isError($nres))
-        die($nres->getDebugInfo());
+    $pdb->prepare(
+        "UPDATE assignment SET Agenda=1 " .
+        "WHERE AssignmentIndex = :assignment_index"
+    )->execute(['assignment_index' => $assignment_index]);
 }
 
 if ($_POST['action'] == "Convert to assignment" and $average_type != $AVG_TYPE_NONE) {
-    $query =    "UPDATE assignment SET Agenda=0 " .
-                "WHERE AssignmentIndex = $assignment_index";
-    $nres = &  $db->query($query);
-    if (DB::isError($nres))
-        die($nres->getDebugInfo());
+    $pdb->prepare(
+        "UPDATE assignment SET Agenda=0 " .
+        "WHERE AssignmentIndex = :assignment_index"
+    )->execute(['assignment_index' => $assignment_index]);
 }
 
 if ($agenda == "0") {
-    $query =    "SELECT subjectstudent.Username FROM " .
-                "       subjectstudent LEFT OUTER JOIN mark ON (mark.AssignmentIndex = $assignment_index " .
-                "       AND mark.Username = subjectstudent.Username), assignment " .
-                "WHERE assignment.AssignmentIndex = $assignment_index " .
-                "AND   subjectstudent.SubjectIndex = assignment.SubjectIndex " .
-                "ORDER BY subjectstudent.Username";
-    $res = & $db->query($query);
-    if (DB::isError($res))
-        die($res->getDebugInfo());
+    $query = $pdb->prepare(
+        "SELECT subjectstudent.Username FROM " .
+        "       subjectstudent LEFT OUTER JOIN mark ON (mark.AssignmentIndex = :assignment_index " .
+        "       AND mark.Username = subjectstudent.Username), assignment " .
+        "WHERE assignment.AssignmentIndex = :assignment_index " .
+        "AND   subjectstudent.SubjectIndex = assignment.SubjectIndex " .
+        "ORDER BY subjectstudent.Username"
+    );
+    $query->execute(['assignment_index' => $assignment_index]);
 
     /* For each student, check whether there's already a mark, then either insert or update mark as needed */
-    while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+    foreach($query as $row) {
         // If comment isn't set, we may be accidentally overwriting marks
         if(!array_key_exists("comment_{$row['Username']}", $_POST)) {
             continue;
         }
 
-        if ($average_type != $AVG_TYPE_NONE) {
-            $score = $_POST["score_{$row['Username']}"]; // Get score for username from POST data
-        } else {
-            $score = "NULL";
-        }
-
         $comment = $_POST["comment_{$row['Username']}"]; // Get comment for username from POST data
 
         $has_makeup = false;
-        $makeup_score = "NULL";
-        $score = "NULL";
+        $makeup_score = null;
+        $score = null;
         if ($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
-            if ($_POST['makeuptype'] == "NULL") {
+            if (is_null($_POST['makeuptype'])) {
                 $items = array('score');
             } else {
                 $items = array('makeup_score', 'score');
@@ -481,7 +479,7 @@ if ($agenda == "0") {
                 } elseif (strtoupper($score) == 'L') {
                     $score = "$MARK_LATE";
                 } elseif ($score == '' or !isset($_POST["{$item}_{$row['Username']}"])) {
-                    $score = "NULL";
+                    $score = null;
                 } else {
                     if ($score != "0") {
                         $max = $_POST['max'];
@@ -501,7 +499,7 @@ if ($agenda == "0") {
                         if ($score == 0) {
                             echo "</p>\n      <p>$type for {$row['Username']} must be a number, A (for absent), E (for exempt), or L (for late)... clearing. " .
                                  "</p>\n      <p>";
-                            $score = "NULL";
+                            $score = null;
                         }
                         settype($score, "string");
                     }
@@ -510,70 +508,58 @@ if ($agenda == "0") {
                     $makeup_score = $score;
             }
         } elseif ($average_type == $AVG_TYPE_INDEX) {
-            $inval = safe($_POST["score_{$row['Username']}"]);
+            $inval = $_POST["score_{$row['Username']}"];
             $inval = strtoupper($inval);
-            $nquery = "SELECT NonmarkIndex FROM nonmark_index WHERE NonmarkTypeIndex=$average_type_index AND Input = '$inval'";
-            $sRes = & $db->query($nquery);
-            if (DB::isError($sRes))
-                die($sRes->getDebugInfo());
+            $score = get_nonmark_index($inval, $average_type_index);
 
-            if ($sRow = & $sRes->fetchRow(DB_FETCHMODE_ASSOC)) {
-                $score = $sRow['NonmarkIndex'];
-            } else {
+            if (!$score) {
                 if (isset($inval) and $inval != "") {
                     echo "</p>\n      <p>Mark for {$row['Username']} is invalid...clearing. " .
                          "</p>\n      <p>";
                 }
-                $score = "NULL";
+                $score = null;
             }
         } else {
-            $score = "NULL";
+            $score = null;
         }
         if ($comment == '' or ! isset($_POST["comment_{$row['Username']}"])) { // If comment is blank, set to NULL
-            $comment = "NULL";
+            $comment = null;
         } else {
-            $comment = safe(htmlize_comment($comment));
-            $comment = "'$comment'"; // If comment is not blank, put quotes around it
+            $comment = htmlize_comment($comment);
         }
 
-        $query =    "SELECT mark.MarkIndex FROM assignment, mark " .
-                    "WHERE assignment.AssignmentIndex = $assignment_index " .
-                    "AND   mark.AssignmentIndex       = assignment.AssignmentIndex " .
-                    "AND   mark.Username              = '{$row['Username']}'";
-        $sRes = & $db->query($query);
-        if (DB::isError($sRes))
-            die($sRes->getDebugInfo());
-
-        if ($sRow = & $sRes->fetchRow(DB_FETCHMODE_ASSOC)) {
-            if($score == "NULL" and $comment == "NULL" and $makeup_score == "NULL") {
-                $query = "DELETE FROM mark WHERE mark.MarkIndex = {$sRow['MarkIndex']}";
-                $update = & $db->query($query);
-                if (DB::isError($update)) {
-                    echo "</p>\n      <p>Update: " . $update->getMessage() .
-                         "</p>\n      <p>";
-                    $error = true;
-                }
+        $squery = $pdb->prepare(
+            "SELECT mark.MarkIndex FROM assignment, mark " .
+            "WHERE assignment.AssignmentIndex = :assignment_index " .
+            "AND   mark.AssignmentIndex       = assignment.AssignmentIndex " .
+            "AND   mark.Username              = :username"
+        );
+        $squery->execute(['assignment_index' => $assignment_index, 'username' => $row['Username']]);
+        $sRow = $squery->fetch();
+        if($sRow) {
+            if(is_null($score) and is_null($comment) and is_null($makeup_score)) {
+                $pdb->prepare(
+                    "DELETE FROM mark WHERE mark.MarkIndex = :mark_index"
+                )->execute(['mark_index' => $sRow['MarkIndex']]);
             } else {
-                $query =    "UPDATE mark SET Score = $score, MakeupScore = $makeup_score, Comment = $comment " .
-                            "WHERE mark.MarkIndex  = {$sRow['MarkIndex']} ";
-                $update = & $db->query($query);
-                if (DB::isError($update)) {
-                    echo "</p>\n      <p>Update: " . $update->getMessage() .
-                         "</p>\n      <p>";
-                    $error = true;
-                }
+                $pdb->prepare(
+                    "UPDATE mark SET Score = :score, MakeupScore = :makeup_score, " .
+                    "                Comment = :comment " .
+                    "WHERE mark.MarkIndex  = :mark_index "
+                )->execute(['score' => $score, 'makeup_score' => $makeup_score,
+                            'comment' => $comment,
+                            'mark_index' => $sRow['MarkIndex']]);
             }
         } else {
-            if($score != "NULL" or $comment != "NULL") {
-                $query =    "INSERT INTO mark (Username, AssignmentIndex, " .
-                            "Score, MakeupScore, Comment) VALUES ('{$row['Username']}', " .
-                            "$assignment_index, $score, $makeup_score, $comment)";
-                $update = & $db->query($query);
-                if (DB::isError($update)) {
-                    echo "</p>\n      <p>Insert: " . $update->getDebugInfo() .
-                         "</p>\n      <p>";
-                    $error = true;
-                }
+            if(!is_null($score) or !is_null($comment)) {
+                $pdb->prepare(
+                    "INSERT INTO mark (Username, AssignmentIndex, " .
+                    "Score, MakeupScore, Comment) VALUES (:username, " .
+                    ":assignment_index, :score, :makeup_score, :comment)"
+                )->execute(['username' => $row['Username'],
+                            'assignment_index' => $assignment_index,
+                            'score' => $score, 'makeup_score' => $makeup_score,
+                            'comment' => $comment]);
             }
         }
     }
@@ -582,15 +568,8 @@ if ($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
     update_marks($assignment_index);
 }
 
-$query =    "SELECT subject.Name FROM assignment, subject " .
-            "WHERE assignment.AssignmentIndex  = $assignment_index " .
-            "AND   subject.SubjectIndex        = assignment.SubjectIndex";
-$res = &  $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo());
-$row = & $res->fetchRow(DB_FETCHMODE_ASSOC);
 log_event($LOG_LEVEL_TEACHER, "teacher/assignment/modify_action.php",
-        $LOG_TEACHER, "Modified assignment ($title) for {$row['Name']}.");
+        $LOG_TEACHER, "Modified assignment ($title) for {$subject_name}.");
 
 if ($error) {
     echo "failed!</p>\n";
