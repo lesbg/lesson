@@ -120,10 +120,11 @@ function check_attendance($username, $subject_index) {
 
     $query = $pdb->prepare(
         "SELECT Username FROM disciplineperms " .
-        "WHERE Permissions >= :pun_perm " .
+        "WHERE Permissions >= :suspended " .
         "AND Username = :username "
     );
-    $query->execute(['pun_perm' => $PUN_PERM_SUSPEND, 'username' => $username]);
+    $query->execute(['suspended' => $PUN_PERM_SUSPEND, 'username' => $username]);
+    $row = $query->fetch();
     if ($row) {
         return true;
     } else {
