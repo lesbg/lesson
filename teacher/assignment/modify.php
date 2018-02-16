@@ -314,7 +314,7 @@ if ($average_type == $AVG_TYPE_INDEX) {
             } else {
                 $first = false;
             }
-            echo "                       {$row[MakeupTypeIndex]}: [{$row[OriginalMax]}, {$row[TargetMax]}]";
+            echo "                       {$row['MakeupTypeIndex']}: [{$row['OriginalMax']}, {$row['TargetMax']}]";
         }
         echo "\n";
         echo "         };";

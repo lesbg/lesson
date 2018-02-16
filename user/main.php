@@ -325,6 +325,7 @@ if($yearindex == $currentyear) {
                  dbfuncString2Int(
                                 "index.php?location=" .
                                  dbfuncString2Int("user/main.php"));
+        $extra = "";
         if ($query->rowCount() > 1)
             $extra = " for {$row['Name']}";
 

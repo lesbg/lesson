@@ -20,6 +20,9 @@ if ($is_agenda)
 include "header.php"; // Show header
 include "core/settermandyear.php";
 
+$is_teacher = false;
+$is_support_class_teacher = false;
+
 /* Check whether user is authorized to change scores */
 if (check_teacher_subject($username, $subject_index))
     $is_teacher = true;
@@ -452,8 +455,7 @@ foreach($query as $row) {
     }
     echo "         </tr>\n";
 }
-if ($no_marks == 0 and
-     ($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE)) { // Show average percentage for all students
+if ($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) { // Show average percentage for all students
     $alt_count += 1;
     if ($alt_count % 2 == 0) {
         $alt_step = "alt";

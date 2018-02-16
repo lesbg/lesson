@@ -159,7 +159,7 @@ if (! isset($_POST['date']) or $_POST['date'] == "") { // Make sure date is in c
     echo "</p>\n      <p align='center'>Date not entered, defaulting to today.</p>\n      <p align='center'>"; // Print error message
     $_POST['date'] = & dbfuncCreateDate(date($dateformat));
 } else {
-    $_POST['date'] = & dbfuncCreateDate($_POST['date']);
+    $_POST['date'] = dbfuncCreateDate($_POST['date']);
 }
 
 /* Check whether or not the due date was set, and set it to NULL if it wasn't */
@@ -172,7 +172,7 @@ if (! isset($_POST['duedate']) or $_POST['duedate'] == "") { // Make sure date i
         $_POST['duedate'] = null;
     }
 } else {
-    $_POST['duedate'] = & dbfuncCreateDate($_POST['duedate']);
+    $_POST['duedate'] = dbfuncCreateDate($_POST['duedate']);
 }
 
 if ($_POST['makeuptype'] == "NULL") {
@@ -182,7 +182,7 @@ if ($_POST['makeuptype'] == "NULL") {
 }
 
 /* Check whether this assignment should be hidden from students */
-if ($_POST['hidden'] == "on") {
+if (isset($_POST['hidden']) and $_POST['hidden'] == "on") {
     $_POST['hidden'] = "1";
 } else {
     $_POST['hidden'] = "0";
@@ -571,7 +571,7 @@ if ($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) {
 log_event($LOG_LEVEL_TEACHER, "teacher/assignment/modify_action.php",
         $LOG_TEACHER, "Modified assignment ($title) for {$subject_name}.");
 
-if ($error) {
+if (isset($error) and $error) {
     echo "failed!</p>\n";
 } else {
     echo "done.</p>\n";
