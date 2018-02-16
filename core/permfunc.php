@@ -110,3 +110,23 @@ function get_punishment_permissions($username) {
         return $DEFAULT_PUN_PERM;
     }
 }
+
+function check_attendance($username, $subject_index) {
+    global $pdb;
+    global $PUN_PERM_SUSPEND;
+
+    if(check_teacher_subject($username, $subject_index))
+        return true;
+
+    $query = $pdb->prepare(
+        "SELECT Username FROM disciplineperms " .
+        "WHERE Permissions >= :pun_perm " .
+        "AND Username = :username "
+    );
+    $query->execute(['pun_perm' => $PUN_PERM_SUSPEND, 'username' => $username]);
+    if ($row) {
+        return true;
+    } else {
+        return false;
+    }
+}

@@ -302,17 +302,17 @@ if($yearindex == $currentyear) {
         $boldst = "";
         $boldend = "";
 
-        $query = $pdb->prepare(
+        $nquery = $pdb->prepare(
             "SELECT AttendanceDoneIndex FROM attendancedone " .
             "WHERE SubjectIndex=:subjectindex " .
             "AND   PeriodIndex=:periodindex " .
             "AND   Date=:date"
         );
-        $query->execute(['subjectindex' => $row['SubjectIndex'],
+        $nquery->execute(['subjectindex' => $row['SubjectIndex'],
                          'periodindex' => $row['PeriodIndex'],
                          'date' => $date]);
-        $row = $query->fetch();
-        if (!$row) {
+        $nrow = $nquery->fetch();
+        if (!$nrow) {
             $boldst = "<strong>";
             $boldend = "</strong>";
         }
