@@ -28,6 +28,47 @@ function check_guardian($student_username, $guardian_username) {
     }
 }
 
+/* Check whether user is the class teacher for a year */
+function check_class_teacher_year($username, $yearindex) {
+    global $pdb;
+
+    $query = $pdb->prepare(
+        "SELECT class.ClassIndex " .
+        "  FROM class " .
+        "WHERE class.ClassTeacherUsername = :username " .
+        "AND   class.YearIndex = :yearindex"
+    );
+    $query->execute(['username' => $username, 'yearindex' => $yearindex]);
+    $row = $query->fetch();
+    if ($row) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/* Check whether user teaches at all during the year */
+function check_teacher_year($username, $yearindex) {
+    global $pdb;
+
+    $query = $pdb->prepare(
+        "SELECT user.FirstName, user.Surname, user.Username FROM " .
+        "       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
+        "            INNER JOIN groups USING (GroupID) " .
+        "WHERE user.Username=:username " .
+        "AND   groups.GroupTypeID='activeteacher' " .
+        "AND   groups.YearIndex=:yearindex " .
+        "ORDER BY user.Username";
+    );
+    $query->execute(['username' => $username, 'yearindex' => $yearindex]);
+    $row = $query->fetch();
+    if ($row) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 /* Check whether user teaches subject containing specified assignment */
 function check_teacher_assignment($username, $assignment_index) {
     global $pdb;
