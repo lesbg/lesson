@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/family/remove_student_from_school.php (c) 2017 Jonathan Dieter
+ * admin/family/remove_student_from_school.php (c) 2017-2018 Jonathan Dieter
  *
  * Remove a student from school
  * ***************************************************************
@@ -46,7 +46,7 @@ if (!$is_admin) {
     exit(0);
 }
 
-if($yearindex != $currentyear) {
+if($yearindex < $currentyear) {
     echo "      <p align='center'>You cannot remove a student from a previous school year.  If this is really what you want to do, manually remove the student from their classes and the 'Active Student' group.</p>";
     echo "      <p align='center'><a href='$nextLink'>Continue</a></p>\n";
     exit(0);
@@ -63,9 +63,13 @@ if(!$confirmed) {
                 "       FROM user " .
                 "          LEFT OUTER JOIN " .
                 "            (class INNER JOIN classterm USING (ClassIndex) " .
-                "                   INNER JOIN classlist USING (ClassTermIndex) " .
-                "                   INNER JOIN currentterm ON classterm.TermIndex=currentterm.TermIndex) " .
-                "               ON (user.Username=classlist.Username " .
+                "                   INNER JOIN classlist USING (ClassTermIndex) ";
+    if($yearindex == $currentyear) {
+        $query .= "                   INNER JOIN currentterm ON classterm.TermIndex=currentterm.TermIndex) ";
+    } else {
+        $query .= "                   INNER JOIN term ON classterm.TermIndex=term.TermIndex AND term.TermNumber=1) ";
+    }
+    $query .=   "               ON (user.Username=classlist.Username " .
                 "                   AND class.YearIndex=$yearindex) " .
                 "          LEFT OUTER JOIN subject " .
                 "               ON subject.YearIndex=$yearindex " .
@@ -120,9 +124,13 @@ if(!$confirmed) {
 $query =    "SELECT user.FirstName, user.Surname, user.Username, classterm.TermIndex" .
             "       FROM user LEFT OUTER JOIN " .
             "            (class INNER JOIN classterm USING (ClassIndex) " .
-            "                   INNER JOIN classlist USING (ClassTermIndex) " .
-            "                   INNER JOIN currentterm ON classterm.TermIndex=currentterm.TermIndex) " .
-            "               ON (user.Username=classlist.Username " .
+            "                   INNER JOIN classlist USING (ClassTermIndex) ";
+if($yearindex == $currentyear) {
+    $query .= "                   INNER JOIN currentterm ON classterm.TermIndex=currentterm.TermIndex) ";
+} else {
+    $query .= "                   INNER JOIN term ON classterm.TermIndex=term.TermIndex AND term.TermNumber=1) ";
+}
+$query .=   "               ON (user.Username=classlist.Username " .
             "                   AND class.YearIndex=$yearindex) " .
             "WHERE user.Username='$delusername' " .
             "GROUP BY user.Username";

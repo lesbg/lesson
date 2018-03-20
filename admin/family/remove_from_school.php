@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/family/remove_from_school.php (c) 2017 Jonathan Dieter
+ * admin/family/remove_from_school.php (c) 2017-2018 Jonathan Dieter
  *
  * Remove a student from school
  * ***************************************************************
@@ -46,7 +46,7 @@ if (!$is_admin) {
     exit(0);
 }
 
-if($yearindex != $currentyear) {
+if($yearindex < $currentyear) {
     echo "      <p align='center'>You cannot remove a family from a previous school year.  If this is really what you want to do, manually remove each student from their classes and the 'Active Student' group.</p>";
     echo "      <p align='center'><a href='$nextLink'>Continue</a></p>\n";
     exit(0);
@@ -57,7 +57,7 @@ if(!$confirmed) {
              "&amp;key=" . $_GET['key'] . "&amp;keyname=" . $_GET['keyname'] .
              "&amp;next=" . dbfuncString2Int($nextLink);
 
-    $query =    "SELECT user.FirstName, user.Surname, user.Username, " .
+    $query =    "SELECT user.FirstName, user.Surname, user.Username, groupgenmem.Username AS ActiveStudent, " .
                 "       COUNT(DISTINCT subjectstudent.SubjectStudentIndex) AS subjects, " .
                 "       class.ClassName, " .
                 "       COUNT(DISTINCT discipline.DisciplineIndex) AS punishments " .
@@ -66,9 +66,13 @@ if(!$confirmed) {
                 "                   AND familylist.Guardian = 0) " .
                 "          LEFT OUTER JOIN " .
                 "            (class INNER JOIN classterm USING (ClassIndex) " .
-                "                   INNER JOIN classlist USING (ClassTermIndex) " .
-                "                   INNER JOIN currentterm ON classterm.TermIndex=currentterm.TermIndex) " .
-                "               ON (user.Username=classlist.Username " .
+                "                   INNER JOIN classlist USING (ClassTermIndex) ";
+    if($yearindex == $currentyear) {
+        $query .= "                   INNER JOIN currentterm ON classterm.TermIndex=currentterm.TermIndex) ";
+    } else {
+        $query .= "                   INNER JOIN term ON classterm.TermIndex=term.TermIndex AND term.TermNumber=1) ";
+    }
+    $query .=   "               ON (user.Username=classlist.Username " .
                 "                   AND class.YearIndex=$yearindex) " .
                 "          LEFT OUTER JOIN subject " .
                 "               ON subject.YearIndex=$yearindex " .
@@ -81,6 +85,8 @@ if(!$confirmed) {
                 "               ON (user.Username=discipline.Username " .
                 "                   AND disciplineweight.YearIndex=$yearindex " .
                 "                   AND disciplineweight.TermIndex=$termindex) " .
+                "          LEFT OUTER JOIN groupgenmem " .
+                "               ON (user.Username = groupgenmem.Username AND groupgenmem.GroupID='activestudent-$yearindex') " .
                 "WHERE familylist.FamilyCode = '$delfcode' " .
                 "GROUP BY user.Username";
     $res = &  $db->query($query);
@@ -105,7 +111,9 @@ if(!$confirmed) {
         if(!is_null($row['punishments']) and $row['punishments'] > 0) {
             echo "                  <li>$name will have {$row['punishments']} punishments removed from this term</li>\n";
         }
-        echo "                  <li>$name's student status will be changed to inactive</li>\n";
+        if(!is_null($row['ActiveStudent'])) {
+            echo "                  <li>$name's student status will be changed to inactive</li>\n";
+        }
     }
     echo "               </ul>\n";
     echo "            </p>\n";
@@ -126,11 +134,17 @@ $query =    "SELECT user.FirstName, user.Surname, user.Username, classterm.TermI
             "       FROM familylist INNER JOIN user " .
             "               ON (user.Username = familylist.Username " .
             "                   AND familylist.Guardian = 0) " .
+            "          INNER JOIN groupgenmem " .
+            "               ON (user.Username = groupgenmem.Username AND groupgenmem.GroupID='activestudent-$yearindex') " .
             "          LEFT OUTER JOIN " .
             "            (class INNER JOIN classterm USING (ClassIndex) " .
-            "                   INNER JOIN classlist USING (ClassTermIndex) " .
-            "               INNER JOIN currentterm ON classterm.TermIndex=currentterm.TermIndex) " .
-            "               ON (user.Username=classlist.Username " .
+            "                   INNER JOIN classlist USING (ClassTermIndex) ";
+if($yearindex == $currentyear) {
+    $query .= "                   INNER JOIN currentterm ON classterm.TermIndex=currentterm.TermIndex) ";
+} else {
+    $query .= "                   INNER JOIN term ON classterm.TermIndex=term.TermIndex AND term.TermNumber=1) ";
+}
+$query .=   "               ON (user.Username=classlist.Username " .
             "                   AND class.YearIndex=$yearindex) " .
             "WHERE familylist.FamilyCode = '$delfcode' " .
             "GROUP BY user.Username";

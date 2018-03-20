@@ -223,7 +223,7 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
                 if ($is_admin) {
                     $editbutton = dbfuncGetButton($editlink, "E", "small", "edit",
                                                 "Edit family");
-                    if(!is_null($row['ActiveStudents']) and $yearindex == $currentyear) {
+                    if(!is_null($row['ActiveStudents']) and $yearindex >= $currentyear) {
                         $removebutton = dbfuncGetButton($removelink, "-", "small", "delete",
                                                     "Remove all students in family from school");
                     } else {
@@ -289,7 +289,7 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
                     if(!is_null($row['ActiveStudent']) && $row['Guardian'] == 0) {
                         $viewbutton = dbfuncGetButton($viewlink, "V", "small", "view",
                                 "View $who's subjects");
-                        if($yearindex == $currentyear) {
+                        if($yearindex >= $currentyear) {
                             $removebutton = dbfuncGetButton($removelink, "-", "small", "delete",
                                                     "Remove from school");
                         } else {
