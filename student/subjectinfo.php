@@ -164,7 +164,6 @@ if ($is_admin or $is_hod or $is_principal or $is_counselor or $is_guardian or
         if (($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) and
              $has_categories) {
             echo "            <th>Category</th>\n";
-            echo "            <th><a title='Category Weight'>CW</a></th>\n";
         }
         echo "            <th>Date</th>\n";
         echo "            <th>Due Date</th>\n";
@@ -255,10 +254,8 @@ if ($is_admin or $is_hod or $is_principal or $is_counselor or $is_guardian or
                  $has_categories) {
                 if (is_null($row['CategoryName'])) {
                     echo "<td><i>None</i></td>\n";
-                    echo "<td><i>N/A</i></td>\n";
                 } else {
                     echo "<td>{$row['CategoryName']}</td>\n";
-                    echo "<td>{$row['CategoryWeight']}</td>\n";
                 }
             }
             echo "            <td>{$dateinfo}</td>\n";
