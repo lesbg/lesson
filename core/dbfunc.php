@@ -1095,7 +1095,8 @@ function update_subject($subject_index) {
         die($res->getDebugInfo());
 
     /* Calculate student's current average in subject */
-    $query = "SELECT MAX(Average) AS Average, Username FROM " . "   ((SELECT" .
+    $query = "SELECT MAX(Average) AS Average, Username FROM " .
+             "   ((SELECT" .
              "     ROUND(SUM((Mark * CategoryWeight * 100) / Weight) / SUM(CategoryWeight)) AS Average, Username FROM" .
              "      (SELECT" .
              "        SUM(mark.Percentage * assignment.Weight) AS Mark, " .
@@ -1112,7 +1113,8 @@ function update_subject($subject_index) {
              "       AND   mark.Percentage         >= 0 " .
              "       AND   assignment.Weight       > 0 " .
              "       GROUP BY subjectstudent.Username, category.CategoryIndex)" .
-             "     AS category_total GROUP BY Username) " . "     UNION " .
+             "     AS category_total GROUP BY Username) " .
+             "     UNION " .
              "    (SELECT -1 AS Average, Username FROM subjectstudent" .
              "     WHERE subjectstudent.SubjectIndex = $subject_index)) AS pscore" .
              "    GROUP BY Username " . "    ORDER BY Username ";
