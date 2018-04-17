@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * student/subjectinfo.php (c) 2004-2007, 2016 Jonathan Dieter
+ * student/subjectinfo.php (c) 2004-2007, 2016-2018 Jonathan Dieter
  *
  * Print information about how student is doing in a subject
  * ***************************************************************
@@ -124,7 +124,8 @@ if ($is_admin or $is_hod or $is_principal or $is_counselor or $is_guardian or
              "       DescriptionFileType, AverageType, ShowAverage, Agenda, subject.Name AS SubjectName, " .
              "       Uploadable, assignment.Weight, Score, MakeupScore, Percentage, OriginalPercentage, " .
              "       MakeupPercentage, mark.Comment, subjectstudent.Average AS StudentSubjectAverage, " .
-             "       CanModify, CategoryName, subject.SubjectIndex " .
+             "       CanModify, CategoryName, subject.SubjectIndex, " .
+             "       categorylist.Weight AS CategoryWeight " .
              "       FROM subject INNER JOIN assignment USING (SubjectIndex) INNER JOIN subjectstudent " .
              "       ON (subjectstudent.SubjectIndex = subject.SubjectIndex) LEFT OUTER JOIN mark ON " .
              "      (mark.Username = subjectstudent.Username AND mark.AssignmentIndex = assignment.AssignmentIndex) " .
@@ -163,6 +164,7 @@ if ($is_admin or $is_hod or $is_principal or $is_counselor or $is_guardian or
         if (($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) and
              $has_categories) {
             echo "            <th>Category</th>\n";
+            echo "            <th><a title='Category Weight'>CW</a></th>\n";
         }
         echo "            <th>Date</th>\n";
         echo "            <th>Due Date</th>\n";
@@ -253,8 +255,10 @@ if ($is_admin or $is_hod or $is_principal or $is_counselor or $is_guardian or
                  $has_categories) {
                 if (is_null($row['CategoryName'])) {
                     echo "<td><i>None</i></td>\n";
+                    echo "<td><i>N/A</i></td>\n";
                 } else {
                     echo "<td>{$row['CategoryName']}</td>\n";
+                    echo "<td>{$row['CategoryWeight']}</td>\n";
                 }
             }
             echo "            <td>{$dateinfo}</td>\n";
@@ -300,6 +304,58 @@ if ($is_admin or $is_hod or $is_principal or $is_counselor or $is_guardian or
             $average = $row['StudentSubjectAverage'];
         }
         echo "      </table>\n"; // End of table
+
+        if (($average_type == $AVG_TYPE_PERCENT or $average_type == $AVG_TYPE_GRADE) and
+            $has_categories) {
+            echo "<p></p><p></p>\n";
+            $query = $pdb->prepare(
+                "SELECT CategoryName, " .
+                "  ROUND((SUM(mark.Percentage * assignment.Weight) / SUM(assignment.Weight) * 100)/100, 2) AS Average, " .
+                "  IF(categorylist.Weight IS NULL, 1, categorylist.Weight) AS CategoryWeight " .
+                "  FROM " .
+                "    assignment LEFT OUTER JOIN (categorylist INNER JOIN category USING (CategoryIndex)) USING (CategoryListIndex) " .
+                "    LEFT OUTER JOIN mark ON (mark.Username = :studentusername AND assignment.AssignmentIndex = mark.AssignmentIndex) " .
+                "WHERE assignment.SubjectIndex = :subjectindex " .
+                "AND   assignment.Agenda       = 0 " .
+                "AND   assignment.Hidden       = 0 " .
+                "AND   mark.Percentage         >= 0 " .
+                "AND   assignment.Weight       > 0 " .
+                "GROUP BY category.CategoryIndex " .
+                "ORDER BY CategoryWeight DESC, CategoryName"
+            );
+            $query->execute(['studentusername' => $studentusername,
+                             'subjectindex' => $subjectindex]);
+            $data = $query->fetchAll();
+
+            /* Print assignments and scores */
+            if ($data) {
+                echo "      <table align='center' border='1'>\n"; // Table headers
+                echo "         <tr>\n";
+                echo "            <th>Category</th>\n";
+                echo "            <th>Score</th>\n";
+                echo "            <th><a title='Category Weight'>CW</a></th>\n";
+                echo "         </tr>\n";
+
+                /* For each assignment, print a row with the title, date, score and comment */
+                $alt_count = 0;
+                foreach($data as $row) {
+                    $alt_count += 1;
+                    if ($alt_count % 2 == 0) {
+                        $alt_step = "alt";
+                    } else {
+                        $alt_step = "std";
+                    }
+                    $alt = " class='$alt_step'";
+
+                    echo "         <tr$alt>\n";
+                    echo "            <td>{$row['CategoryName']}</th>\n";
+                    echo "            <td align='right'>{$row['Average']}%</th>\n";
+                    echo "            <td align='right'>{$row['CategoryWeight']}</th>\n";
+                    echo "         </tr>\n";
+                }
+                echo "      </table>\n"; // End of table
+            }
+        }
 
         /* Total percentage */
         if ($average_type == $AVG_TYPE_PERCENT and $show_average == 1) {
