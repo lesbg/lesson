@@ -58,7 +58,7 @@ function check_teacher_year($username, $yearindex) {
         "WHERE user.Username=:username " .
         "AND   groups.GroupTypeID='activeteacher' " .
         "AND   groups.YearIndex=:yearindex " .
-        "ORDER BY user.Username";
+        "ORDER BY user.Username"
     );
     $query->execute(['username' => $username, 'yearindex' => $yearindex]);
     $row = $query->fetch();
