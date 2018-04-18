@@ -489,7 +489,7 @@ if($new) {
         echo "            <input type='submit' name='action' value='Convert to assignment' tabindex='23' />&nbsp; \n";
     }
 }
-if (! is_null($next_subjectindex)) {
+if (isset($next_subjectindex) and !is_null($next_subjectindex)) {
     echo "            <input type='hidden' name='next_subject' value='$next_subjectindex' /><input type='submit' name='action' value='Move this assignment to next term' tabindex='24' />&nbsp; \n";
 }
 echo "         </p>\n";

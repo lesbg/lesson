@@ -33,7 +33,7 @@ $query = "SELECT Title, Date, DueDate, AssignmentIndex, Description, Description
          "       INNER JOIN mark USING (AssignmentIndex) INNER JOIN subjectstudent " .
          "       ON (subjectstudent.SubjectIndex = subject.SubjectIndex AND subjectstudent.Username = mark.Username) " .
          "       LEFT OUTER JOIN categorylist USING (CategoryListIndex) LEFT OUTER JOIN category USING (CategoryIndex) " .
-         "WHERE mark.Username     = '$studentusername' " .
+         "WHERE mark.Username     = '$student_username' " .
          "AND   Hidden       = 0 " . "AND   mark.Score   = $MARK_LATE " .
          "AND   subject.CanModify = 1 " . "AND   YearIndex    = $yearindex " .
          "AND   TermIndex    = $termindex " .

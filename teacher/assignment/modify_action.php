@@ -175,7 +175,7 @@ if (! isset($_POST['duedate']) or $_POST['duedate'] == "") { // Make sure date i
     $_POST['duedate'] = dbfuncCreateDate($_POST['duedate']);
 }
 
-if ($_POST['makeuptype'] == "NULL") {
+if (!isset($_POST['makeuptype']) or $_POST['makeuptype'] == "NULL") {
     $_POST['makeuptype'] = null;
 } else {
     $_POST['makeuptype'] = intval($_POST['makeuptype']);
@@ -189,7 +189,7 @@ if (isset($_POST['hidden']) and $_POST['hidden'] == "on") {
 }
 
 /* Check whether this assignment is uploadable */
-if ($_POST['uploadable'] == "on") {
+if (isset($_POST['uploadable']) and $_POST['uploadable'] == "on") {
     $_POST['uploadable'] = "1";
     /* Set assignment's directory */
     $remove_array = array(
