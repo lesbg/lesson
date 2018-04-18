@@ -47,6 +47,31 @@ function check_class_teacher_year($username, $yearindex) {
     }
 }
 
+/* Check whether user is class teacher for a student */
+function check_class_teacher_student($username, $student_username, $yearindex,
+                                     $termindex) {
+    global $pdb;
+
+    $query = $pdb->prepare(
+        "SELECT class.ClassTeacherUsername FROM class, classterm, classlist " .
+        "WHERE class.ClassTeacherUsername = :username " .
+        "AND   classlist.Username = :student_username " .
+        "AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+        "AND   classterm.TermIndex = :termindex " .
+        "AND   class.ClassIndex = classterm.ClassIndex " .
+        "AND   class.YearIndex = :yearindex"
+    );
+    $query->execute(['username' => $username, 'termindex' => $termindex,
+                     'student_username' => $student_username,
+                     'yearindex' => $yearindex]);
+    $row = $query->fetch();
+    if ($row) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 /* Check whether user teaches at all during the year */
 function check_teacher_year($username, $yearindex) {
     global $pdb;
@@ -98,6 +123,31 @@ function check_teacher_subject($username, $subject_index) {
          "AND   subjectteacher.Username     = :username"
     );
     $query->execute(['username' => $username, 'subject_index' => $subject_index]);
+    $row = $query->fetch();
+    if ($row) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/* Check whether user teaches a student */
+function check_teacher_student($username, $student_username, $yearindex,
+                               $termindex) {
+    global $pdb;
+
+    $query = $pdb->prepare(
+        "SELECT subjectteacher.Username FROM subject, subjectstudent, subjectteacher " .
+        "WHERE subjectstudent.Username = :student_username " .
+        "AND   subject.SubjectIndex = subjectstudent.SubjectIndex " .
+        "AND   subject.YearIndex = :yearindex " .
+        "AND   subject.TermIndex = :termindex " .
+        "AND   subjectteacher.SubjectIndex = subject.SubjectIndex " .
+        "AND   subjectteacher.Username = :username"
+    );
+    $query->execute(['username' => $username, 'termindex' => $termindex,
+                     'student_username' => $student_username,
+                     'yearindex' => $yearindex]);
     $row = $query->fetch();
     if ($row) {
         return true;
@@ -165,6 +215,65 @@ function check_attendance($username, $subject_index) {
         "AND Username = :username "
     );
     $query->execute(['suspended' => $PUN_PERM_SUSPEND, 'username' => $username]);
+    $row = $query->fetch();
+    if ($row) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/* Check if user is the principal */
+function check_principal($username) {
+    global $pdb;
+
+    $query = $pdb->prepare(
+        "SELECT Username FROM principal " .
+        "WHERE Username=:username AND Level=1"
+    );
+    $query->execute(['username' => $username]);
+    $row = $query->fetch();
+    if ($row) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/* Check whether user is the head of department for a student */
+function check_hod($username, $student_username, $yearindex, $termindex) {
+    global $pdb;
+
+    $query = $pdb->prepare(
+        "SELECT hod.Username FROM hod, class, classterm, classlist " .
+        "WHERE hod.Username = :username " .
+        "AND   hod.DepartmentIndex = class.DepartmentIndex " .
+        "AND   classlist.Username = :student_username " .
+        "AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+        "AND   classterm.TermIndex = :termindex " .
+        "AND   class.ClassIndex = classterm.ClassIndex " .
+        "AND   class.YearIndex = :yearindex "
+    );
+    $query->execute(['username' => $username, 'termindex' => $termindex,
+                     'student_username' => $student_username,
+                     'yearindex' => $yearindex]);
+    $row = $query->fetch();
+    if ($row) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/* Check whether user is a counselor */
+function check_counselor($username) {
+    global $pdb;
+
+    $query = $pdb->prepare(
+        "SELECT Username FROM counselorlist " .
+        "WHERE Username=:username"
+    );
+    $query->execute(['username' => $username]);
     $row = $query->fetch();
     if ($row) {
         return true;

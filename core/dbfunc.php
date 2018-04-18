@@ -683,7 +683,7 @@ function getNamesFromList($namelist) {
             }
             $name_string .= " $name";
         }
-        return trim($name_string);
+        return htmlspecialchars(trim($name_string), ENT_QUOTES);
     }
 }
 

@@ -1,14 +1,14 @@
 <?php
 /**
  * ***************************************************************
- * teacher/casenote/new_action.php (c) 2006 Jonathan Dieter
+ * teacher/casenote/new_action.php (c) 2006, 2018 Jonathan Dieter
  *
  * Insert new casenote into database
  * ***************************************************************
  */
 
 /* Get variables */
-$studentusername = safe(dbfuncInt2String($_GET['key']));
+$student_username = safe(dbfuncInt2String($_GET['key']));
 $student = dbfuncInt2String($_GET['keyname']);
 $link = "index.php?location=" . dbfuncString2Int("teacher/casenote/list.php") .
          "&amp;key=" . $_GET['key'] . "&amp;keyname=" . $_GET['keyname'] .
@@ -16,297 +16,17 @@ $link = "index.php?location=" . dbfuncString2Int("teacher/casenote/list.php") .
 
 include "core/settermandyear.php";
 
-/* Check whether current user is principal */
-$res = &  $db->query(
-                "SELECT Username FROM principal " .
-                 "WHERE Username=\"$username\" AND Level=1");
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
+$is_principal = check_principal($username);
+$is_hod = check_hod($username, $student_username, $currentyear, $currentterm);
+$is_counselor = check_counselor($username);
+$is_class_teacher = check_class_teacher_student($username, $student_username,
+                                                $currentyear, $currentterm);
+$is_support_teacher = false;
+$is_teacher = check_teacher_student($username, $student_username, $currentyear,
+                                    $currentterm);
 
-if ($res->numRows() > 0) {
-    $is_principal = true;
-} else {
-    $is_principal = false;
-}
-
-/* Check whether current user is head of department for student */
-$query = "SELECT hod.Username FROM hod, class, classterm, classlist " .
-         "WHERE hod.Username = '$username' " .
-         "AND   hod.DepartmentIndex = class.DepartmentIndex " .
-         "AND   classlist.Username = '$studentusername' " .
-         "AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
-         "AND   classterm.TermIndex = $currentterm " .
-         "AND   class.ClassIndex = classterm.ClassIndex " .
-         "AND   class.YearIndex = $currentyear";
-$res = &  $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-
-if ($res->numRows() > 0) {
-    $is_hod = true;
-} else {
-    $is_hod = false;
-}
-
-/* Check whether current user is a counselor */
-$res = &  $db->query(
-                "SELECT Username FROM counselorlist " .
-                 "WHERE Username=\"$username\"");
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-
-if ($res->numRows() > 0) {
-    $is_counselor = true;
-} else {
-    $is_counselor = false;
-}
-
-/* Check whether current user is class teacher for this student this year */
-$query = "SELECT class.ClassTeacherUsername FROM class, classterm, classlist " .
-         "WHERE class.ClassTeacherUsername = '$username' " .
-         "AND   classlist.Username = '$studentusername' " .
-         "AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
-         "AND   classterm.TermIndex = $currentterm " .
-         "AND   class.ClassIndex = classterm.ClassIndex " .
-         "AND   class.YearIndex = $currentyear";
-$res = &  $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-
-if ($res->numRows() > 0) {
-    $is_classteacher = true;
-} else {
-    $is_classteacher = false;
-}
-
-/* Check whether current user is a support teacher for this student */
-$query = "SELECT user.FirstName, user.Surname, user.Username FROM " .
-         "       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
-         "            INNER JOIN groups USING (GroupID) " .
-         "WHERE user.Username='$username' " .
-         "AND   groups.GroupTypeID='supportteacher' " .
-         "AND   groups.YearIndex=$yearindex " .
-         "ORDER BY user.Username";
-$res = &  $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-if ($res->numRows() > 0) {
-    $is_supportteacher = true;
-} else {
-    $is_supportteacher = false;
-}
-
-/* Check whether current user is a teacher for this student */
-$query = "SELECT user.FirstName, user.Surname, user.Username FROM " .
-         "       user INNER JOIN groupgenmem ON (user.Username=groupgenmem.Username) " .
-         "            INNER JOIN groups USING (GroupID) " .
-         "WHERE user.Username='$username' " .
-         "AND   groups.GroupTypeID='activeteacher' " .
-         "AND   groups.YearIndex=$yearindex " .
-         "ORDER BY user.Username";
-$res = &  $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-if ($res->numRows() > 0) {
-    $is_teacher = true;
-} else {
-    $is_teacher = false;
-}
-
-if ($is_principal or $is_hod or $is_counselor or $is_classteacher or
-     $is_supportteacher or $is_teacher) {
-    /* Check which button was pressed */
-    if ($_POST["action"] == "Save" or $_POST["action"] == "Update") { // If update or save were pressed, print
-        $title = "LESSON - Saving casenote...";
-        $noHeaderLinks = true;
-        $noJS = true;
-
-        include "header.php"; // Print header
-
-        echo "      <p align=\"center\">Saving casenote...";
-
-        /* Check whether or not a casenote was included and cancel if it wasn't */
-        if ($_POST['note'] == "") {
-            echo "failed</p>\n";
-            echo "      <p align=\"center\">There is not point in saving an empty casenote</p>\n";
-        } else {
-            $note = str_replace("\n", "<br>\n", $_POST['note']);
-            $note = "<p>$note</p>";
-            $note = $db->escapeSimple($note);
-            $level = $_POST['level'];
-
-            // Make sure level is consistent with teacher's position - disabled at Steve's request
-            /*
-             * if($level > 5) $level = 5;
-             * if($level > 4 && !$is_principal && !$is_hod && !$is_counselor) $level = 4;
-             * if($level > 2 && !$is_principal && !$is_hod && !$is_counselor && !$is_classteacher) $level = 2;
-             */
-
-            if ($_POST["action"] == "Save") {
-                /* Insert into casenote table */
-                $query = "INSERT INTO casenote (WorkerUsername, StudentUsername, " .
-                     "                      Note, Level, Date) " .
-                     "       VALUES " .
-                     "       ('$username', '$studentusername', '$note', $level, NOW())";
-                $res = & $db->query($query);
-                if (DB::isError($res))
-                    die($res->getDebugInfo()); // Check for errors in query
-                $cn_index = - 1;
-                $query = "SELECT LAST_INSERT_ID() AS CaseNoteIndex";
-                $res = & $db->query($query);
-                if (DB::isError($res))
-                    die($res->getDebugInfo()); // Check for errors in query
-                if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC) and
-         $row['CaseNoteIndex'] != 0) {
-                    $cn_index = $row['CaseNoteIndex'];
-                }
-                if ($level == 3) {
-                    foreach ( $_POST['counselor_list'] as $counselor ) {
-                        $counselor = $db->escapeSimple($counselor);
-                        /* Set counselor as someone who can read casenote */
-                        $query = "INSERT INTO casenotelist (WorkerUsername, " .
-                                 "                          CaseNoteIndex) " .
-                                 "       VALUES " .
-                                 "       ('$counselor', $cn_index)";
-                        $nrs = & $db->query($query);
-                        if (DB::isError($nrs))
-                            die($nrs->getDebugInfo());
-                    }
-                }
-                if ($level > 0) {
-                    $new_list = array();
-
-                    /* Build list of principals */
-                    $query = "SELECT Username FROM principal " .
-                             "WHERE Level = 1";
-                    $res = &  $db->query($query);
-                    if (DB::isError($res))
-                        die($res->getDebugInfo());
-                    while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-                        $new_list[] = $row['Username'];
-                    }
-
-                    if ($level < 5) {
-                        /* Build list of relevant head of departments */
-                        $query = "SELECT user.Username " .
-                             "       FROM hod, class, classterm, classlist, user " .
-                             "WHERE hod.DepartmentIndex = class.DepartmentIndex " .
-                             "AND   class.YearIndex = $currentyear " .
-                             "AND   class.ClassIndex = classterm.ClassIndex " .
-                             "AND   classterm.TermIndex = $currentterm " .
-                             "AND   classterm.ClassTermIndex = classlist.ClassTermIndex " .
-                             "AND   classlist.Username = '$studentusername' " .
-                             "AND   hod.Username = user.Username";
-                        $res = &  $db->query($query);
-                        if (DB::isError($res))
-                            die($res->getDebugInfo()); // Check for errors in query
-                        if ($res->numRows() > 0) {
-                            while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-                                $new_list[] = $row['Username'];
-                            }
-                        }
-                    }
-
-                    /* Specified Counselors */
-                    if ($level == 3) {
-                        $query = "SELECT WorkerUsername FROM casenotelist " .
-                             "WHERE  CaseNoteIndex = $cn_index";
-                        $res = &  $db->query($query);
-                        if (DB::isError($res))
-                            die($res->getDebugInfo());
-                        if ($res->numRows() > 0) {
-                            while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-                                $new_list[] = $row['WorkerUsername'];
-                            }
-                        }
-                    }
-
-                    /* Applicable Counselors */
-                    if ($level <= 3) {
-                        $query = "SELECT WorkerUsername FROM casenotewatch " .
-                             "WHERE  StudentUsername = \"$studentusername\" ";
-                        $res = &  $db->query($query);
-                        if (DB::isError($res))
-                            die($res->getDebugInfo());
-                        if ($res->numRows() > 0) {
-                            while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-                                $new_list[] = $row['WorkerUsername'];
-                            }
-                        }
-                    }
-
-                    /* Class teacher */
-                    if ($level < 3) {
-                        /* Build list of this student's class teacher for this term */
-                        $query = "SELECT class.ClassTeacherUsername " .
-                             "       FROM class, classterm, classlist, user " .
-                             "WHERE class.ClassTeacherUsername = user.Username " .
-                             "AND   class.YearIndex = $currentyear " .
-                             "AND   class.ClassIndex = classterm.ClassIndex " .
-                             "AND   classterm.TermIndex = $currentterm " .
-                             "AND   classterm.ClassTermIndex = classlist.ClassTermIndex " .
-                             "AND   classlist.Username = '$studentusername' ";
-                        $res = &  $db->query($query);
-                        if (DB::isError($res))
-                            die($res->getDebugInfo());
-                        if ($res->numRows() > 0) {
-                            while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-                                $new_list[] = $row['ClassTeacherUsername'];
-                            }
-                        }
-                    }
-                    if ($level < 2) {
-                        $query = "(SELECT subjectteacher.Username FROM subject, " .
-                             "        subjectteacher, subjectstudent " .
-                             " WHERE  subjectteacher.SubjectIndex = " .
-                             "        subjectstudent.SubjectIndex " .
-                             " AND    subjectstudent.Username = '$studentusername' " .
-                             " AND    subject.SubjectIndex = subjectteacher.SubjectIndex " .
-                             " AND    subject.YearIndex = $currentyear " .
-                             " AND    subject.TermIndex = $currentterm) " .
-                             "UNION " .
-                             "(SELECT user.Username FROM user, support, groups, groupgenmem " .
-                             " WHERE  support.StudentUsername = '$studentusername' " .
-                             " AND    support.WorkerUsername  = user.Username " .
-                             " AND    groupgenmem.Username    = '$username' " .
-                             " AND    groups.GroupID          = groupgenmem.GroupID " .
-                             " AND    groups.GroupTypeID      = 'supportteacher' " .
-                             " AND    groups.YearIndex        = $currentyear) ";
-                        $res = &  $db->query($query);
-                        if (DB::isError($res))
-                            die($res->getDebugInfo());
-                        if ($res->numRows() > 0) {
-                            while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-                                $new_list[] = $row['Username'];
-                            }
-                        }
-                    }
-                    $new_list = array_unique($new_list);
-                    foreach ( $new_list as $wl_username ) {
-                        if ($wl_username != $username and $wl_username != "" and
-                             $wl_username != NULL) {
-                            $query = "INSERT INTO casenotenew (CaseNoteIndex, " .
-                             "            WorkerUsername) " .
-                             "       VALUES ($cn_index, '$wl_username')";
-                            $nrs = &  $db->query($query);
-                            if (DB::isError($nrs))
-                                die($nrs->getDebugInfo());
-                        }
-                    }
-                }
-                echo " done</p>\n";
-                log_event($LOG_LEVEL_TEACHER, "teacher/casenote/new_action.php",
-                        $LOG_TEACHER, "Created new casenote for $student.");
-            }
-        }
-
-        echo "      <p align=\"center\"><a href=\"$link\">Continue</a></p>\n"; // Link to next page
-
-        include "footer.php";
-    } else {
-        redirect($nextLink);
-    }
-} else { // User isn't authorized to create casenotes
+if (!$is_principal and !$is_hod and !$is_counselor and !$is_class_teacher and
+    !$is_support_teacher and !$is_teacher) {
     /* Log unauthorized access attempt */
     log_event($LOG_LEVEL_ERROR, "teacher/casenote/new_action.php",
             $LOG_DENIED_ACCESS, "Tried to create new casenote for $student.");
@@ -317,6 +37,182 @@ if ($is_principal or $is_hod or $is_counselor or $is_classteacher or
     include "header.php"; // Print header
 
     echo "      <p>You do not have permission to access this page</p>\n";
-    echo "      <p><a href=\"$backLink\">Click here to go back</a></p>\n";
+    echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";
     include "footer.php";
+    exit(0);
 }
+
+/* If whatever button was pressed wasn't save, redirect back */
+if ($_POST["action"] != "Save") {
+    redirect($nextLink);
+    exit(0);
+}
+
+$title = "LESSON - Saving casenote...";
+$noHeaderLinks = true;
+$noJS = true;
+
+include "header.php"; // Print header
+
+echo "      <p align='center'>Saving casenote...";
+
+/* Check whether or not a casenote was included and cancel if it wasn't */
+if ($_POST['note'] == "") {
+    echo "failed</p>\n";
+    echo "      <p align='center'>There is no point in saving an empty casenote</p>\n";
+    echo "      <p align='center'><a href='$link'>Continue</a></p>\n"; // Link to next page
+
+    include "footer.php";
+    exit(0);
+}
+
+$note = str_replace("\n", "<br>\n", $_POST['note']);
+$note = "<p>$note</p>";
+$level = $_POST['level'];
+
+/* Insert into casenote table */
+$pdb->prepare(
+    "INSERT INTO casenote (WorkerUsername, StudentUsername, " .
+    "                      Note, Level, Date) " .
+    "       VALUES " .
+    "       (:username, :student_username, :note, :level, NOW())"
+)->execute(['username' => $username, 'student_username' => $student_username,
+            'note' => $note, 'level' => $level]);
+$cn_index = $pdb->lastInsertId('CaseNoteIndex');
+
+if ($level == 3) {
+    foreach ( $_POST['counselor_list'] as $counselor ) {
+        /* Set counselor as someone who can read casenote */
+        $pdb->prepare(
+            "INSERT INTO casenotelist (WorkerUsername, " .
+            "                          CaseNoteIndex) " .
+            "       VALUES " .
+            "       (:counselor, :cn_index)"
+        )->execute(['counselor' => $counselor, 'cn_index' => $cn_index]);
+    }
+}
+
+log_event($LOG_LEVEL_TEACHER, "teacher/casenote/new_action.php",
+        $LOG_TEACHER, "Created new casenote for $student.");
+
+if($level < 1) {
+    echo " done</p>\n";
+
+    echo "      <p align='center'><a href='$link'>Continue</a></p>\n"; // Link to next page
+
+    include "footer.php";
+    exit(0);
+}
+
+$new_list = array();
+
+/* Build list of principals */
+$query = $pdb->query(
+    "SELECT Username " .
+    "       FROM principal " .
+    "WHERE Level = 1 "
+);
+while($row = $query->fetch())
+    $new_list[] = $row['Username'];
+
+if ($level < 5) {
+    /* Build list of relevant head of departments */
+    $query = $pdb->prepare(
+        "SELECT hod.Username " .
+        "       FROM hod, class, classterm, classlist " .
+        "WHERE hod.DepartmentIndex = class.DepartmentIndex " .
+        "AND   class.YearIndex = :currentyear " .
+        "AND   class.ClassIndex = classterm.ClassIndex " .
+        "AND   classterm.TermIndex = :currentterm " .
+        "AND   classterm.ClassTermIndex = classlist.ClassTermIndex " .
+        "AND   classlist.Username = :student_username "
+    );
+    $query->execute(['student_username' => $student_username,
+                     'currentyear' => $currentyear,
+                     'currentterm' => $currentterm]);
+    while ($row = $query->fetch())
+        $new_list[] = $row['Username'];
+}
+
+/* Specified Counselors */
+if ($level == 3) {
+    $query = $pdb->prepare(
+        "SELECT WorkerUsername FROM casenotelist " .
+        "WHERE  CaseNoteIndex = :cn_index"
+    );
+    $query->execute(['cn_index' => $cn_index]);
+    while ($row = $query->fetch())
+        $new_list[] = $row['WorkerUsername'];
+}
+
+/* Applicable Counselors */
+if ($level <= 3) {
+    $query = $pdb->prepare(
+        "SELECT WorkerUsername FROM casenotewatch " .
+        "WHERE  StudentUsername = :student_username "
+    );
+    $query->execute(['student_username' => $student_username]);
+    while ($row = $query->fetch())
+        $new_list[] = $row['WorkerUsername'];
+}
+
+/* Class teacher */
+if ($level < 3) {
+    $query = $pdb->prepare(
+        "SELECT class.ClassTeacherUsername " .
+        "       FROM class, classterm, classlist " .
+        "WHERE class.YearIndex = :currentyear " .
+        "AND   class.ClassIndex = classterm.ClassIndex " .
+        "AND   classterm.TermIndex = :currentterm " .
+        "AND   classterm.ClassTermIndex = classlist.ClassTermIndex " .
+        "AND   classlist.Username = :student_username "
+    );
+    $query->execute(['student_username' => $student_username,
+                     'currentyear' => $currentyear,
+                     'currentterm' => $currentterm]);
+    while ($row = $query->fetch())
+        $new_list[] = $row['ClassTeacherUsername'];
+}
+
+/* Any current teacher */
+if ($level < 2) {
+    $query = $pdb->prepare(
+        "(SELECT subjectteacher.Username FROM subject, " .
+        "        subjectteacher, subjectstudent " .
+        " WHERE  subjectteacher.SubjectIndex = " .
+        "        subjectstudent.SubjectIndex " .
+        " AND    subjectstudent.Username = :student_username " .
+        " AND    subject.SubjectIndex = subjectteacher.SubjectIndex " .
+        " AND    subject.YearIndex = :currentyear " .
+        " AND    subject.TermIndex = :currentterm) " .
+        "UNION " .
+        "(SELECT user.Username FROM user, support, groups, groupgenmem " .
+        " WHERE  support.StudentUsername = :student_username " .
+        " AND    support.WorkerUsername  = user.Username " .
+        " AND    groupgenmem.Username    = :username " .
+        " AND    groups.GroupID          = groupgenmem.GroupID " .
+        " AND    groups.GroupTypeID      = 'supportteacher' " .
+        " AND    groups.YearIndex        = :currentyear) "
+    );
+    $query->execute(['student_username' => $student_username,
+                     'currentyear' => $currentyear, 'currentterm' => $currentterm,
+                     'username' => $username]);
+    while ($row = $query->fetch())
+        $new_list[] = $row['Username'];
+}
+
+$new_list = array_unique($new_list);
+foreach($new_list as $wl_username) {
+    if($wl_username != $username and $wl_username != "" and $wl_username != NULL) {
+        $pdb->prepare(
+            "INSERT INTO casenotenew (CaseNoteIndex, WorkerUsername) " .
+            "    VALUES (:cn_index, :wl_username)"
+        )->execute(['cn_index' => $cn_index, 'wl_username' => $wl_username]);
+    }
+}
+
+echo " done</p>\n";
+
+echo "      <p align='center'><a href='$link'>Continue</a></p>\n"; // Link to next page
+
+include "footer.php";
