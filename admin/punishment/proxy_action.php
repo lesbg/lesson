@@ -72,7 +72,7 @@ if ($is_admin or ($perm >= $PUN_PERM_PROXY and $is_teacher)) {
                 if (DB::isError($nres))
                     die($nres->getDebugInfo()); // Check for errors in query
                 if ($nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-                    print $nrow['Firstname'];
+                    print $nrow['FirstName'];
                     if (! isset($_POST['date']) || $_POST['date'] == "") { // Make sure date is in correct format.
                         $dateinfo = & dbfuncCreateDate(date($dateformat));
                     } else {
