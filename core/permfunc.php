@@ -19,9 +19,7 @@ function check_guardian($student_username, $guardian_username) {
         "AND   familylist2.Guardian        = 1 "
     );
     $query->execute(['student_username' => $student_username, 'guardian_username' => $guardian_username]);
-    $row = $query->fetch();
-
-    if ($row) {
+    if ($query->fetch()) {
         return true;
     } else {
         return false;
@@ -39,8 +37,7 @@ function check_class_teacher_year($username, $yearindex) {
         "AND   class.YearIndex = :yearindex"
     );
     $query->execute(['username' => $username, 'yearindex' => $yearindex]);
-    $row = $query->fetch();
-    if ($row) {
+    if ($query->fetch()) {
         return true;
     } else {
         return false;
@@ -64,8 +61,26 @@ function check_class_teacher_student($username, $student_username, $yearindex,
     $query->execute(['username' => $username, 'termindex' => $termindex,
                      'student_username' => $student_username,
                      'yearindex' => $yearindex]);
-    $row = $query->fetch();
-    if ($row) {
+    if ($query->fetch()) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/* Check whether user is class teacher for a classterm */
+function check_class_teacher_classterm($username, $classterm_index) {
+    global $pdb;
+
+    $query = $pdb->prepare(
+        "SELECT class.ClassIndex FROM class, classterm " .
+        "WHERE class.ClassIndex           = classterm.ClassIndex " .
+        "AND   classterm.ClassTermIndex   = :classterm_index " .
+        "AND   class.ClassTeacherUsername = :username"
+    );
+    $query->execute(['username' => $username,
+                     'classterm_index' => $classterm_index]);
+    if ($query->fetch()) {
         return true;
     } else {
         return false;
@@ -86,8 +101,7 @@ function check_teacher_year($username, $yearindex) {
         "ORDER BY user.Username"
     );
     $query->execute(['username' => $username, 'yearindex' => $yearindex]);
-    $row = $query->fetch();
-    if ($row) {
+    if ($query->fetch()) {
         return true;
     } else {
         return false;
@@ -105,8 +119,7 @@ function check_teacher_assignment($username, $assignment_index) {
          "AND   subjectteacher.Username     = :username"
     );
     $query->execute(['username' => $username, 'assignment_index' => $assignment_index]);
-    $row = $query->fetch();
-    if ($row) {
+    if ($query->fetch()) {
         return true;
     } else {
         return false;
@@ -123,8 +136,7 @@ function check_teacher_subject($username, $subject_index) {
          "AND   subjectteacher.Username     = :username"
     );
     $query->execute(['username' => $username, 'subject_index' => $subject_index]);
-    $row = $query->fetch();
-    if ($row) {
+    if ($query->fetch()) {
         return true;
     } else {
         return false;
@@ -148,8 +160,7 @@ function check_teacher_student($username, $student_username, $yearindex,
     $query->execute(['username' => $username, 'termindex' => $termindex,
                      'student_username' => $student_username,
                      'yearindex' => $yearindex]);
-    $row = $query->fetch();
-    if ($row) {
+    if ($query->fetch()) {
         return true;
     } else {
         return false;
@@ -177,8 +188,7 @@ function check_support_teacher_subject($username, $subject_index) {
         "         AND subject.SubjectIndex = :subject_index"
     );
     $query->execute(['username' => $username, 'subject_index' => $subject_index]);
-    $row = $query->fetch();
-    if ($row) {
+    if ($query->fetch()) {
         return true;
     } else {
         return false;
@@ -194,8 +204,7 @@ function get_punishment_permissions($username) {
         "SELECT Permissions FROM disciplineperms WHERE Username=:username"
     );
     $query->execute(['username' => $username]);
-    $row = $query->fetch();
-    if ($row) {
+    if ($row = $query->fetch()) {
         return $row['Permissions'];
     } else {
         return $DEFAULT_PUN_PERM;
@@ -215,8 +224,7 @@ function check_attendance($username, $subject_index) {
         "AND Username = :username "
     );
     $query->execute(['suspended' => $PUN_PERM_SUSPEND, 'username' => $username]);
-    $row = $query->fetch();
-    if ($row) {
+    if ($query->fetch()) {
         return true;
     } else {
         return false;
@@ -232,8 +240,7 @@ function check_principal($username) {
         "WHERE Username=:username AND Level=1"
     );
     $query->execute(['username' => $username]);
-    $row = $query->fetch();
-    if ($row) {
+    if ($query->fetch()) {
         return true;
     } else {
         return false;
@@ -241,7 +248,7 @@ function check_principal($username) {
 }
 
 /* Check whether user is the head of department for a student */
-function check_hod($username, $student_username, $yearindex, $termindex) {
+function check_hod_student($username, $student_username, $yearindex, $termindex) {
     global $pdb;
 
     $query = $pdb->prepare(
@@ -257,8 +264,27 @@ function check_hod($username, $student_username, $yearindex, $termindex) {
     $query->execute(['username' => $username, 'termindex' => $termindex,
                      'student_username' => $student_username,
                      'yearindex' => $yearindex]);
-    $row = $query->fetch();
-    if ($row) {
+    if ($query->fetch()) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/* Check whether user is the head of department for a classterm */
+function check_hod_classterm($username, $classterm_index) {
+    global $pdb;
+
+    $query = $pdb->prepare(
+        "SELECT hod.Username FROM hod, class, classterm " .
+        "WHERE hod.Username        = :username " .
+        "AND   hod.DepartmentIndex = class.DepartmentIndex " .
+        "AND   class.ClassIndex    = classterm.ClassIndex " .
+        "AND   classterm.ClassTermIndex = :classterm_index"
+    );
+    $query->execute(['username' => $username,
+                     'classterm_index' => $classterm_index]);
+    if ($query->fetch()) {
         return true;
     } else {
         return false;
@@ -274,8 +300,7 @@ function check_counselor($username) {
         "WHERE Username=:username"
     );
     $query->execute(['username' => $username]);
-    $row = $query->fetch();
-    if ($row) {
+    if ($query->fetch()) {
         return true;
     } else {
         return false;

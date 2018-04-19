@@ -48,7 +48,7 @@ if ($row) {
 }
 
 $is_principal = check_principal($username);
-$is_hod = check_hod($username, $student_username, $currentyear, $currentterm);
+$is_hod = check_hod_student($username, $student_username, $currentyear, $currentterm);
 $is_counselor = check_counselor($username);
 $is_class_teacher = check_class_teacher_student($username, $student_username,
                                                 $currentyear, $currentterm);
