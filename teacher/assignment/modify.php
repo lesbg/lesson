@@ -104,13 +104,15 @@ if(!is_null($average_type_index))
 if(!$new) {
     /* Get assignment info */
     $query = $pdb->prepare(
-        "SELECT assignment.Title, assignment.Description, assignment.Max, " .
+        "SELECT assignment.Title, assignment.Description, TRIM(assignment.Max)+0 AS Max, " .
         "       assignment.DescriptionFileType, assignment.DescriptionFileIndex, " .
-        "       assignment.TopMark, assignment.BottomMark, assignment.CurveType, " .
-        "       assignment.Weight, assignment.Date, assignment.CategoryListIndex, " .
+        "       TRIM(assignment.TopMark)+0 AS TopMark, " .
+        "       TRIM(assignment.BottomMark)+0 AS BottomMark, assignment.CurveType, " .
+        "       TRIM(assignment.Weight)+0 AS Weight, assignment.Date, assignment.CategoryListIndex, " .
         "       assignment.DueDate, assignment.Hidden, assignment.IgnoreZero, " .
         "       assignment.Uploadable, assignment.UploadName, assignment.MakeupTypeIndex, " .
-        "       makeup_type.OriginalMax, makeup_type.TargetMax " .
+        "       TRIM(makeup_type.OriginalMax)+0 AS OriginalMax, " .
+        "       TRIM(makeup_type.TargetMax)+0 AS TargetMax " .
         "       FROM assignment LEFT OUTER JOIN makeup_type USING (MakeupTypeIndex) " .
         "WHERE assignment.AssignmentIndex  = :assignment_index "
     );

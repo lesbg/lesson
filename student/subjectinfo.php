@@ -122,10 +122,11 @@ if ($is_admin or $is_hod or $is_principal or $is_counselor or $is_guardian or
 
     $query = "SELECT Title, Date, DueDate, assignment.AssignmentIndex, Description, DescriptionFileIndex, " .
              "       DescriptionFileType, AverageType, ShowAverage, Agenda, subject.Name AS SubjectName, " .
-             "       Uploadable, assignment.Weight, Score, MakeupScore, Percentage, OriginalPercentage, " .
+             "       Uploadable, TRIM(assignment.Weight)+0 AS Weight, TRIM(Score)+0 AS Score, " .
+             "       TRIM(MakeupScore)+0 AS MakeupScore, Percentage, OriginalPercentage, " .
              "       MakeupPercentage, mark.Comment, subjectstudent.Average AS StudentSubjectAverage, " .
              "       CanModify, CategoryName, subject.SubjectIndex, " .
-             "       categorylist.Weight AS CategoryWeight " .
+             "       TRIM(categorylist.Weight)+0 AS CategoryWeight " .
              "       FROM subject INNER JOIN assignment USING (SubjectIndex) INNER JOIN subjectstudent " .
              "       ON (subjectstudent.SubjectIndex = subject.SubjectIndex) LEFT OUTER JOIN mark ON " .
              "      (mark.Username = subjectstudent.Username AND mark.AssignmentIndex = assignment.AssignmentIndex) " .
