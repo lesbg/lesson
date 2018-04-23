@@ -126,25 +126,27 @@ while ( $row = $query->fetch() ) {
 
 $writable = true;
 if ($is_principal) {
-    $query = "SELECT user.FirstName, user.Surname, user.Username, " .
-             "       user.Title, casenote.CaseNoteIndex, casenote.Note, " .
-             "       casenote.Level, casenote.Date " .
-             "       FROM user, casenote " .
-             "WHERE user.Username = casenote.WorkerUsername " .
-             "AND   (casenote.Level > 0 OR " .
-             "       casenote.WorkerUsername = :username " .
-             "AND   casenote.StudentUsername = :student_username " .
-             "ORDER BY casenote.Date DESC, casenote.CaseNoteIndex DESC";
+    $qstr =
+        "SELECT user.FirstName, user.Surname, user.Username, " .
+        "       user.Title, casenote.CaseNoteIndex, casenote.Note, " .
+        "       casenote.Level, casenote.Date " .
+        "       FROM user, casenote " .
+        "WHERE user.Username = casenote.WorkerUsername " .
+        "AND   (casenote.Level > 0 OR " .
+        "       casenote.WorkerUsername = :username) " .
+        "AND   casenote.StudentUsername = :student_username " .
+        "ORDER BY casenote.Date DESC, casenote.CaseNoteIndex DESC";
 } elseif ($is_hod) {
-    $qstr = "SELECT user.FirstName, user.Surname, user.Username, " .
-             "       user.Title, casenote.CaseNoteIndex, casenote.Note, " .
-             "       casenote.Level, casenote.Date " .
-             "       FROM user, casenote " .
-             "WHERE user.Username = casenote.WorkerUsername " .
-             "AND   ((casenote.Level > 0 AND casenote.Level < 5) OR " .
-             "       casenote.WorkerUsername = :username) " .
-             "AND   casenote.StudentUsername = :student_username " .
-             "ORDER BY casenote.Date DESC, casenote.CaseNoteIndex DESC";
+    $qstr =
+        "SELECT user.FirstName, user.Surname, user.Username, " .
+        "       user.Title, casenote.CaseNoteIndex, casenote.Note, " .
+        "       casenote.Level, casenote.Date " .
+        "       FROM user, casenote " .
+        "WHERE user.Username = casenote.WorkerUsername " .
+        "AND   ((casenote.Level > 0 AND casenote.Level < 5) OR " .
+        "       casenote.WorkerUsername = :username) " .
+        "AND   casenote.StudentUsername = :student_username " .
+        "ORDER BY casenote.Date DESC, casenote.CaseNoteIndex DESC";
 } elseif ($is_counselor) {
     $qstr =
         "SELECT user.FirstName, user.Surname, user.Username, " .
