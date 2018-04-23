@@ -522,8 +522,8 @@ if($new) {
     $query->execute(['subject_index' => $subject_index]);
 } else {
     $query = $pdb->prepare(
-        "SELECT user.FirstName, user.Surname, user.Username, mark.Score, mark.Comment, " .
-        "       mark.MakeupScore, mark.Percentage, mark.MakeupPercentage, mark.OriginalPercentage, " .
+        "SELECT user.FirstName, user.Surname, user.Username, TRIM(mark.Score)+0 AS Score, mark.Comment, " .
+        "       TRIM(mark.MakeupScore)+0 AS MakeupScore, mark.Percentage, mark.MakeupPercentage, mark.OriginalPercentage, " .
         "       query.ClassOrder FROM subjectstudent LEFT OUTER JOIN" .
         "       (SELECT classlist.ClassOrder, classlist.Username " .
         "               FROM class, classterm, classlist, subject " .

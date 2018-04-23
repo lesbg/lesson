@@ -308,7 +308,7 @@ if ($is_admin or $is_hod or $is_principal or $is_counselor or $is_guardian or
             $query = $pdb->prepare(
                 "SELECT CategoryName, " .
                 "  ROUND((SUM(mark.Percentage * assignment.Weight) / SUM(assignment.Weight) * 100)/100, 2) AS Average, " .
-                "  IF(categorylist.Weight IS NULL, 1, categorylist.Weight) AS CategoryWeight " .
+                "  IF(categorylist.Weight IS NULL, 1, TRIM(categorylist.Weight)+0) AS CategoryWeight " .
                 "  FROM " .
                 "    assignment LEFT OUTER JOIN (categorylist INNER JOIN category USING (CategoryIndex)) USING (CategoryListIndex) " .
                 "    LEFT OUTER JOIN mark ON (mark.Username = :studentusername AND assignment.AssignmentIndex = mark.AssignmentIndex) " .
