@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * teacher/report/class_modify_action.php (c) 2008 Jonathan Dieter
+ * teacher/report/class_modify_action.php (c) 2008, 2018 Jonathan Dieter
  *
  * Run query to change report information
  * ***************************************************************
@@ -12,31 +12,31 @@ if (! isset($_GET['next']))
     $_GET['next'] = dbfuncString2Int($backLink);
 $class = dbfuncInt2String($_GET['keyname']);
 $student_name = dbfuncInt2String($_GET['keyname2']);
-$classtermindex = safe(dbfuncInt2String($_GET['key']));
-$student_username = safe(dbfuncInt2String($_GET['key2']));
+$classterm_index = dbfuncInt2String($_GET['key']);
+$student_username = dbfuncInt2String($_GET['key2']);
 $nextLink = dbfuncInt2String($_GET['next']); // Link to next page
 $error = false; // Boolean to store any errors
 
 include "core/settermandyear.php";
 if (isset($_GET['key3']))
-    $termindex = safe(dbfuncInt2String($_GET['key3']));
+    $termindex = dbfuncInt2String($_GET['key3']);
 
     /* Check whether subject is open for report editing */
-$query = "SELECT classterm.AverageType, classterm.EffortType, classterm.ConductType, " .
-         "       classterm.AverageTypeIndex, classterm.EffortTypeIndex, " .
-         "       classterm.ConductTypeIndex, classterm.CTCommentType, " .
-         "       classterm.HODCommentType, classterm.PrincipalCommentType, " .
-         "       classterm.CanDoReport, classterm.AbsenceType, class.DepartmentIndex, " .
-         "       department.ProofreaderUsername " .
-         "       FROM classterm, class, department " .
-         "WHERE classterm.ClassTermIndex    = $classtermindex " .
-         "AND   class.ClassIndex = classterm.ClassIndex " .
-         "AND   department.DepartmentIndex = class.DepartmentIndex ";
-$res = & $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
+$query = $pdb->prepare(
+    "SELECT classterm.AverageType, classterm.EffortType, classterm.ConductType, " .
+    "       classterm.AverageTypeIndex, classterm.EffortTypeIndex, " .
+    "       classterm.ConductTypeIndex, classterm.CTCommentType, " .
+    "       classterm.HODCommentType, classterm.PrincipalCommentType, " .
+    "       classterm.CanDoReport, classterm.AbsenceType, class.DepartmentIndex, " .
+    "       department.ProofreaderUsername " .
+    "       FROM classterm, class, department " .
+    "WHERE classterm.ClassTermIndex    = :classterm_index " .
+    "AND   class.ClassIndex = classterm.ClassIndex " .
+    "AND   department.DepartmentIndex = class.DepartmentIndex "
+);
+$query->execute(['classterm_index' => $classterm_index]);
 
-if (! $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) or $row['CanDoReport'] == 0) {
+if (!$row = $query->fetch() or $row['CanDoReport'] == 0) {
     /* Print error message */
     $title = "LESSON - Error";
 
@@ -65,49 +65,9 @@ $effort_type_index = $row['EffortTypeIndex'];
 $conduct_type_index = $row['ConductTypeIndex'];
 $proof_username = $row['ProofreaderUsername'];
 
-/* Check whether current user is principal */
-$res = &  $db->query(
-                "SELECT Username FROM principal " .
-                 "WHERE Username=\"$username\" AND Level=1");
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-
-if ($res->numRows() > 0) {
-    $is_principal = true;
-} else {
-    $is_principal = false;
-}
-
-/* Check whether current user is a hod */
-$res = &  $db->query(
-                "SELECT hod.Username FROM hod, class, classterm " .
-                 "WHERE hod.Username        = '$username' " .
-                 "AND   hod.DepartmentIndex = class.DepartmentIndex " .
-                 "AND   class.ClassIndex    = classterm.ClassIndex " .
-                 "AND   classterm.ClassTermIndex = $classtermindex");
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-
-if ($res->numRows() > 0) {
-    $is_hod = true;
-} else {
-    $is_hod = false;
-}
-
-/* Check whether user is authorized to change scores */
-$res = & $db->query(
-                "SELECT class.ClassIndex FROM class, classterm " .
-                 "WHERE class.ClassIndex           = classterm.ClassIndex " .
-                 "AND   classterm.ClassTermIndex   = $classtermindex " .
-                 "AND   class.ClassTeacherUsername = '$username'");
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-
-if ($res->numRows() > 0) {
-    $is_ct = true;
-} else {
-    $is_ct = false;
-}
+$is_principal = check_principal($username);
+$is_hod = check_hod_classterm($username, $classterm_index);
+$is_ct = check_class_teacher_classterm($username, $classterm_index);
 
 /* Check whether user is proofreader */
 if ($proof_username == $username) {
@@ -116,8 +76,7 @@ if ($proof_username == $username) {
     $is_proofreader = false;
 }
 
-if (! $is_ct and ! $is_hod and ! $is_principal and ! $is_admin and
-     ! $is_proofreader) {
+if (!$is_ct and !$is_hod and !$is_principal and !$is_admin and !$is_proofreader) {
     $noJS = true;
     $noHeaderLinks = true;
     include "header.php"; // Show header
@@ -131,48 +90,51 @@ if (! $is_ct and ! $is_hod and ! $is_principal and ! $is_admin and
     exit(0);
 }
 
-$query = "SELECT MIN(subjectstudent.ReportDone) AS ReportDone " .
-         "       FROM subject, subjectstudent, classterm, class " .
-         "WHERE subjectstudent.Username      = '$student_username' " .
-         "AND   subjectstudent.SubjectIndex  = subject.SubjectIndex " .
-         "AND   classterm.ClassTermIndex     = $classtermindex " .
-         "AND   subject.TermIndex            = classterm.TermIndex " .
-         "AND   class.ClassIndex             = classterm.ClassIndex " .
-         "AND   subject.YearIndex            = class.YearIndex " .
-         "GROUP BY subjectstudent.Username";
-$res = &  $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
+$query = $pdb->prepare(
+    "SELECT MIN(subjectstudent.ReportDone) AS ReportDone " .
+    "       FROM subject, subjectstudent, classterm, class " .
+    "WHERE subjectstudent.Username      = :student_username " .
+    "AND   subjectstudent.SubjectIndex  = subject.SubjectIndex " .
+    "AND   classterm.ClassTermIndex     = :classterm_index " .
+    "AND   subject.TermIndex            = classterm.TermIndex " .
+    "AND   class.ClassIndex             = classterm.ClassIndex " .
+    "AND   subject.YearIndex            = class.YearIndex " .
+    "GROUP BY subjectstudent.Username"
+);
+$query->execute(['student_username' => $student_username,
+                 'classterm_index' => $classterm_index]);
+
 
 $subject_report_done = 1;
-if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC))
+if ($row = $query->fetch())
     $subject_report_done = $row['ReportDone'];
 
-$query = "SELECT classlist.classlistIndex, user.Gender, user.FirstName, user.Surname, " .
-         "       classlist.Average, classlist.Conduct, classlist.Effort, " .
-         "       classlist.Rank, classlist.CTComment, classlist.HODComment, " .
-         "       classlist.CTCommentDone, classlist.HODCommentDone, " .
-         "       classlist.PrincipalComment, classlist.PrincipalCommentDone, " .
-         "       classlist.PrincipalUsername, classlist.HODUsername, " .
-         "       classlist.ReportDone, classlist.Absences, " .
-         "       average_index.Display AS AverageDisplay, " .
-         "       effort_index.Display AS EffortDisplay, " .
-         "       conduct_index.Display AS ConductDisplay " .
-         "       FROM user, classlist " .
-         "       LEFT OUTER JOIN nonmark_index AS average_index ON " .
-         "            classlist.Average = average_index.NonmarkIndex " .
-         "       LEFT OUTER JOIN nonmark_index AS effort_index ON " .
-         "            classlist.Effort = effort_index.NonmarkIndex " .
-         "       LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
-         "            classlist.Conduct = conduct_index.NonmarkIndex " .
-         "WHERE classlist.Username       = '$student_username' " .
-         "AND   user.Username            = '$student_username' " .
-         "AND   classlist.ClassTermIndex = $classtermindex ";
-$res = &  $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
+$query = $pdb->prepare(
+    "SELECT classlist.classlistIndex, user.Gender, user.FirstName, user.Surname, " .
+    "       classlist.Average, classlist.Conduct, classlist.Effort, " .
+    "       classlist.Rank, classlist.CTComment, classlist.HODComment, " .
+    "       classlist.CTCommentDone, classlist.HODCommentDone, " .
+    "       classlist.PrincipalComment, classlist.PrincipalCommentDone, " .
+    "       classlist.PrincipalUsername, classlist.HODUsername, " .
+    "       classlist.ReportDone, classlist.Absences, " .
+    "       average_index.Display AS AverageDisplay, " .
+    "       effort_index.Display AS EffortDisplay, " .
+    "       conduct_index.Display AS ConductDisplay " .
+    "       FROM user, classlist " .
+    "       LEFT OUTER JOIN nonmark_index AS average_index ON " .
+    "            classlist.Average = average_index.NonmarkIndex " .
+    "       LEFT OUTER JOIN nonmark_index AS effort_index ON " .
+    "            classlist.Effort = effort_index.NonmarkIndex " .
+    "       LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
+    "            classlist.Conduct = conduct_index.NonmarkIndex " .
+    "WHERE classlist.Username       = :student_username " .
+    "AND   user.Username            = :student_username " .
+    "AND   classlist.ClassTermIndex = :classterm_index "
+);
+$query->execute(['student_username' => $student_username,
+                 'classterm_index' => $classterm_index]);
 
-if (! $row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+if (!$row = $query->fetch()) {
     /* Print error message */
     $noJS = true;
     $noHeaderLinks = true;
@@ -190,9 +152,8 @@ $student_info = $row;
 $new_student = "";
 $change_subject = "";
 
-foreach ( $_POST as $postkey => $postval ) {
-    if (substr($postkey, 0, 8) == "student_" and
-         ($postval == "<<" or $postval == ">>")) {
+foreach ($_POST as $postkey => $postval) {
+    if (substr($postkey, 0, 8) == "student_" and ($postval == "<<" or $postval == ">>")) {
         $new_student = safe(substr($postkey, 8));
     } elseif (substr($postkey, 0, 5) == "edit_" and $postval == "Change") {
         $change_subject = substr($postkey, 5);
@@ -298,15 +259,15 @@ if ($_POST['action'] == "Update" or $_POST['action'] == "Close report" or
                     exit(0);
                 }
             }
-            $query = "SELECT user.FirstName, user.Surname " . "FROM user " .
-                     "WHERE user.Username = '$new_student'";
-            $res = &  $db->query($query);
-            if (DB::isError($res))
-                die($res->getDebugInfo()); // Check for errors in query
-            if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+            $query = $pdb->prepare(
+                "SELECT user.FirstName, user.Surname " .
+                "FROM user " .
+                "WHERE user.Username = :new_student"
+            );
+            $query->execute(['new_student' => $new_student]);
+            if ($row = $query->fetch()) {
                 $_GET['key2'] = dbfuncString2Int($new_student);
-                $_GET['keyname2'] = dbfuncString2Int(
-                                                    "{$row['FirstName']} {$row['Surname']} ($new_student)");
+                $_GET['keyname2'] = dbfuncString2Int("{$row['FirstName']} {$row['Surname']} ($new_student)");
                 unset($_POST);
             }
             include "teacher/report/class_modify.php";
@@ -341,17 +302,7 @@ if ($_POST['action'] == "Update" or $_POST['action'] == "Close report" or
                     $average = $scorestr;
                 }
             } elseif ($average_type == $CLASS_AVG_TYPE_INDEX) {
-                $scorestr = safe($_POST["average"]);
-                $query = "SELECT NonmarkIndex FROM nonmark_index " .
-                         "WHERE Input='$scorestr' " .
-                         "AND   NonmarkTypeIndex=$average_type_index";
-                $nres = & $db->query($query);
-                if (DB::isError($nres))
-                    die($nres->getDebugInfo());
-
-                if ($nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-                    $average = "{$nrow['NonmarkIndex']}";
-                }
+                $average = get_nonmark_index($_POST['average'], $average_type_index);
             }
         } else {
             $average = NULL;
@@ -371,17 +322,7 @@ if ($_POST['action'] == "Update" or $_POST['action'] == "Close report" or
                     $effort = $scorestr;
                 }
             } elseif ($effort_type == $CLASS_EFFORT_TYPE_INDEX) {
-                $scorestr = safe($_POST["effort"]);
-                $query = "SELECT NonmarkIndex FROM nonmark_index " .
-                         "WHERE Input='$scorestr' " .
-                         "AND   NonmarkTypeIndex=$effort_type_index";
-                $nres = & $db->query($query);
-                if (DB::isError($nres))
-                    die($nres->getDebugInfo());
-
-                if ($nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-                    $effort = "{$nrow['NonmarkIndex']}";
-                }
+                $effort = get_nonmark_index($_POST['effort'], $effort_type_index);
             }
         } else {
             $effort = NULL;
@@ -401,17 +342,7 @@ if ($_POST['action'] == "Update" or $_POST['action'] == "Close report" or
                     $conduct = $scorestr;
                 }
             } elseif ($conduct_type == $CLASS_CONDUCT_TYPE_INDEX) {
-                $scorestr = safe($_POST["conduct"]);
-                $query = "SELECT NonmarkIndex FROM nonmark_index " .
-                         "WHERE Input='$scorestr' " .
-                         "AND   NonmarkTypeIndex=$conduct_type_index";
-                $nres = & $db->query($query);
-                if (DB::isError($nres))
-                    die($nres->getDebugInfo());
-
-                if ($nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-                    $conduct = "{$nrow['NonmarkIndex']}";
-                }
+                $conduct = get_nonmark_index($_POST['conduct'], $conduct_type_index);
             }
         } else {
             $conduct = NULL;
@@ -446,68 +377,67 @@ if ($_POST['action'] == "Update" or $_POST['action'] == "Close report" or
     if ($ct_comment_type == $COMMENT_TYPE_MANDATORY or
          $ct_comment_type == $COMMENT_TYPE_OPTIONAL) {
         if (isset($_POST["ct_comment"])) {
-            $ct_comment = trim(safe($_POST["ct_comment"]));
+            $ct_comment = trim($_POST["ct_comment"]);
         }
     }
-    if ($ct_comment == "") {
-        $ct_comment = "NULL";
-    } else {
-        $ct_comment = "'$ct_comment'";
-    }
+    if ($ct_comment == "")
+        $ct_comment = NULL;
 
     if ($hod_comment_type == $COMMENT_TYPE_MANDATORY or
          $hod_comment_type == $COMMENT_TYPE_OPTIONAL) {
         if (isset($_POST["hod_comment"])) {
-            $hod_comment = trim(safe($_POST["hod_comment"]));
+            $hod_comment = trim($_POST["hod_comment"]);
         }
     }
-    if ($hod_comment == "") {
-        $hod_comment = "NULL";
-    } else {
-        $hod_comment = "'$hod_comment'";
-    }
+    if ($hod_comment == "")
+        $hod_comment = NULL;
 
     if ($pr_comment_type == $COMMENT_TYPE_MANDATORY or
          $pr_comment_type == $COMMENT_TYPE_OPTIONAL) {
         if (isset($_POST["pr_comment"])) {
-            $pr_comment = trim(safe($_POST["pr_comment"]));
+            $pr_comment = trim($_POST["pr_comment"]);
         }
     }
-    if ($pr_comment == "") {
-        $pr_comment = "NULL";
-    } else {
-        $pr_comment = "'$pr_comment'";
-    }
+    if ($pr_comment == "")
+        $pr_comment = NULL;
 
     $query = "UPDATE classlist SET ";
+    $qvars = array();
     if (($average_type == $CLASS_AVG_TYPE_INDEX or
          $average_type == $CLASS_AVG_TYPE_PERCENT) and ! is_null($average)) {
-        $query .= "       Average              = $average, ";
+        $query .= "       Average              = :average, ";
+        $qvars['average'] = $average;
     }
     if ($effort_type == $CLASS_EFFORT_TYPE_INDEX or
          $effort_type == $CLASS_EFFORT_TYPE_PERCENT and ! is_null($effort)) {
-        $query .= "       Effort               = $effort, ";
+        $query .= "       Effort               = :effort, ";
+        $qvars['effort'] = $effort;
     }
     if ($conduct_type == $CLASS_CONDUCT_TYPE_INDEX or
          $conduct_type == $CLASS_CONDUCT_TYPE_PERCENT and ! is_null($conduct)) {
-        $query .= "       Conduct              = $conduct, ";
+        $query .= "       Conduct              = :conduct, ";
+        $qvars['conduct'] = $conduct;
     }
     if ($absence_type == $ABSENCE_TYPE_NUM and ! is_null($absences)) {
-        $query .= "       Absences             = $absences, ";
+        $query .= "       Absences             = :absences, ";
+        $qvars['absences'] = $absences;
     }
     if (($ct_comment_type == $COMMENT_TYPE_MANDATORY or
          $ct_comment_type == $COMMENT_TYPE_OPTIONAL) and
          ! $student_info['CTCommentDone'] and ! is_null($ct_comment)) {
-        $query .= "       CTComment            = $ct_comment, " .
+        $query .= "       CTComment            = :ct_comment, " .
                   "       CTCommentDone        = 0, ";
+        $qvars['ct_comment'] = $ct_comment;
     }
     if (($hod_comment_type == $COMMENT_TYPE_MANDATORY or
          $hod_comment_type == $COMMENT_TYPE_OPTIONAL) and
          ($is_hod or $is_principal or $is_admin or $is_proofreader) and
          ! $student_info['HODCommentDone'] and ! is_null($hod_comment)) {
-        $query .= "       HODComment           = $hod_comment, ";
+        $query .= "       HODComment           = :hod_comment, ";
+        $qvars['hod_comment'] = $hod_comment;
         if ($is_hod) {
-            $query .= "       HODUsername          = '$username', ";
+            $query .= "       HODUsername          = :hod_username, ";
+            $qvars['hod_username'] = $username;
         } else {
             $query .= "       HODUsername          = NULL, ";
         }
@@ -517,20 +447,21 @@ if ($_POST['action'] == "Update" or $_POST['action'] == "Close report" or
          $pr_comment_type == $COMMENT_TYPE_OPTIONAL) and
          ($is_admin or $is_principal or $is_proofreader) and
          ! $student_info['PrincipalCommentDone'] and ! is_null($pr_comment)) {
-        $query .= "       PrincipalComment     = $pr_comment, ";
+        $query .= "       PrincipalComment     = :pr_comment, ";
+        $qvars['pr_comment'] = $pr_comment;
         if ($is_principal) {
-            $query .= "       PrincipalUsername    = '$username', ";
+            $query .= "       PrincipalUsername    = :pr_username, ";
+            $qvars['pr_username'] = $username;
         } else {
             $query .= "       PrincipalUsername    = NULL, ";
         }
         $query .= "       PrincipalCommentDone = 0, ";
     }
-    $query .= "       ReportDone = 0, ";
-    $query = substr($query, 0, strlen($query) - 2); // Get rid of final comma
-    $query .= " WHERE classlist.classlistIndex = {$student_info['classlistIndex']} ";
-    $nres = & $db->query($query);
-    if (DB::isError($nres))
-        die($nres->getDebugInfo());
+    $query .= "       ReportDone = 0 " .
+              " WHERE classlist.classlistIndex = :classlist_index ";
+    $qvars['classlist_index'] = $student_info['classlistIndex'];
+    $query = $pdb->prepare($query);
+    $query->execute($qvars);
 
     if ($_POST['action'] == "Update") {
         echo "done.</p>\n";
@@ -538,29 +469,26 @@ if ($_POST['action'] == "Update" or $_POST['action'] == "Close report" or
         $do_include = false;
     } elseif ($_POST['action'] == "Finished with comments") {
         if ($is_ct and $ct_comment_type != $COMMENT_TYPE_NONE and
-                 ($ct_comment != "NULL" or
+                 (!is_null($ct_comment) or
                  $ct_comment_type != $COMMENT_TYPE_MANDATORY)) {
-            $query = "UPDATE classlist SET CTCommentDone=1 " .
-                     "WHERE classlistIndex = {$student_info['classlistIndex']}";
-            $nres = & $db->query($query);
-            if (DB::isError($nres))
-                die($nres->getDebugInfo());
+            $pdb->prepare(
+                "UPDATE classlist SET CTCommentDone=1 " .
+                "WHERE classlistIndex = :classlist_index"
+            )->execute(['classlist_index' => $student_info['classlistIndex']]);
         }
         if ($is_hod and $hod_comment_type != $COMMENT_TYPE_NONE and
-             ($hod_comment != "NULL" or $hod_comment_type != $COMMENT_TYPE_MANDATORY)) {
-            $query = "UPDATE classlist SET HODCommentDone=1 " .
-                     "WHERE classlistIndex = {$student_info['classlistIndex']}";
-            $nres = & $db->query($query);
-            if (DB::isError($nres))
-                die($nres->getDebugInfo());
+             (!is_null($hod_comment) or $hod_comment_type != $COMMENT_TYPE_MANDATORY)) {
+            $pdb->prepare(
+                "UPDATE classlist SET HODCommentDone=1 " .
+                "WHERE classlistIndex = :classlist_index"
+            )->execute(['classlist_index' => $student_info['classlistIndex']]);
         }
         if ($is_principal and $pr_comment_type != $COMMENT_TYPE_NONE and
-             ($pr_comment != "NULL" or $pr_comment_type != $COMMENT_TYPE_MANDATORY)) {
-            $query = "UPDATE classlist SET PrincipalCommentDone=1 " .
-                     "WHERE classlistIndex = {$student_info['classlistIndex']}";
-            $nres = & $db->query($query);
-            if (DB::isError($nres))
-                die($nres->getDebugInfo());
+             (!is_null($pr_comment) or $pr_comment_type != $COMMENT_TYPE_MANDATORY)) {
+            $pdb->prepare(
+                "UPDATE classlist SET PrincipalCommentDone=1 " .
+                "WHERE classlistIndex = :classlist_index"
+            )->execute(['classlist_index' => $student_info['classlistIndex']]);
         }
         unset($_POST);
         $include = "teacher/report/class_modify.php";
@@ -573,22 +501,22 @@ if ($_POST['action'] == "Update" or $_POST['action'] == "Close report" or
             $query .= "       PrincipalCommentDone = 0, ";
         }
         $query .= "       CTCommentDone        = 0 " .
-                  "WHERE classlistIndex = {$student_info['classlistIndex']}";
-        $nres = & $db->query($query);
-        if (DB::isError($nres))
-            die($nres->getDebugInfo());
+                  "WHERE classlistIndex = :classlist_index";
+        $query = $pdb->prepare($query);
+        $query->execute(['classlist_index' => $student_info['classlistIndex']]);
 
         unset($_POST);
         $include = "teacher/report/class_modify.php";
     } elseif ($_POST['action'] == "Close report") {
         if ($is_hod or $is_principal or $is_admin) {
-            $query = "SELECT CTComment, HODComment, PrincipalComment FROM classlist " .
-                     "WHERE  classlistIndex = {$student_info['classlistIndex']}";
-            $nres = & $db->query($query);
-            if (DB::isError($nres))
-                die($nres->getDebugInfo());
+            $query = $pdb->prepare(
+                "SELECT CTComment, HODComment, PrincipalComment FROM classlist " .
+                "WHERE  classlistIndex = :classlist_index"
+            );
+            $query->execute(['classlist_index' => $student_info['classlistIndex']]);
 
-            $nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC);
+
+            $nrow = $query->fetch();
             if ((is_null($nrow['CTComment']) and $ct_comment_type == $COMMENT_TYPE_MANDATORY) or
                  (! $student_info['CTCommentDone'] and $ct_comment_type != $COMMENT_TYPE_NONE) or
                  (is_null($nrow['HODComment']) and
@@ -640,25 +568,21 @@ if ($_POST['action'] == "Update" or $_POST['action'] == "Close report" or
                 $query .= "       ReportProofread = 1, ";
             }
             $query .= "       ReportDone = 1 " .
-                      " WHERE classlist.classlistIndex = {$student_info['classlistIndex']} ";
-            $nres = & $db->query($query);
-            if (DB::isError($nres))
-                die($nres->getDebugInfo());
+                      " WHERE classlist.classlistIndex = :classlist_index ";
+            $pdb->prepare($query)->execute(['classlist_index' => $student_info['classlistIndex']]);
         }
         unset($_POST);
         $include = "teacher/report/class_modify.php";
     } elseif ($new_student != "" or $_POST['action'] == "Done with report") {
         if ($_POST['action'] == "Done with report") {
-            $query = "UPDATE classlist SET ReportProofread=0 " .
-                     "WHERE  classlistIndex={$student_info['classlistIndex']}";
-            $res = &  $db->query($query);
-            if (DB::isError($res))
-                die($res->getDebugInfo()); // Check for errors in query
-
+            $pdb->prepare(
+                "UPDATE classlist SET ReportProofread=0 " .
+                "WHERE  classlistIndex=:classlist_index"
+            )->execute(['classlist_index' => $student_info['classlistIndex']]);
             if (isset($_POST['studentnext'])) {
-                $new_student = safe($_POST['studentnext']);
+                $new_student = $_POST['studentnext'];
             } elseif (isset($_POST['studentprev'])) {
-                $new_student = safe($_POST['studentprev']);
+                $new_student = $_POST['studentprev'];
             } else {
                 $nextLink = "index.php?location=" . dbfuncString2Int("main.php");
                 $noJS = true;
@@ -674,25 +598,27 @@ if ($_POST['action'] == "Update" or $_POST['action'] == "Close report" or
                 exit(0);
             }
         }
-        $query = "SELECT user.FirstName, user.Surname " . "FROM user " .
-                 "WHERE user.Username = '$new_student'";
-        $res = &  $db->query($query);
-        if (DB::isError($res))
-            die($res->getDebugInfo()); // Check for errors in query
-        if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+        $query = $pdb->prepare(
+            "SELECT user.FirstName, user.Surname " .
+            "FROM user " .
+            "WHERE user.Username = :new_student"
+        );
+        $query->execute(['new_student' => $new_student]);
+        if ($row = $query->fetch()) {
             $_GET['key2'] = dbfuncString2Int($new_student);
-            $_GET['keyname2'] = dbfuncString2Int(
-                                                "{$row['FirstName']} {$row['Surname']} ($new_student)");
+            $_GET['keyname2'] = dbfuncString2Int("{$row['FirstName']} {$row['Surname']} ($new_student)");
             unset($_POST);
         }
         $include = "teacher/report/class_modify.php";
     } elseif ($change_subject != "") {
-        $query = "SELECT subject.Name " . "FROM subject " .
-                 "WHERE subject.SubjectIndex = '$change_subject'";
-        $res = &  $db->query($query);
-        if (DB::isError($res))
-            die($res->getDebugInfo()); // Check for errors in query
-        if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+        $query = $pdb->prepare(
+            "SELECT subject.Name " .
+            "FROM subject " .
+            "WHERE subject.SubjectIndex = :change_subject"
+        );
+        $query->execute(['change_subject' => $change_subject]);
+
+        if ($row = $query->fetch()) {
             $_GET['next'] = dbfuncString2Int($curLink);
             $_GET['key'] = dbfuncString2Int($change_subject);
             $_GET['keyname'] = dbfuncString2Int($row['Name']);
@@ -706,15 +632,15 @@ if ($_POST['action'] == "Update" or $_POST['action'] == "Close report" or
         }
     }
 } elseif ($_POST['action'] == "Open report") {
-    $query = "UPDATE classlist SET " . "       ReportDone      = 0, ";
+    $query = "UPDATE classlist SET " .
+             "       ReportDone      = 0, ";
     if (! $is_proofreader) {
         $query .= "       ReportProofread = 0, ";
     }
-    $query .= "       ReportProofDone = 0, " . "       ReportPrinted   = 0 " .
-             " WHERE classlist.classlistIndex = {$student_info['classlistIndex']} ";
-    $nres = & $db->query($query);
-    if (DB::isError($nres))
-        die($nres->getDebugInfo());
+    $query .= "       ReportProofDone = 0, " .
+              "       ReportPrinted   = 0 " .
+              " WHERE classlist.classlistIndex = :classlist_index ";
+    $pdb->prepare($query)->execute(['classlist_index' => $student_info['classlistIndex']]);
 
     unset($_POST);
     $include = "teacher/report/class_modify.php";
@@ -724,4 +650,4 @@ if ($_POST['action'] == "Update" or $_POST['action'] == "Close report" or
 
 if ($do_include)
     include $include;
-?>
+

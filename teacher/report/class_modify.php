@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * teacher/report/class_modify.php (c) 2008, 2016 Jonathan Dieter
+ * teacher/report/class_modify.php (c) 2008, 2016-2018 Jonathan Dieter
  *
  * Show subject conduct, effort, average and comment for report
  * Change class conduct, effort, average and commentsd
@@ -16,13 +16,16 @@ $student_name = dbfuncInt2String($_GET['keyname2']);
 if (isset($_GET['showonly']) and dbfuncInt2String($_GET['showonly']) == "1") {
     $show_only = true;
 }
+
 if (! $show_only) {
     $title = "Report for " . $student_name;
 } else {
     $title = $student_name;
 }
-$classtermindex = intval(safe(dbfuncInt2String($_GET['key'])));
-$student_username = safe(dbfuncInt2String($_GET['key2']));
+$title = htmlspecialchars($title, ENT_QUOTES);
+
+$classterm_index = dbfuncInt2String($_GET['key']);
+$student_username = dbfuncInt2String($_GET['key2']);
 
 $link = "index.php?location=" .
          dbfuncString2Int("teacher/report/class_modify_action.php") . "&amp;key=" .
@@ -36,31 +39,29 @@ $extra_js = "class_report.js";
 
 include "core/settermandyear.php";
 if (isset($_GET['key3']))
-    $termindex = safe(dbfuncInt2String($_GET['key3']));
+    $termindex = dbfuncInt2String($_GET['key3']);
 include "header.php"; // Show header
 
 /* Check whether subject is open for report editing */
-$query = "SELECT classterm.AverageType, classterm.EffortType, classterm.ConductType, " .
-         "       classterm.AverageTypeIndex, classterm.EffortTypeIndex, " .
-         "       classterm.ConductTypeIndex, classterm.CTCommentType, " .
-         "       classterm.HODCommentType, classterm.PrincipalCommentType, " .
-         "       classterm.CanDoReport, classterm.AbsenceType, " .
-         "       MIN(classlist.ReportDone) AS ReportDone," .
-         "       class.ClassIndex " . "       FROM classterm, classlist, class " .
-         "WHERE classterm.ClassTermIndex = $classtermindex " .
-         "AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
-         "AND   class.ClassIndex = classterm.ClassIndex " .
-         "GROUP BY classterm.ClassIndex";
-$res = & $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
+$query = $pdb->prepare(
+    "SELECT classterm.AverageType, classterm.EffortType, classterm.ConductType, " .
+    "       classterm.AverageTypeIndex, classterm.EffortTypeIndex, " .
+    "       classterm.ConductTypeIndex, classterm.CTCommentType, " .
+    "       classterm.HODCommentType, classterm.PrincipalCommentType, " .
+    "       classterm.CanDoReport, classterm.AbsenceType, " .
+    "       MIN(classlist.ReportDone) AS ReportDone," .
+    "       class.ClassIndex " . "       FROM classterm, classlist, class " .
+    "WHERE classterm.ClassTermIndex = :classterm_index " .
+    "AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+    "AND   class.ClassIndex = classterm.ClassIndex " .
+    "GROUP BY classterm.ClassIndex"
+);
+$query->execute(['classterm_index' => $classterm_index]);
 
-if (! $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) or
-     (! $row['CanDoReport'] and ! $row['ReportDone'])) {
-    /* Print error message */
+if (!$row=$query->fetch() or (!$row['CanDoReport'] and !$row['ReportDone'])) {
     $noJS = true;
     $noHeaderLinks = true;
-    include "header.php"; // Show header
+    include "header.php";
 
     echo "      <p>Reports for this class aren't open.</p>\n";
     echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";
@@ -85,49 +86,9 @@ $conduct_type_index = $row['ConductTypeIndex'];
 $proof_username = $row['ProofreaderUsername'];
 $class_index = $row['ClassIndex'];
 
-/* Check whether current user is principal */
-$res = &  $db->query(
-                "SELECT Username FROM principal " .
-                 "WHERE Username=\"$username\" AND Level=1");
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-
-if ($res->numRows() > 0) {
-    $is_principal = true;
-} else {
-    $is_principal = false;
-}
-
-/* Check whether current user is a hod */
-$res = &  $db->query(
-                "SELECT hod.Username FROM hod, class, classterm " .
-                 "WHERE hod.Username        = '$username' " .
-                 "AND   hod.DepartmentIndex = class.DepartmentIndex " .
-                 "AND   class.ClassIndex    = classterm.ClassIndex " .
-                 "AND   classterm.ClassTermIndex = $classtermindex");
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-
-if ($res->numRows() > 0) {
-    $is_hod = true;
-} else {
-    $is_hod = false;
-}
-
-/* Check whether user is authorized to change scores */
-$res = & $db->query(
-                "SELECT class.ClassIndex FROM class, classterm " .
-                 "WHERE classterm.ClassTermIndex  = $classtermindex " .
-                 "AND   classterm.ClassIndex = class.ClassIndex " .
-                 "AND   class.ClassTeacherUsername = '$username'");
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-
-if ($res->numRows() > 0) {
-    $is_ct = true;
-} else {
-    $is_ct = false;
-}
+$is_principal = check_principal($username);
+$is_hod = check_hod_classterm($username, $classterm_index);
+$is_ct = check_class_teacher_classterm($username, $classterm_index);
 
 /* Check whether user is proofreader */
 if ($proof_username == $username) {
@@ -136,9 +97,7 @@ if ($proof_username == $username) {
     $is_proofreader = false;
 }
 
-if (! $is_ct and ! $is_hod and ! $is_principal and ! $is_admin and
-     ! $is_proofreader) {
-    /* Print error message */
+if (!$is_ct and !$is_hod and !$is_principal and !$is_admin and !$is_proofreader) {
     echo "      <p>You do not have permission to access this page</p>\n";
     echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";
     log_event($LOG_LEVEL_ERROR, "teacher/report/class_modify.php",
@@ -149,52 +108,45 @@ if (! $is_ct and ! $is_hod and ! $is_principal and ! $is_admin and
     exit(0);
 }
 
-/*
- * update_classterm($classindex, $termindex);
- * update_conduct_input($classindex, $termindex);
- */
-
-$query = "SELECT user.Gender, user.FirstName, user.Surname, user.Username, " .
-         "       newmem.Username AS New, specialmem.Username AS Special, " .
-         "       classlist.Average, classlist.Conduct, classlist.Effort, " .
-         "       classlist.Rank, classlist.CTComment, classlist.HODComment, " .
-         "       classlist.CTCommentDone, classlist.HODCommentDone, " .
-         "       classlist.PrincipalComment, classlist.PrincipalCommentDone, " .
-         "       classlist.PrincipalUsername, classlist.HODUsername, " .
-         "       classlist.ReportDone, classlist.ReportProofread, " .
-         "       classlist.ReportPrinted, classlist.Absences, " .
-         "       classlist.ReportProofDone, classterm.Average AS ClassAverage, " .
-         "       classterm.Conduct AS ClassConduct, classterm.Effort AS ClassEffort, " .
-         "       average_index.Display AS AverageDisplay, " .
-         "       effort_index.Display AS EffortDisplay, " .
-         "       conduct_index.Display AS ConductDisplay " .
-         "       FROM user, classterm, classlist " .
-         "       LEFT OUTER JOIN nonmark_index AS average_index ON " .
-         "            classlist.Average = average_index.NonmarkIndex " .
-         "       LEFT OUTER JOIN nonmark_index AS effort_index ON " .
-         "            classlist.Effort = effort_index.NonmarkIndex " .
-         "       LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
-         "            classlist.Conduct = conduct_index.NonmarkIndex " .
-         "       LEFT OUTER JOIN (groupgenmem AS newmem INNER JOIN " .
-         "                        groups AS newgroups ON (newgroups.GroupID=newmem.GroupID " .
-         "                                                AND newgroups.GroupTypeID='new' " .
-         "                                                AND newgroups.YearIndex=$yearindex)) ON (classlist.Username=newmem.Username) " .
-         "       LEFT OUTER JOIN (groupgenmem AS specialmem INNER JOIN " .
-         "                        groups AS specgroups ON (specgroups.GroupID=specialmem.GroupID " .
-         "                                                 AND specgroups.GroupTypeID='special' " .
-         "                                                 AND specgroups.YearIndex=$yearindex)) ON (classlist.Username=specialmem.Username) " .
-         "WHERE user.Username            = classlist.Username " .
-         "AND   classlist.ClassTermIndex = $classtermindex " .
-         "AND   classterm.ClassTermIndex = classlist.ClassTermIndex " .
-         "AND   classlist.Username       = '$student_username' " .
-         "ORDER BY user.FirstName, user.Surname, user.Username";
-
-$res = &  $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-
-if (! $row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
-    /* Print error message */
+$query = $pdb->prepare(
+    "SELECT user.Gender, user.FirstName, user.Surname, user.Username, " .
+    "       newmem.Username AS New, specialmem.Username AS Special, " .
+    "       classlist.Average, classlist.Conduct, classlist.Effort, " .
+    "       classlist.Rank, classlist.CTComment, classlist.HODComment, " .
+    "       classlist.CTCommentDone, classlist.HODCommentDone, " .
+    "       classlist.PrincipalComment, classlist.PrincipalCommentDone, " .
+    "       classlist.PrincipalUsername, classlist.HODUsername, " .
+    "       classlist.ReportDone, classlist.ReportProofread, " .
+    "       classlist.ReportPrinted, classlist.Absences, " .
+    "       classlist.ReportProofDone, classterm.Average AS ClassAverage, " .
+    "       classterm.Conduct AS ClassConduct, classterm.Effort AS ClassEffort, " .
+    "       average_index.Display AS AverageDisplay, " .
+    "       effort_index.Display AS EffortDisplay, " .
+    "       conduct_index.Display AS ConductDisplay " .
+    "       FROM user, classterm, classlist " .
+    "       LEFT OUTER JOIN nonmark_index AS average_index ON " .
+    "            classlist.Average = average_index.NonmarkIndex " .
+    "       LEFT OUTER JOIN nonmark_index AS effort_index ON " .
+    "            classlist.Effort = effort_index.NonmarkIndex " .
+    "       LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
+    "            classlist.Conduct = conduct_index.NonmarkIndex " .
+    "       LEFT OUTER JOIN (groupgenmem AS newmem INNER JOIN " .
+    "                        groups AS newgroups ON (newgroups.GroupID=newmem.GroupID " .
+    "                                                AND newgroups.GroupTypeID='new' " .
+    "                                                AND newgroups.YearIndex=:yearindex)) ON (classlist.Username=newmem.Username) " .
+    "       LEFT OUTER JOIN (groupgenmem AS specialmem INNER JOIN " .
+    "                        groups AS specgroups ON (specgroups.GroupID=specialmem.GroupID " .
+    "                                                 AND specgroups.GroupTypeID='special' " .
+    "                                                 AND specgroups.YearIndex=:yearindex)) ON (classlist.Username=specialmem.Username) " .
+    "WHERE user.Username            = classlist.Username " .
+    "AND   classlist.ClassTermIndex = :classterm_index " .
+    "AND   classterm.ClassTermIndex = classlist.ClassTermIndex " .
+    "AND   classlist.Username       = :student_username " .
+    "ORDER BY user.FirstName, user.Surname, user.Username"
+);
+$query->execute(['yearindex' => $yearindex, 'classterm_index' => $classterm_index,
+                 'student_username' => $student_username]);
+if (!$row=$query->fetch()) {
     echo "      <p>$student_name is not in $class.</p>\n";
     echo "      <p><a href='$backLink'>Click here to go back</a></p>\n";
 
@@ -209,41 +161,51 @@ $next_uname = "";
 
 $query = "";
 if ($is_proofreader) {
-    $query .= "(SELECT user.Username, user.FirstName, user.Surname, class.Grade, " .
-             "        class.ClassName, term.TermNumber " .
-             "        FROM department, user, classlist, class, classterm, term " .
-             " WHERE user.Username                  = classlist.Username " .
-             " AND   classlist.ClassTermIndex       = classterm.ClassTermIndex " .
-             " AND   classlist.ReportProofread      = 1 " .
-             " AND   classlist.ReportProofDone      = 0 " .
-             " AND   classterm.CanDoReport          = 1 " .
-             " AND   class.ClassIndex               = classterm.ClassIndex " .
-             " AND   term.TermIndex                 = classterm.TermIndex " .
-             " AND   department.DepartmentIndex     = class.DepartmentIndex " .
-             " AND   department.ProofreaderUsername = '$username') ";
+    $query .=
+        "(SELECT user.Username, user.FirstName, user.Surname, class.Grade, " .
+        "        class.ClassName, term.TermNumber " .
+        "        FROM department, user, classlist, class, classterm, term " .
+        " WHERE user.Username                  = classlist.Username " .
+        " AND   classlist.ClassTermIndex       = classterm.ClassTermIndex " .
+        " AND   classlist.ReportProofread      = 1 " .
+        " AND   classlist.ReportProofDone      = 0 " .
+        " AND   classterm.CanDoReport          = 1 " .
+        " AND   class.ClassIndex               = classterm.ClassIndex " .
+        " AND   term.TermIndex                 = classterm.TermIndex " .
+        " AND   department.DepartmentIndex     = class.DepartmentIndex " .
+        " AND   department.ProofreaderUsername = :username) ";
 }
 if ($is_proofreader and ($is_ct or $is_hod or $is_principal or $is_admin)) {
-    $query .= "UNION ";
+    $query .=
+        "UNION ";
 }
 if ($is_ct or $is_hod or $is_principal or $is_admin) {
-    $query = "(SELECT user.Username, user.FirstName, user.Surname, class.Grade, " .
-         "         class.ClassName, term.TermNumber " .
-         "         FROM classterm, classlist, class, term, user " .
-         " WHERE classlist.ClassTermIndex = $classtermindex " .
-         " AND   classterm.ClassTermIndex = classlist.ClassTermIndex " .
-         " AND   class.ClassIndex         = classterm.ClassIndex " .
-         " AND   user.Username            = classlist.Username " .
-         " AND   term.TermIndex           = classterm.TermIndex) ";
+    $query .=
+        "(SELECT user.Username, user.FirstName, user.Surname, class.Grade, " .
+        "         class.ClassName, term.TermNumber " .
+        "         FROM classterm, classlist, class, term, user " .
+        " WHERE classlist.ClassTermIndex = :classterm_index " .
+        " AND   classterm.ClassTermIndex = classlist.ClassTermIndex " .
+        " AND   class.ClassIndex         = classterm.ClassIndex " .
+        " AND   user.Username            = classlist.Username " .
+        " AND   term.TermIndex           = classterm.TermIndex) ";
 }
 $query .= "ORDER BY TermNumber, Grade, ClassName, FirstName, Surname, Username";
+$query = $pdb->prepare($query);
+if($is_proofreader) {
+    if($is_ct or $is_hod or $is_principal or $is_admin) {
+        $query->execute(['username' => $username,
+                         'classterm_index' => $classterm_index]);
+    } else {
+        $query->execute(['username' => $username]);
+    }
+} else {
+    $query->execute(['classterm_index' => $classterm_index]);
+}
 
-$res = &  $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-
-while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-    if ($row['Username'] == $student_username) {
-        if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+while($row = $query->fetch()) {
+    if($row['Username'] == $student_username) {
+        if($row = $query->fetch()) {
             $next_uname = $row['Username'];
         }
         break;
@@ -252,17 +214,16 @@ while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
 }
 
 if (! is_null($average_type_index)) {
-    $query = "SELECT Input, Display FROM nonmark_index " .
-             "WHERE  NonmarkTypeIndex=$average_type_index ";
-    $res = &  $db->query($query);
-    if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
-
-    if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+    $query = $pdb->prepare(
+        "SELECT Input, Display FROM nonmark_index " .
+        "WHERE  NonmarkTypeIndex=:type_index "
+    );
+    $query->execute(['type_index' => $average_type_index]);
+    if($row = $query->fetch()) {
         $input = strtoupper($row['Input']);
         $ainput_array = "'$input'";
         $adisplay_array = "'{$row['Display']}'";
-        while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+        while($row = $query->fetch()) {
             $input = strtoupper($row['Input']);
             $ainput_array .= ", '$input'";
             $adisplay_array .= ", '{$row['Display']}'";
@@ -273,18 +234,18 @@ if (! is_null($average_type_index)) {
     $adisplay_array = "";
 }
 if (! is_null($effort_type_index)) {
-    $query = "SELECT Input, Display FROM nonmark_index " .
-             "WHERE  NonmarkTypeIndex=$effort_type_index ";
-    $res = &  $db->query($query);
-    if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
-
-    if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+    $query = $pdb->prepare(
+        "SELECT Input, Display FROM nonmark_index " .
+        "WHERE  NonmarkTypeIndex=:type_index "
+    );
+    $query->execute(['type_index' => $effort_type_index]);
+    if($row = $query->fetch()) {
         $input = strtoupper($row['Input']);
         $einput_array = "'$input'";
         $edisplay_array = "'{$row['Display']}'";
-        while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-            $einput_array .= ", '{$row['Input']}'";
+        while($row = $query->fetch()) {
+            $input = strtoupper($row['Input']);
+            $einput_array .= ", '$input'";
             $edisplay_array .= ", '{$row['Display']}'";
         }
     }
@@ -293,18 +254,18 @@ if (! is_null($effort_type_index)) {
     $edisplay_array = "";
 }
 if (! is_null($conduct_type_index)) {
-    $query = "SELECT Input, Display FROM nonmark_index " .
-             "WHERE  NonmarkTypeIndex=$conduct_type_index ";
-    $res = &  $db->query($query);
-    if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
-
-    if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+    $query = $pdb->prepare(
+        "SELECT Input, Display FROM nonmark_index " .
+        "WHERE  NonmarkTypeIndex=:type_index "
+    );
+    $query->execute(['type_index' => $conduct_type_index]);
+    if($row = $query->fetch()) {
         $input = strtoupper($row['Input']);
         $cinput_array = "'$input'";
         $cdisplay_array = "'{$row['Display']}'";
-        while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
-            $cinput_array .= ", '{$row['Input']}'";
+        while($row = $query->fetch()) {
+            $input = strtoupper($row['Input']);
+            $cinput_array .= ", '$input'";
             $cdisplay_array .= ", '{$row['Display']}'";
         }
     }
@@ -319,13 +280,12 @@ if ($ct_comment_type == $COMMENT_TYPE_MANDATORY or
      $hod_comment_type == $COMMENT_TYPE_OPTIONAL or
      $pr_comment_type == $COMMENT_TYPE_MANDATORY or
      $pr_comment_type == $COMMENT_TYPE_OPTIONAL) {
-    $query = "SELECT CommentIndex, Comment, Strength FROM comment ORDER BY CommentIndex";
-    $res = &  $db->query($query);
-    if (DB::isError($res))
-        die($res->getDebugInfo()); // Check for errors in query
+    $query = $pdb->query(
+        "SELECT CommentIndex, Comment, Strength FROM comment ORDER BY CommentIndex"
+    );
 
     $count = 0;
-    if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+    if($row = $query->fetch()) {
         $comment = htmlspecialchars($row['Comment'], ENT_QUOTES);
         if ($row['CommentIndex'] == $count) {
             $comment_array = "'$comment'";
@@ -342,7 +302,7 @@ if ($ct_comment_type == $COMMENT_TYPE_MANDATORY or
             $comment_array .= ", '$comment'";
             $cval_array .= ", '{$row['Strength']}'";
         }
-        while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+        while($row = $query->fetch()) {
             $comment = str_replace("'", "\'", $row['Comment']);
             $comment = str_replace("\"", "\\\"", $comment);
             $count += 1;
@@ -357,38 +317,39 @@ if ($ct_comment_type == $COMMENT_TYPE_MANDATORY or
     }
 }
 
-$query = "SELECT class.ClassName, class.Grade FROM class, classterm, classlist " .
-         "WHERE classlist.Username       = '$student_username' " .
-         "AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
-         "AND   classterm.TermIndex      = $termindex " .
-         "AND   classterm.ClassIndex     = class.ClassIndex " .
-         "AND   class.YearIndex          = $yearindex ";
-
-$res = &  $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+$query = $pdb->prepare(
+    "SELECT class.ClassName, class.Grade FROM class, classterm, classlist " .
+    "WHERE classlist.Username       = :student_username " .
+    "AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+    "AND   classterm.TermIndex      = :termindex " .
+    "AND   classterm.ClassIndex     = class.ClassIndex " .
+    "AND   class.YearIndex          = :yearindex "
+);
+$query->execute(['student_username' => $student_username, 'termindex' => $termindex,
+                 'yearindex' => $yearindex]);
+if($row = $query->fetch()) {
     $grade = $row['Grade'];
     $classname = $row['ClassName'];
 } else {
-    $grade = - 1;
+    $grade = -1;
     $classname = "";
 }
 
 $rpt_sentence = "";
-$query = "SELECT Grade, ClassCount FROM " .
-         "  (SELECT class.Grade, COUNT(DISTINCT class.YearIndex) AS ClassCount " .
-         "          FROM class, classterm, classlist " .
-         "   WHERE classlist.Username = '$student_username' " .
-         "   AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
-         "   AND   classterm.ClassIndex     = class.ClassIndex " .
-         "   GROUP BY Grade) AS classcount " . "WHERE ClassCount > 1";
-$res = &  $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+$query = $pdb->prepare(
+    "SELECT Grade, ClassCount FROM " .
+    "  (SELECT class.Grade, COUNT(DISTINCT class.YearIndex) AS ClassCount " .
+    "          FROM class, classterm, classlist " .
+    "   WHERE classlist.Username = '$student_username' " .
+    "   AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+    "   AND   classterm.ClassIndex     = class.ClassIndex " .
+    "   GROUP BY Grade) AS classcount " .
+    "WHERE ClassCount > 1"
+);
+$query->execute(['student_username' => $student_username]);
+if($row = $query->fetch()) {
     $rpt_sentence = "<p class='error' align='center'>{$student_info['FirstName']} has repeated class {$row['Grade']}";
-    while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+    while($row = $query->fetch()) {
         $rpt_sentence .= " and {$row['Grade']}";
     }
     $rpt_sentence .= ".</p>";
@@ -399,23 +360,23 @@ if (!is_null($student_info['New'])) {
     $new_sentence = "<p align='center'>{$student_info['FirstName']} is a new student.";
 }
 
-$query = "SELECT MAX(subject.AverageType) AS MaxAverage, " .
-         "       MAX(subject.ConductType) AS MaxConduct, " .
-         "       MAX(subject.CommentType) AS MaxComment, " .
-         "       MAX(subject.EffortType) AS MaxEffort,  " .
-         "       AVG(subjectstudent.CommentValue) AS CommentAverage, " .
-         "       MIN(subjectstudent.ReportDone) AS ReportDone " .
-         "       FROM subject, subjectstudent " .
-         "WHERE subjectstudent.Username      = '$student_username' " .
-         "AND   subjectstudent.SubjectIndex  = subject.SubjectIndex " .
-         "AND   subject.TermIndex            = $termindex " .
-         "AND   subject.YearIndex            = $yearindex " .
-         "GROUP BY subjectstudent.Username";
-$res = &  $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-
-if (! $row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+$query = $pdb->prepare(
+    "SELECT MAX(subject.AverageType) AS MaxAverage, " .
+    "       MAX(subject.ConductType) AS MaxConduct, " .
+    "       MAX(subject.CommentType) AS MaxComment, " .
+    "       MAX(subject.EffortType) AS MaxEffort,  " .
+    "       AVG(subjectstudent.CommentValue) AS CommentAverage, " .
+    "       MIN(subjectstudent.ReportDone) AS ReportDone " .
+    "       FROM subject, subjectstudent " .
+    "WHERE subjectstudent.Username      = :student_username " .
+    "AND   subjectstudent.SubjectIndex  = subject.SubjectIndex " .
+    "AND   subject.TermIndex            = :termindex " .
+    "AND   subject.YearIndex            = :yearindex " .
+    "GROUP BY subjectstudent.Username"
+);
+$query->execute(['student_username' => $student_username, 'termindex' => $termindex,
+                 'yearindex' => $yearindex]);
+if(!$row=$query->fetch()) {
     if ($can_do_report) {
         echo "      <form action='$link' method='post' name='report'>\n"; // Form method
         echo "         <p align='center'>\n";
@@ -446,93 +407,43 @@ $subject_comment_type = $row['MaxComment'];
 $subject_comment_avg = $row['CommentAverage'];
 $subject_report_done = $row['ReportDone'];
 
-$query = "SELECT COUNT(TermIndex) AS TermCount, MIN(TermNumber) AS LowTerm, " .
-         "       MAX(TermNumber) AS CurrentTermNumber, " .
-         "       DepartmentIndex AS DepartmentIndex " . "FROM (" .
-         " SELECT subject.TermIndex, 1 AS TGroup, term.TermNumber, term.DepartmentIndex FROM " .
-         "        subject, subjectstudent, term, term AS depterm " .
-         " WHERE  subjectstudent.Username = '$student_username' " .
-         " AND    subject.SubjectIndex    = subjectstudent.SubjectIndex " .
-         " AND    subject.YearIndex       = $yearindex " .
-         " AND    subject.TermIndex       = term.TermIndex " .
-         " AND    subject.ShowInList      = 1 " .
-         " AND   (subject.AverageType != $AVG_TYPE_NONE OR subject.EffortType != $EFFORT_TYPE_NONE OR subject.ConductType != $CONDUCT_TYPE_NONE OR subject.CommentType != $COMMENT_TYPE_NONE) " .
-         " AND    term.DepartmentIndex    =  depterm.DepartmentIndex " .
-         " AND    term.TermNumber         <= depterm.TermNumber " .
-         " AND    depterm.TermIndex       =  $termindex " .
-         " GROUP BY subject.TermIndex) AS SubList " . "GROUP BY TGroup";
-$res = &  $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
-if ($row = & $res->fetchRow(DB_FETCHMODE_ASSOC)) {
+$query = $pdb->prepare(
+    "SELECT COUNT(TermIndex) AS TermCount, MIN(TermNumber) AS LowTerm, " .
+    "       MAX(TermNumber) AS CurrentTermNumber, " .
+    "       DepartmentIndex AS DepartmentIndex " . "FROM (" .
+    " SELECT subject.TermIndex, 1 AS TGroup, term.TermNumber, " .
+    "        term.DepartmentIndex FROM " .
+    "        subject, subjectstudent, term, term AS depterm " .
+    " WHERE  subjectstudent.Username = :student_username " .
+    " AND    subject.SubjectIndex    = subjectstudent.SubjectIndex " .
+    " AND    subject.YearIndex       = :yearindex " .
+    " AND    subject.TermIndex       = term.TermIndex " .
+    " AND    subject.ShowInList      = 1 " .
+    " AND   (subject.AverageType != :at_none OR ".
+    "        subject.EffortType  != :et_none OR " .
+    "        subject.ConductType != :cont_none OR " .
+    "        subject.CommentType != :comt_none) " .
+    " AND    term.DepartmentIndex    = depterm.DepartmentIndex " .
+    " AND    term.TermNumber        <= depterm.TermNumber " .
+    " AND    depterm.TermIndex       = :termindex " .
+    " GROUP BY subject.TermIndex) AS SubList " .
+    "GROUP BY TGroup"
+);
+$query->execute(['student_username' => $student_username,
+                 'yearindex' => $yearindex,
+                 'at_none' => $AVG_TYPE_NONE,
+                 'et_none' => $EFFORT_TYPE_NONE,
+                 'cont_none' => $CONDUCT_TYPE_NONE,
+                 'comt_none' => $COMMENT_TYPE_NONE,
+                 'termindex' => $termindex]);
+if($row = $query->fetch()) {
     $termcount = $row['TermCount'];
-    $lowtermnumber = $row['LowTerm'];
-    $termnumber = $row['CurrentTermNumber'];
-    $departmentindex = $row['DepartmentIndex'];
+    $low_term_number = $row['LowTerm'];
+    $term_number = $row['CurrentTermNumber'];
+    $department_index = $row['DepartmentIndex'];
 } else {
     $termcount = 0;
 }
-
-$query =        "SELECT subject.Name AS SubjectName, subject.SubjectIndex, " .
-                "       subject.Average AS SubjectAverage, " .
-                "       subject.AverageType, subject.EffortType, subject.ConductType, " .
-                "       subject.AverageTypeIndex, subject.EffortTypeIndex, " .
-                "       subject.ConductTypeIndex, subject.CommentType, " .
-                "       subjectstudent.Average, subjectstudent.Effort, subjectstudent.Conduct, " .
-                "       average_index.Display AS AverageDisplay, " .
-                "       effort_index.Display AS EffortDisplay, " .
-                "       conduct_index.Display AS ConductDisplay, " .
-                "       subjectstudent.Comment, subjectstudent.CommentValue, " .
-                "       subjectstudent.ReportDone, " .
-                "       get_weight(subject.SubjectIndex, $class_index, '$student_username') AS SubjectWeight " .
-                "       FROM subject, subjecttype, ";
-if ($is_admin or $is_ct or $is_hod or $is_principal) {
-    $query .=   "         (SELECT subject.Name AS SubjectName FROM subjectstudent, subject, term, term AS currentterm " .
-                "       WHERE subjectstudent.Username = '$student_username' " .
-                "       AND   subjectstudent.SubjectIndex  = subject.SubjectIndex " .
-                "       AND   subject.TermIndex            = term.TermIndex " .
-                "       AND   term.TermNumber              <= currentterm.TermNumber " .
-                "       AND   term.DepartmentIndex         = $departmentindex " .
-                "       AND   currentterm.TermIndex        = $termindex " .
-                "       AND   subject.YearIndex            = $yearindex " .
-                "       AND   subject.ShowInList           = 1 " .
-                "       GROUP BY subject.Name) AS tempsubjectlist, subjectstudent " .
-                "       LEFT OUTER JOIN nonmark_index AS average_index ON " .
-                "            subjectstudent.Average = average_index.NonmarkIndex " .
-                "       LEFT OUTER JOIN nonmark_index AS effort_index ON " .
-                "            subjectstudent.Effort = effort_index.NonmarkIndex " .
-                "       LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
-                "            subjectstudent.Conduct = conduct_index.NonmarkIndex " .
-                "WHERE subject.Name = tempsubjectlist.SubjectName " .
-                "AND   subjectstudent.Username      = '$student_username' " .
-                "AND   subjectstudent.SubjectIndex  = subject.SubjectIndex " .
-                "AND   subject.YearIndex = $yearindex " .
-                "AND   subject.TermIndex = $termindex ";
-} else {
-    $query .=   "       subjectstudent " .
-                "       LEFT OUTER JOIN nonmark_index AS average_index ON " .
-                "            subjectstudent.Average = average_index.NonmarkIndex " .
-                "       LEFT OUTER JOIN nonmark_index AS effort_index ON " .
-                "            subjectstudent.Effort = effort_index.NonmarkIndex " .
-                "       LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
-                "            subjectstudent.Conduct = conduct_index.NonmarkIndex " .
-                "WHERE subjectstudent.Username      = '$student_username' " .
-                "AND   subjectstudent.SubjectIndex  = subject.SubjectIndex " .
-                "AND   subject.TermIndex            = $termindex " .
-                "AND   subject.YearIndex            = $yearindex " .
-                "AND   subject.ShowInList           = 1 ";
-}
-$query .=       "AND   (subject.AverageType != $AVG_TYPE_NONE " .
-                "       OR subject.EffortType != $EFFORT_TYPE_NONE " .
-                "       OR subject.ConductType != $CONDUCT_TYPE_NONE " .
-                "       OR subject.CommentType != $COMMENT_TYPE_NONE) " .
-                "AND   subjecttype.SubjectTypeIndex = subject.SubjectTypeIndex " .
-                "ORDER BY subjecttype.HighPriority DESC, " .
-                "         get_weight(subject.SubjectIndex, $class_index, '$student_username') DESC, " .
-                "         subjecttype.Title, subject.Name, subject.TermIndex DESC, subject.SubjectIndex ";
-$res = &  $db->query($query);
-if (DB::isError($res))
-    die($res->getDebugInfo()); // Check for errors in query
 
 $gender = strtolower($student_info['Gender']);
 
@@ -650,35 +561,39 @@ echo "               <th>Subject</th>\n";
 if ($is_ct or $is_admin or $is_principal or $is_hod) {
     if ($subject_average_type != $AVG_TYPE_NONE) {
         echo "               <th>Weight</th>\n";
-        $query = "SELECT TermName, get_term_weight(TermIndex, $class_index, '$student_username') AS Weight FROM term " .
-                 "WHERE TermNumber >= $lowtermnumber " .
-                 "AND   TermNumber <= $termnumber " .
-                 "AND   DepartmentIndex = $departmentindex " .
-                 "ORDER BY term.TermNumber ASC";
-        $nres = &  $db->query($query);
-        if (DB::isError($nres))
-            die($nres->getDebugInfo()); // Check for errors in query
-        while ( $nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC) ) {
-            $name = htmlentities(
-                                "{$nrow['TermName']} - Weight {$nrow['Weight']}");
-            $pname = htmlentities(substr($nrow['TermName'], 0, 1));
+        $nquery = $pdb->prepare(
+            "SELECT TermName, " .
+            "       get_term_weight(TermIndex, :class_index, :student_username) AS Weight FROM term " .
+            "WHERE TermNumber >= :low_term_number " .
+            "AND   TermNumber <= :term_number " .
+            "AND   DepartmentIndex = :department_index " .
+            "ORDER BY term.TermNumber ASC"
+        );
+        $nquery->execute(['class_index' => $class_index,
+                          'student_username' => $student_username,
+                          'low_term_number' => $low_term_number,
+                          'term_number' => $term_number,
+                          'department_index' => $department_index]);
+        while($nrow = $nquery->fetch()) {
+            $name = htmlspecialchars("{$nrow['TermName']} - Weight {$nrow['Weight']}", ENT_QUOTES);
+            $pname = htmlspecialchars(substr($nrow['TermName'], 0, 1), ENT_QUOTES);
             echo "               <th><a title='$name'>$pname</a></th>\n";
         }
         echo "               <th><a title='Average'>A</a></th>\n";
     }
-    if (! $show_only) {
-        if ($subject_effort_type != $EFFORT_TYPE_NONE) {
+    if(!$show_only) {
+        if($subject_effort_type != $EFFORT_TYPE_NONE) {
             echo "               <th>Effort</th>\n";
             $colcount += 1;
         }
-        if ($subject_conduct_type != $CONDUCT_TYPE_NONE) {
+        if($subject_conduct_type != $CONDUCT_TYPE_NONE) {
             echo "               <th>Conduct</th>\n";
             $colcount += 1;
         }
     }
 }
-if (! $show_only) {
-    if ($subject_comment_type != $COMMENT_TYPE_NONE) {
+if(!$show_only) {
+    if($subject_comment_type != $COMMENT_TYPE_NONE) {
         echo "               <th>Comment</th>\n";
         echo "               <th>Tone</th>\n";
         $colcount += 2;
@@ -693,10 +608,110 @@ if (! $show_only) {
 
 echo "            </tr>\n";
 
+if ($is_admin or $is_ct or $is_hod or $is_principal) {
+    $query = $pdb->prepare(
+        "SELECT subject.Name AS SubjectName, subject.SubjectIndex, " .
+        "       subject.Average AS SubjectAverage, " .
+        "       subject.AverageType, subject.EffortType, subject.ConductType, " .
+        "       subject.AverageTypeIndex, subject.EffortTypeIndex, " .
+        "       subject.ConductTypeIndex, subject.CommentType, " .
+        "       subjectstudent.Average, subjectstudent.Effort, subjectstudent.Conduct, " .
+        "       average_index.Display AS AverageDisplay, " .
+        "       effort_index.Display AS EffortDisplay, " .
+        "       conduct_index.Display AS ConductDisplay, " .
+        "       subjectstudent.Comment, subjectstudent.CommentValue, " .
+        "       subjectstudent.ReportDone, " .
+        "       get_weight(subject.SubjectIndex, :class_index, :student_username) AS SubjectWeight " .
+        "       FROM subject, subjecttype, " .
+        "         (SELECT subject.Name AS SubjectName FROM subjectstudent, subject, term, term AS currentterm " .
+        "       WHERE subjectstudent.Username      = :student_username " .
+        "       AND   subjectstudent.SubjectIndex  = subject.SubjectIndex " .
+        "       AND   subject.TermIndex            = term.TermIndex " .
+        "       AND   term.TermNumber             <= currentterm.TermNumber " .
+        "       AND   term.DepartmentIndex         = :department_index " .
+        "       AND   currentterm.TermIndex        = :termindex " .
+        "       AND   subject.YearIndex            = :yearindex " .
+        "       AND   subject.ShowInList           = 1 " .
+        "       GROUP BY subject.Name) AS tempsubjectlist, subjectstudent " .
+        "       LEFT OUTER JOIN nonmark_index AS average_index ON " .
+        "            subjectstudent.Average = average_index.NonmarkIndex " .
+        "       LEFT OUTER JOIN nonmark_index AS effort_index ON " .
+        "            subjectstudent.Effort = effort_index.NonmarkIndex " .
+        "       LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
+        "            subjectstudent.Conduct = conduct_index.NonmarkIndex " .
+        "WHERE subject.Name = tempsubjectlist.SubjectName " .
+        "AND   subjectstudent.Username     = :student_username " .
+        "AND   subjectstudent.SubjectIndex = subject.SubjectIndex " .
+        "AND   subject.YearIndex           = :yearindex " .
+        "AND   subject.TermIndex           = :termindex " .
+        "AND   (subject.AverageType    != :at_none " .
+        "       OR subject.EffortType  != :et_none " .
+        "       OR subject.ConductType != :cont_none " .
+        "       OR subject.CommentType != :comt_none) " .
+        "AND   subjecttype.SubjectTypeIndex = subject.SubjectTypeIndex " .
+        "ORDER BY subjecttype.HighPriority DESC, " .
+        "         get_weight(subject.SubjectIndex, :class_index, :student_username) DESC, " .
+        "         subjecttype.Title, subject.Name, subject.TermIndex DESC, subject.SubjectIndex "
+    );
+    $query->execute(['class_index' => $class_index,
+                     'student_username' => $student_username,
+                     'department_index' => $department_index,
+                     'yearindex' => $yearindex,
+                     'termindex' => $termindex,
+                     'at_none' => $AVG_TYPE_NONE,
+                     'et_none' => $EFFORT_TYPE_NONE,
+                     'cont_none' => $CONDUCT_TYPE_NONE,
+                     'comt_none' => $COMMENT_TYPE_NONE]);
+
+} else {
+    $query = $pdb->prepare(
+        "SELECT subject.Name AS SubjectName, subject.SubjectIndex, " .
+        "       subject.Average AS SubjectAverage, " .
+        "       subject.AverageType, subject.EffortType, subject.ConductType, " .
+        "       subject.AverageTypeIndex, subject.EffortTypeIndex, " .
+        "       subject.ConductTypeIndex, subject.CommentType, " .
+        "       subjectstudent.Average, subjectstudent.Effort, subjectstudent.Conduct, " .
+        "       average_index.Display AS AverageDisplay, " .
+        "       effort_index.Display AS EffortDisplay, " .
+        "       conduct_index.Display AS ConductDisplay, " .
+        "       subjectstudent.Comment, subjectstudent.CommentValue, " .
+        "       subjectstudent.ReportDone, " .
+        "       get_weight(subject.SubjectIndex, :class_index, :student_username) AS SubjectWeight " .
+        "       FROM subject, subjecttype, subjectstudent " .
+        "       LEFT OUTER JOIN nonmark_index AS average_index ON " .
+        "            subjectstudent.Average = average_index.NonmarkIndex " .
+        "       LEFT OUTER JOIN nonmark_index AS effort_index ON " .
+        "            subjectstudent.Effort = effort_index.NonmarkIndex " .
+        "       LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
+        "            subjectstudent.Conduct = conduct_index.NonmarkIndex " .
+        "WHERE subjectstudent.Username      = :student_username " .
+        "AND   subjectstudent.SubjectIndex  = subject.SubjectIndex " .
+        "AND   subject.TermIndex            = :termindex " .
+        "AND   subject.YearIndex            = :yearindex " .
+        "AND   subject.ShowInList           = 1 " .
+        "AND   (subject.AverageType    != :at_none " .
+        "       OR subject.EffortType  != :et_none " .
+        "       OR subject.ConductType != :cont_none " .
+        "       OR subject.CommentType != :comt_none) " .
+        "AND   subjecttype.SubjectTypeIndex = subject.SubjectTypeIndex " .
+        "ORDER BY subjecttype.HighPriority DESC, " .
+        "         get_weight(subject.SubjectIndex, :class_index, :student_username) DESC, " .
+        "         subjecttype.Title, subject.Name, subject.TermIndex DESC, subject.SubjectIndex "
+    );
+    $query->execute(['class_index' => $class_index,
+                     'student_username' => $student_username,
+                     'yearindex' => $yearindex,
+                     'termindex' => $termindex,
+                     'at_none' => $AVG_TYPE_NONE,
+                     'et_none' => $EFFORT_TYPE_NONE,
+                     'cont_none' => $CONDUCT_TYPE_NONE,
+                     'comt_none' => $COMMENT_TYPE_NONE]);
+
+}
+
 /* For each student, print a row with the student's name and score on each report */
 $alt_count = 0;
-
-while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
+while($row = $query->fetch()) {
     $alt_count += 1;
 
     if ($alt_count % 2 == 0) {
@@ -714,47 +729,59 @@ while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
 
     if ($is_admin or $is_ct or $is_hod or $is_principal) {
         if ($subject_average_type != $AVG_TYPE_NONE) {
-            $subject_name = safe($row['SubjectName']);
-            $query = "SELECT subject.AverageType, subject.AverageTypeIndex, subjectstudent.Average, " .
-                     "       subject.EffortType, subject.EffortTypeIndex, subjectstudent.Effort, " .
-                     "       subject.ConductType, subject.ConductTypeIndex, subjectstudent.Conduct, " .
-                     "       subject.CommentType, subjectstudent.Comment, subject.Average AS SubjectAverage, " .
-                     "       average_index.Display AS AverageDisplay, " .
-                     "       effort_index.Display AS EffortDisplay, " .
-                     "       conduct_index.Display AS ConductDisplay, " .
-                     "      subject.TermIndex, term.TermNumber, " .
-                     "       get_term_weight(term.TermIndex, $class_index, '$student_username') AS Weight " .
-                     " FROM " . " (term INNER JOIN term AS depterm " .
-                     "       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
-                     "       AND depterm.TermIndex = $termindex" .
-                     "       AND term.TermNumber <= depterm.TermNumber " .
-                     "       AND term.TermNumber >= $lowtermnumber) " .
-                     " INNER JOIN class ON (class.ClassIndex = $class_index) " .
-                     " LEFT OUTER JOIN " . " (subjectstudent INNER JOIN subject " .
-                     "       ON  subjectstudent.Username = '$student_username' " .
-                     "       AND subjectstudent.SubjectIndex = subject.SubjectIndex " .
-                     "       AND subject.YearIndex = $yearindex " .
-                     "       AND subject.Name = '$subject_name' " .
-                     "       AND subject.ShowInList = 1 " .
-                     "       AND (subject.AverageType != $AVG_TYPE_NONE OR subject.EffortType != $EFFORT_TYPE_NONE OR subject.ConductType != $CONDUCT_TYPE_NONE OR subject.CommentType != $COMMENT_TYPE_NONE)) " .
-                     " ON term.TermIndex = subject.TermIndex " .
-                     " LEFT OUTER JOIN nonmark_index AS average_index ON " .
-                     "       subjectstudent.Average = average_index.NonmarkIndex " .
-                     " LEFT OUTER JOIN nonmark_index AS effort_index ON " .
-                     "       subjectstudent.Effort = effort_index.NonmarkIndex " .
-                     " LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
-                     "       subjectstudent.Conduct = conduct_index.NonmarkIndex " .
-                     "ORDER BY term.TermNumber ASC";
-            $dres = &  $db->query($query);
-            if (DB::isError($dres))
-                die($dres->getDebugInfo()); // Check for errors in query
-
+            $subject_name = $row['SubjectName'];
+            $dquery = $pdb->prepare(
+                "SELECT subject.AverageType, subject.AverageTypeIndex, subjectstudent.Average, " .
+                "       subject.EffortType, subject.EffortTypeIndex, subjectstudent.Effort, " .
+                "       subject.ConductType, subject.ConductTypeIndex, subjectstudent.Conduct, " .
+                "       subject.CommentType, subjectstudent.Comment, subject.Average AS SubjectAverage, " .
+                "       average_index.Display AS AverageDisplay, " .
+                "       effort_index.Display AS EffortDisplay, " .
+                "       conduct_index.Display AS ConductDisplay, " .
+                "      subject.TermIndex, term.TermNumber, " .
+                "       get_term_weight(term.TermIndex, :class_index, :student_username) AS Weight " .
+                " FROM " .
+                " (term INNER JOIN term AS depterm " .
+                "       ON  term.DepartmentIndex = depterm.DepartmentIndex " .
+                "       AND depterm.TermIndex = :termindex " .
+                "       AND term.TermNumber  <= depterm.TermNumber " .
+                "       AND term.TermNumber  >= :low_term_number) " .
+                " INNER JOIN class ON (class.ClassIndex = :class_index) " .
+                " LEFT OUTER JOIN " . " (subjectstudent INNER JOIN subject " .
+                "       ON  subjectstudent.Username     = :student_username " .
+                "       AND subjectstudent.SubjectIndex = subject.SubjectIndex " .
+                "       AND subject.YearIndex           = :yearindex " .
+                "       AND subject.Name                = :subject_name " .
+                "       AND subject.ShowInList          = 1 " .
+                "       AND (subject.AverageType != :at_none OR " .
+                "            subject.EffortType  != :et_none OR " .
+                "            subject.ConductType != :cont_none OR " .
+                "            subject.CommentType != :comt_none)) " .
+                " ON term.TermIndex = subject.TermIndex " .
+                " LEFT OUTER JOIN nonmark_index AS average_index ON " .
+                "       subjectstudent.Average = average_index.NonmarkIndex " .
+                " LEFT OUTER JOIN nonmark_index AS effort_index ON " .
+                "       subjectstudent.Effort = effort_index.NonmarkIndex " .
+                " LEFT OUTER JOIN nonmark_index AS conduct_index ON " .
+                "       subjectstudent.Conduct = conduct_index.NonmarkIndex " .
+                "ORDER BY term.TermNumber ASC"
+            );
+            $dquery->execute(['class_index' => $class_index,
+                              'student_username' => $student_username,
+                              'termindex' => $termindex,
+                              'low_term_number' => $low_term_number,
+                              'yearindex' => $yearindex,
+                              'subject_name' => $subject_name,
+                              'at_none' => $AVG_TYPE_NONE,
+                              'et_none' => $EFFORT_TYPE_NONE,
+                              'cont_none' => $CONDUCT_TYPE_NONE,
+                              'comt_none' => $COMMENT_TYPE_NONE]);
             $average = 0;
             $average_max = 0;
             $subj_average = 0;
             $subj_average_max = 0;
 
-            while ( $drow = & $dres->fetchRow(DB_FETCHMODE_ASSOC) ) {
+            while($drow = $dquery->fetch()) {
                 $term_weight = $drow['Weight'];
 
                 if ($drow['AverageType'] == $AVG_TYPE_NONE) {
@@ -911,23 +938,25 @@ while ( $row = & $res->fetchRow(DB_FETCHMODE_ASSOC) ) {
 
 if ($is_admin or $is_ct or $is_hod or $is_principal) {
     if ($conduct_type != $CLASS_CONDUCT_TYPE_NONE) {
-        $query = "SELECT term.TermNumber, term.TermIndex, classlist.Conduct, " .
-             "       classterm.Conduct AS ClassConduct, classterm.ConductType," .
-             "       get_term_weight(term.TermIndex, classterm.ClassIndex, '$student_username') AS Weight FROM " .
-             " (term INNER JOIN term AS depterm " .
-             "       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
-             "       AND depterm.TermIndex = $termindex" .
-             "       AND term.TermNumber <= depterm.TermNumber) " .
-             " INNER JOIN " .
-             " (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
-             "       ON  classlist.Username = '$student_username' " .
-             "       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
-             "       AND class.YearIndex = $yearindex) " .
-             " ON term.TermIndex = classterm.TermIndex " .
-             "ORDER BY term.TermNumber";
-        $cRes = &   $db->query($query);
-        if (DB::isError($cRes))
-            die($cRes->getDebugInfo()); // Check for errors in query
+        $query = $pdb->prepare(
+            "SELECT term.TermNumber, term.TermIndex, classlist.Conduct, " .
+            "       classterm.Conduct AS ClassConduct, classterm.ConductType," .
+            "       get_term_weight(term.TermIndex, classterm.ClassIndex, :student_username) AS Weight FROM " .
+            " (term INNER JOIN term AS depterm " .
+            "       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+            "       AND depterm.TermIndex = :termindex " .
+            "       AND term.TermNumber <= depterm.TermNumber) " .
+            " INNER JOIN " .
+            " (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
+            "       ON  classlist.Username = :student_username " .
+            "       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+            "       AND class.YearIndex = :yearindex) " .
+            " ON term.TermIndex = classterm.TermIndex " .
+            "ORDER BY term.TermNumber"
+        );
+        $query->execute(['student_username' => $student_username,
+                         'termindex' => $termindex,
+                         'yearindex' => $yearindex]);
 
         $ovl_conduct = 0;
         $ovl_conduct_max = 0;
@@ -946,10 +975,10 @@ if ($is_admin or $is_ct or $is_hod or $is_principal) {
         echo "               <td nowrap>Conduct</td>\n";
         echo "               <td nowrap>1</td>\n";
 
-        while ( $cRow = & $cRes->fetchrow(DB_FETCHMODE_ASSOC) ) {
+        while($cRow = $query->fetch()) {
             $term_weight = $cRow['Weight'];
 
-            if ($cRow['Conduct'] != - 1 and ! is_null($cRow['Conduct'])) {
+            if ($cRow['Conduct'] != -1 and !is_null($cRow['Conduct'])) {
                 $term_conduct = round($cRow['Conduct']);
                 $ovl_conduct += $term_conduct * $term_weight;
                 $ovl_conduct_max += 100 * $term_weight;
@@ -993,36 +1022,14 @@ if ($is_admin or $is_ct or $is_hod or $is_principal) {
                         $ovl_conduct_max += 100 * $term_weight;
                     }
                 } elseif ($conduct_type == $CLASS_CONDUCT_TYPE_INDEX) {
-                    if (isset($_POST["conduct"]) and
-                             $termindex == $cRow['TermIndex']) {
-                        $scorestr = safe($_POST["conduct"]);
-                        $query = "SELECT Display FROM nonmark_index " .
-                                 "WHERE Input='$scorestr' " .
-                                 "AND   NonmarkTypeIndex=$conduct_type_index";
-                        $nres = & $db->query($query);
-                        if (DB::isError($nres))
-                            die($nres->getDebugInfo());
-
-                        if ($nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-                            $score = $nrow['Display'];
-                        } else {
+                    if (isset($_POST["conduct"]) and $termindex == $cRow['TermIndex']) {
+                        $score = get_nonmark_display($_POST['conduct'], $conduct_type_index);
+                        if(is_null($score))
                             $score = "-";
-                        }
                     } else {
-                        $scoreindex = $cRow['Conduct'];
-                        $query = "SELECT Input, Display FROM nonmark_index " .
-                                 "WHERE NonmarkIndex=$scoreindex";
-                        $nres = & $db->query($query);
-                        if (DB::isError($nres))
-                            die($nres->getDebugInfo());
-
-                        if ($nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-                            $scorestr = $nrow['Input'];
-                            $score = $nrow['Display'];
-                        } else {
-                            $scorestr = "";
+                        $score = get_nonmark_display($cRow['Conduct'], $conduct_type_index);
+                        if(is_null($score))
                             $score = "-";
-                        }
                     }
                 } elseif ($conduct_type == $CLASS_CONDUCT_TYPE_CALC or
                          $conduct_type == $CLASS_CONDUCT_TYPE_PUN) {
@@ -1107,23 +1114,25 @@ if ($is_admin or $is_ct or $is_hod or $is_principal) {
     }
 
     if ($average_type != $CLASS_AVG_TYPE_NONE) {
-        $query = "SELECT term.TermNumber, term.TermIndex, classlist.Average, " .
-             "       classterm.Average AS ClassAverage, classterm.AverageType," .
-             "       get_term_weight(term.TermIndex, classterm.ClassIndex, '$student_username') AS Weight FROM " .
-             " (term INNER JOIN term AS depterm " .
-             "       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
-             "       AND depterm.TermIndex = $termindex" .
-             "       AND term.TermNumber <= depterm.TermNumber) " .
-             " INNER JOIN " .
-             " (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
-             "       ON  classlist.Username = '$student_username' " .
-             "       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
-             "       AND class.YearIndex = $yearindex) " .
-             " ON term.TermIndex = classterm.TermIndex " .
-             "ORDER BY term.TermNumber";
-        $cRes = &   $db->query($query);
-        if (DB::isError($cRes))
-            die($cRes->getDebugInfo()); // Check for errors in query
+        $query = $pdb->prepare(
+            "SELECT term.TermNumber, term.TermIndex, classlist.Average, " .
+            "       classterm.Average AS ClassAverage, classterm.AverageType," .
+            "       get_term_weight(term.TermIndex, classterm.ClassIndex, :student_username) AS Weight FROM " .
+            " (term INNER JOIN term AS depterm " .
+            "       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+            "       AND depterm.TermIndex = :termindex" .
+            "       AND term.TermNumber <= depterm.TermNumber) " .
+            " INNER JOIN " .
+            " (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
+            "       ON  classlist.Username = :student_username " .
+            "       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+            "       AND class.YearIndex = :yearindex) " .
+            " ON term.TermIndex = classterm.TermIndex " .
+            "ORDER BY term.TermNumber"
+        );
+        $query->execute(['student_username' => $student_username,
+                         'termindex' => $termindex,
+                         'yearindex' => $yearindex]);
 
         $ovl_average = 0;
         $ovl_average_max = 0;
@@ -1141,7 +1150,7 @@ if ($is_admin or $is_ct or $is_hod or $is_principal) {
         echo "            <tr$alt id='row_average']}'>\n";
         echo "               <td nowrap colspan='2'><b>Average</b></td>\n";
 
-        while ( $cRow = & $cRes->fetchrow(DB_FETCHMODE_ASSOC) ) {
+        while($cRow = $query->fetch()) {
             $term_weight = $cRow['Weight'];
 
             if ($cRow['Average'] != - 1 and ! is_null($cRow['Average'])) {
@@ -1188,36 +1197,14 @@ if ($is_admin or $is_ct or $is_hod or $is_principal) {
                         $ovl_average_max += 100 * $term_weight;
                     }
                 } elseif ($average_type == $CLASS_AVG_TYPE_INDEX) {
-                    if (isset($_POST["average"]) and
-                             $termindex == $cRow['TermIndex']) {
-                        $scorestr = safe($_POST["average"]);
-                        $query = "SELECT Display FROM nonmark_index " .
-                                 "WHERE Input='$scorestr' " .
-                                 "AND   NonmarkTypeIndex=$average_type_index";
-                        $nres = & $db->query($query);
-                        if (DB::isError($nres))
-                            die($nres->getDebugInfo());
-
-                        if ($nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-                            $score = $nrow['Display'];
-                        } else {
+                    if (isset($_POST["average"]) and $termindex == $cRow['TermIndex']) {
+                        $score = get_nonmark_display($_POST['average'], $average_type_index);
+                        if(is_null($score))
                             $score = "N/A";
-                        }
                     } else {
-                        $scoreindex = $cRow['Average'];
-                        $query = "SELECT Input, Display FROM nonmark_index " .
-                                 "WHERE NonmarkIndex=$scoreindex";
-                        $nres = & $db->query($query);
-                        if (DB::isError($nres))
-                            die($nres->getDebugInfo());
-
-                        if ($nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-                            $scorestr = $nrow['Input'];
-                            $score = $nrow['Display'];
-                        } else {
-                            $scorestr = "";
+                        $score = get_nonmark_display($cRow['Average'], $average_type_index);
+                        if(is_null($score))
                             $score = "N/A";
-                        }
                     }
                 } elseif ($average_type == $CLASS_AVG_TYPE_CALC) {
                     if ($cRow['Average'] == - 1) {
@@ -1295,255 +1282,374 @@ if ($is_admin or $is_ct or $is_hod or $is_principal) {
         echo "            </tr>\n";
     }
 
-    if ($average_type == $CLASS_AVG_TYPE_PERCENT or
-         $average_type == $CLASS_AVG_TYPE_CALC) {
-        $query = "SELECT term.TermNumber, term.TermIndex, classlist.Rank FROM " .
-         " (term INNER JOIN term AS depterm " .
-         "       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
-         "       AND depterm.TermIndex = $termindex" .
-         "       AND term.TermNumber <= depterm.TermNumber) " . " INNER JOIN " .
-         " (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
-         "       ON  classlist.Username = '$student_username' " .
-         "       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
-         "       AND class.YearIndex = $yearindex) " .
-         " ON term.TermIndex = classterm.TermIndex " . "ORDER BY term.TermNumber";
-    $cRes = &   $db->query($query);
-    if (DB::isError($cRes))
-        die($cRes->getDebugInfo()); // Check for errors in query
+    if ($average_type == $CLASS_AVG_TYPE_PERCENT or $average_type == $CLASS_AVG_TYPE_CALC) {
+        $query = $pdb->prepare(
+            "SELECT term.TermNumber, term.TermIndex, classlist.Rank FROM " .
+            " (term INNER JOIN term AS depterm " .
+            "       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+            "       AND depterm.TermIndex = :termindex" .
+            "       AND term.TermNumber <= depterm.TermNumber) " .
+            " INNER JOIN " .
+            " (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
+            "       ON  classlist.Username = :student_username " .
+            "       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+            "       AND class.YearIndex = :yearindex) " .
+            " ON term.TermIndex = classterm.TermIndex " .
+            "ORDER BY term.TermNumber"
+        );
+        $query->execute(['termindex' => $termindex,
+                         'student_username' => $student_username,
+                         'yearindex' => $yearindex]);
 
-    $alt_count += 1;
+        $alt_count += 1;
 
-    if ($alt_count % 2 == 0) {
-        $alt = " class='alt'";
-    } else {
-        $alt = " class='std'";
-    }
-
-    echo "            <tr$alt id='row_rank']}'>\n";
-    echo "               <td nowrap colspan='2'>Rank</td>\n";
-
-    while ( $cRow = & $cRes->fetchrow(DB_FETCHMODE_ASSOC) ) {
-        if ($cRow['Rank'] == - 1) {
-            $scorestr = "";
-            $score = "-";
+        if ($alt_count % 2 == 0) {
+            $alt = " class='alt'";
         } else {
-            $scorestr = round($cRow['Rank']);
-            $score = "$scorestr";
-        }
-        $score = "<b>$score</b>";
-        if ($cRow['TermIndex'] != $termindex) {
-            $score = str_replace("<b>", "", $score);
-            $score = str_replace("</b>", "", $score);
+            $alt = " class='std'";
         }
 
-        echo "               <td>$score</td>\n";
-    }
+        echo "            <tr$alt id='row_rank']}'>\n";
+        echo "               <td nowrap colspan='2'>Rank</td>\n";
 
-    $query =    "SELECT classlist.Username, " .
-                "       ROUND(SUM(CONVERT(ROUND(studentcl.Average * " .
-                "                               get_term_weight(term.TermIndex, " .
-                "                                               studentclass.ClassIndex, " .
-                "                                               classlist.Username)), DECIMAL)) / " .
-                "             SUM(get_term_weight(term.TermIndex, studentclass.ClassIndex, classlist.Username))) " .
-                "         AS Average " .
-                "FROM classlist AS studentcl, " .
-                "     classterm AS studentct, " .
-                "     class AS studentclass, " .
-                "     term, " .
-                "     term AS selected_term, " .
-                "     class, " .
-                "     classterm, " .
-                "     classlist " .
-                "WHERE classterm.ClassTermIndex=$classtermindex " .
-                "AND   class.ClassIndex=classterm.ClassIndex " .
-                "AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
-                "AND   selected_term.TermIndex = classterm.TermIndex " .
-                "AND   term.TermNumber <= selected_term.TermNumber " .
-                "AND   term.DepartmentIndex = selected_term.DepartmentIndex " .
-                "AND   studentclass.YearIndex = class.YearIndex " .
-                "AND   studentct.ClassIndex = studentclass.ClassIndex " .
-                "AND   studentct.TermIndex = term.TermIndex " .
-                "AND   studentcl.ClassTermIndex = studentct.ClassTermIndex " .
-                "AND   studentcl.Username = classlist.Username " .
-                "AND   studentcl.Average != -1 " .
-                "GROUP BY classlist.Username " .
-                "ORDER BY Average DESC";
-    $cRes = &   $db->query($query);
-    if (DB::isError($cRes))
-        die($cRes->getDebugInfo()); // Check for errors in query
+        while ($cRow = $query->fetch()) {
+            if ($cRow['Rank'] == - 1) {
+                $scorestr = "";
+                $score = "-";
+            } else {
+                $scorestr = round($cRow['Rank']);
+                $score = "$scorestr";
+            }
+            $score = "<b>$score</b>";
+            if ($cRow['TermIndex'] != $termindex) {
+                $score = str_replace("<b>", "", $score);
+                $score = str_replace("</b>", "", $score);
+            }
 
-    $countrank = 0;
-    $rank = - 1;
-    $prevmark = - 1;
-    $same = 1;
-    /* Student username may not show up if they don't have any marks in any subjects */
-    while ( $cRow = & $cRes->fetchrow(DB_FETCHMODE_ASSOC) ) {
-        if ($cRow['Average'] != $prevmark) {
-            $countrank += $same;
-            $same = 1;
+            echo "               <td>$score</td>\n";
+        }
+
+        $query = $pdb->prepare(
+            "SELECT classlist.Username, " .
+            "       ROUND(SUM(CONVERT(ROUND(studentcl.Average * " .
+            "                               get_term_weight(term.TermIndex, " .
+            "                                               studentclass.ClassIndex, " .
+            "                                               classlist.Username)), DECIMAL)) / " .
+            "             SUM(get_term_weight(term.TermIndex, studentclass.ClassIndex, classlist.Username))) " .
+            "         AS Average " .
+            "FROM classlist AS studentcl, " .
+            "     classterm AS studentct, " .
+            "     class AS studentclass, " .
+            "     term, " .
+            "     term AS selected_term, " .
+            "     class, " .
+            "     classterm, " .
+            "     classlist " .
+            "WHERE classterm.ClassTermIndex=:classterm_index " .
+            "AND   class.ClassIndex=classterm.ClassIndex " .
+            "AND   classlist.ClassTermIndex = classterm.ClassTermIndex " .
+            "AND   selected_term.TermIndex = classterm.TermIndex " .
+            "AND   term.TermNumber <= selected_term.TermNumber " .
+            "AND   term.DepartmentIndex = selected_term.DepartmentIndex " .
+            "AND   studentclass.YearIndex = class.YearIndex " .
+            "AND   studentct.ClassIndex = studentclass.ClassIndex " .
+            "AND   studentct.TermIndex = term.TermIndex " .
+            "AND   studentcl.ClassTermIndex = studentct.ClassTermIndex " .
+            "AND   studentcl.Username = classlist.Username " .
+            "AND   studentcl.Average != -1 " .
+            "GROUP BY classlist.Username " .
+            "ORDER BY Average DESC"
+        );
+        $query->execute(['classterm_index' => $classterm_index]);
+
+        $countrank = 0;
+        $rank = - 1;
+        $prevmark = - 1;
+        $same = 1;
+        /* Student username may not show up if they don't have any marks in any subjects */
+        while ($cRow = $query->fetch()) {
+            if ($cRow['Average'] != $prevmark) {
+                $countrank += $same;
+                $same = 1;
+            } else {
+                $same += 1;
+            }
+            $prevmark = $cRow['Average'];
+            if ($cRow['Username'] == $student_username) {
+                $rank = $countrank;
+                break;
+            }
+        }
+
+        if ($rank == - 1) {
+            $ovl_rank = "-";
         } else {
-            $same += 1;
+            $ovl_rank = "<i>$rank</i>";
         }
-        $prevmark = $cRow['Average'];
-        if ($cRow['Username'] == $student_username) {
-            $rank = $countrank;
-            break;
+        echo "               <td>$ovl_rank</td>";
+        if ($colcount > 0) {
+            echo "               <td colspan='$colcount'>&nbsp;</td>\n";
         }
+        echo "            </tr>\n";
     }
 
-    if ($rank == - 1) {
-        $ovl_rank = "-";
-    } else {
-        $ovl_rank = "<i>$rank</i>";
-    }
-    echo "               <td>$ovl_rank</td>";
-    if ($colcount > 0) {
-        echo "               <td colspan='$colcount'>&nbsp;</td>\n";
-    }
-    echo "            </tr>\n";
-}
+    if ($effort_type != $CLASS_EFFORT_TYPE_NONE) {
 
-if ($effort_type != $CLASS_EFFORT_TYPE_NONE) {
-    $query = "SELECT term.TermNumber, term.TermIndex, classlist.Effort, " .
-         "       classterm.Effort AS ClassEffort, classterm.EffortType, " .
-         "       get_term_weight(term.TermIndex, classterm.ClassIndex, '$student_username') AS Weight FROM " .
-         " (term INNER JOIN term AS depterm " .
-         "       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
-         "       AND depterm.TermIndex = $termindex" .
-         "       AND term.TermNumber <= depterm.TermNumber) " . " INNER JOIN " .
-         " (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
-         "       ON  classlist.Username = '$student_username' " .
-         "       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
-         "       AND class.YearIndex = $yearindex) " .
-         " ON term.TermIndex = classterm.TermIndex " . "ORDER BY term.TermNumber";
-    $cRes = &   $db->query($query);
-    if (DB::isError($cRes))
-        die($cRes->getDebugInfo()); // Check for errors in query
+        $query = $pdb->prepare(
+            "SELECT term.TermNumber, term.TermIndex, classlist.Effort, " .
+            "       classterm.Effort AS ClassEffort, classterm.EffortType, " .
+            "       get_term_weight(term.TermIndex, classterm.ClassIndex, :student_username) AS Weight FROM " .
+            " (term INNER JOIN term AS depterm " .
+            "       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+            "       AND depterm.TermIndex = :termindex" .
+            "       AND term.TermNumber <= depterm.TermNumber) " . " INNER JOIN " .
+            " (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
+            "       ON  classlist.Username = :student_username " .
+            "       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+            "       AND class.YearIndex = :yearindex) " .
+            " ON term.TermIndex = classterm.TermIndex " .
+            "ORDER BY term.TermNumber"
+        );
+        $query->execute(['student_username' => $student_username,
+                         'termindex' => $termindex,
+                         'yearindex' => $yearindex]);
 
-    $ovl_effort = 0;
-    $ovl_effort_max = 0;
-    $cls_ovl_effort = 0;
-    $cls_ovl_effort_max = 0;
+        $ovl_effort = 0;
+        $ovl_effort_max = 0;
+        $cls_ovl_effort = 0;
+        $cls_ovl_effort_max = 0;
 
-    $alt_count += 1;
+        $alt_count += 1;
 
-    if ($alt_count % 2 == 0) {
-        $alt = " class='alt'";
-    } else {
-        $alt = " class='std'";
-    }
-
-    echo "            <tr$alt id='row_average']}'>\n";
-    echo "               <td nowrap colspan='2'>Effort</td>\n";
-
-    while ( $cRow = & $cRes->fetchrow(DB_FETCHMODE_ASSOC) ) {
-        $term_weight = 1;
-
-        if (! is_null($cRow['Weight'])) {
-            $term_weight = $cRow['Weight'];
-        }
-        if ($cRow['Effort'] != - 1 and ! is_null($cRow['Effort'])) {
-            $term_effort = round($cRow['Effort']);
-            $ovl_effort += $term_effort * $term_weight;
-            $ovl_effort_max += 100 * $term_weight;
-
-            $term_effort = "$term_effort%";
-        }
-        if ($cRow['ClassEffort'] != - 1 and ! is_null($cRow['ClassEffort'])) {
-
-            $class_term_effort = "$class_term_effort%";
+        if ($alt_count % 2 == 0) {
+            $alt = " class='alt'";
+        } else {
+            $alt = " class='std'";
         }
 
-        $effort_type = $cRow['EffortType'];
-        if ($effort_type != $CLASS_EFFORT_TYPE_NONE) {
-            if ($effort_type == $CLASS_EFFORT_TYPE_PERCENT) {
-                if (isset($_POST["effort"]) and $termindex == $cRow['TermIndex']) {
-                    $scorestr = $_POST["effort"];
+        echo "            <tr$alt id='row_average']}'>\n";
+        echo "               <td nowrap colspan='2'>Effort</td>\n";
 
+        while ($cRow = $query->fetch()) {
+            $term_weight = 1;
+
+            if (! is_null($cRow['Weight'])) {
+                $term_weight = $cRow['Weight'];
+            }
+            if ($cRow['Effort'] != - 1 and ! is_null($cRow['Effort'])) {
+                $term_effort = round($cRow['Effort']);
+                $ovl_effort += $term_effort * $term_weight;
+                $ovl_effort_max += 100 * $term_weight;
+
+                $term_effort = "$term_effort%";
+            }
+            if ($cRow['ClassEffort'] != - 1 and ! is_null($cRow['ClassEffort'])) {
+
+                $class_term_effort = "$class_term_effort%";
+            }
+
+            $effort_type = $cRow['EffortType'];
+            if ($effort_type != $CLASS_EFFORT_TYPE_NONE) {
+                if ($effort_type == $CLASS_EFFORT_TYPE_PERCENT) {
+                    if (isset($_POST["effort"]) and $termindex == $cRow['TermIndex']) {
+                        $scorestr = $_POST["effort"];
+
+                        if (strval(intval($scorestr)) != $scorestr) {
+                            $score = "-";
+                        } elseif (intval($scorestr) > 100) {
+                            $score = "100";
+                        } elseif (intval($scorestr) < 0) {
+                            $score = "0";
+                        } else {
+                            $score = "$scorestr";
+                        }
+                    } else {
+                        if ($cRow['Effort'] == - 1) {
+                            $scorestr = "";
+                            $score = "-";
+                        } else {
+                            $scorestr = round($cRow['Effort']);
+                            $score = "$scorestr";
+                        }
+                    }
+                    if ($score != "-") {
+                        $term_effort = round(intval($score));
+                        $ovl_effort += $term_effort * $term_weight;
+                        $ovl_effort_max += 100 * $term_weight;
+                    }
+                } elseif ($effort_type == $CLASS_EFFORT_TYPE_INDEX) {
+                    if (isset($_POST["effort"]) and $termindex == $cRow['TermIndex']) {
+                        $score = get_nonmark_display($_POST['effort'], $effort_type_index);
+                        if(is_null($score))
+                            $score = "-";
+                    } else {
+                        $score = get_nonmark_display($cRow['Effort'], $effort_type_index);
+                        if(is_null($score))
+                            $score = "-";
+                    }
+                } elseif ($effort_type == $CLASS_EFFORT_TYPE_CALC) {
+                    if ($cRow['Effort'] == - 1) {
+                        $score = "-";
+                    } else {
+                        $scorestr = round($cRow['Effort']);
+                        if ($scorestr < 60) {
+                            $color = "#CC0000";
+                        } elseif ($scorestr < 75) {
+                            $color = "#666600";
+                        } elseif ($scorestr < 90) {
+                            $color = "#000000";
+                        } else {
+                            $color = "#339900";
+                        }
+                        $score = "<span style='color: $color'>$scorestr%</span>";
+                    }
+                    if ($cRow['ClassEffort'] == - 1) {
+                        $score = "<b>$score</b>";
+                    } else {
+                        $class_term_effort = round($cRow['ClassEffort']);
+                        $cls_ovl_effort += $class_term_effort * $term_weight;
+                        $cls_ovl_effort_max += 100 * $term_weight;
+
+                        $score = "<b>$score</b> ($class_term_effort)";
+                    }
+                    if ($cRow['Effort'] != - 1) {
+                        $term_effort = round($cRow['Effort']);
+                        $ovl_effort += $term_effort * $term_weight;
+                        $ovl_effort_max += 100 * $term_weight;
+                    }
+                } else {
+                    $score = "-";
+                }
+                if ($cRow['TermIndex'] != $termindex) {
+                    $score = str_replace("<b>", "", $score);
+                    $score = str_replace("</b>", "", $score);
+                }
+
+                if (($effort_type == $CLASS_EFFORT_TYPE_INDEX or
+                     $effort_type == $CLASS_EFFORT_TYPE_PERCENT) and
+                     ! $student_info['ReportDone'] and
+                     $termindex == $cRow['TermIndex']) {
+                    echo "               <td><input type='text' name='effort' " .
+                     "id='effort' value='$scorestr' size='4' onChange='recalc_effort();'> = <label name='e' id='eavg' for='effort'>$score</label></td>\n";
+                } else {
+                    echo "               <td>$score</td>\n";
+                }
+            }
+        }
+
+        if ($cls_ovl_effort_max > 0) {
+            $scorestr = round($cls_ovl_effort * 100 / $cls_ovl_effort_max);
+            $cls_ovl_effort = " ($scorestr)";
+        } else {
+            $cls_ovl_effort = "";
+        }
+
+        if ($ovl_effort_max > 0) {
+            $scorestr = round($ovl_effort * 100 / $ovl_effort_max);
+            $ovl_effort = "$scorestr";
+
+            if ($scorestr < 60) {
+                $color = "#CC0000";
+            } elseif ($scorestr < 75) {
+                $color = "#666600";
+            } elseif ($scorestr < 90) {
+                $color = "#000000";
+            } else {
+                $color = "#339900";
+            }
+            $ovl_effort = "<i><span style='color: $color'>$scorestr%</span></i>";
+        } else {
+            $ovl_effort = "-";
+        }
+        echo "               <td>$ovl_effort$cls_ovl_effort</td>";
+        if ($colcount > 0) {
+            echo "               <td colspan='$colcount'>&nbsp;</td>\n";
+        }
+        echo "            </tr>\n";
+    }
+
+    if ($absence_type != $ABSENCE_TYPE_NONE) {
+        $query = $pdb->prepare(
+            "SELECT term.TermNumber, term.TermIndex, classlist.Absences FROM " .
+            " (term INNER JOIN term AS depterm " .
+            "       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+            "       AND depterm.TermIndex = :termindex" .
+            "       AND term.TermNumber <= depterm.TermNumber) " .
+            " INNER JOIN " .
+            " (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
+            "       ON  classlist.Username = :student_username " .
+            "       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+            "       AND class.YearIndex = :yearindex) " .
+            " ON term.TermIndex = classterm.TermIndex " .
+            "ORDER BY term.TermNumber"
+        );
+        $query->execute(['student_username' => $student_username,
+                         'termindex' => $termindex,
+                         'yearindex' => $yearindex]);
+        $alt_count += 1;
+
+        if ($alt_count % 2 == 0) {
+            $alt = " class='alt'";
+        } else {
+            $alt = " class='std'";
+        }
+
+        echo "            <tr$alt id='row_absences']}'>\n";
+        echo "               <td nowrap colspan='2'>Absences</td>\n";
+
+        while ($cRow = $query->fetch()) {
+            if ($absence_type == $ABSENCE_TYPE_NUM) {
+                if (isset($_POST["absences"]) and $termindex == $cRow['TermIndex']) {
+                    $scorestr = $_POST["absences"];
                     if (strval(intval($scorestr)) != $scorestr) {
                         $score = "-";
-                    } elseif (intval($scorestr) > 100) {
-                        $score = "100";
                     } elseif (intval($scorestr) < 0) {
                         $score = "0";
                     } else {
                         $score = "$scorestr";
                     }
                 } else {
-                    if ($cRow['Effort'] == - 1) {
+                    if ($cRow['Absences'] == - 1) {
                         $scorestr = "";
                         $score = "-";
                     } else {
-                        $scorestr = round($cRow['Effort']);
+                        $scorestr = round($cRow['Absences']);
                         $score = "$scorestr";
                     }
                 }
                 if ($score != "-") {
-                    $term_effort = round(intval($score));
-                    $ovl_effort += $term_effort * $term_weight;
-                    $ovl_effort_max += 100 * $term_weight;
+                    $term_absence = round(intval($score));
                 }
-            } elseif ($effort_type == $CLASS_EFFORT_TYPE_INDEX) {
-                if (isset($_POST["effort"]) and $termindex == $cRow['TermIndex']) {
-                    $scorestr = safe($_POST["effort"]);
-                    $query = "SELECT Display FROM nonmark_index " .
-                             "WHERE Input='$scorestr' " .
-                             "AND   NonmarkTypeIndex=$effort_type_index";
-                    $nres = & $db->query($query);
-                    if (DB::isError($nres))
-                        die($nres->getDebugInfo());
+            } elseif ($absence_type == $ABSENCE_TYPE_CALC) {
+                $absent = 0;
+                $late = 0;
+                $suspended = 0;
 
-                    if ($nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-                        $score = $nrow['Display'];
-                    } else {
-                        $score = "-";
-                    }
-                } else {
-                    $scoreindex = $cRow['Effort'];
-                    $query = "SELECT Input, Display FROM nonmark_index " .
-                             "WHERE NonmarkIndex=$scoreindex";
-                    $nres = & $db->query($query);
-                    if (DB::isError($nres))
-                        die($nres->getDebugInfo());
+                $nquery = $pdb->prepare(
+                    "SELECT AttendanceTypeIndex, COUNT(AttendanceIndex) AS Count " .
+                    "       FROM attendance INNER JOIN subject USING (SubjectIndex) " .
+                    "       INNER JOIN period USING (PeriodIndex) " .
+                    "WHERE  attendance.Username = :student_username " .
+                    "AND    subject.YearIndex = :yearindex " .
+                    "AND    subject.TermIndex = :dtermindex " .
+                    "AND    period.Period = 1 " .
+                    "AND    attendance.AttendanceTypeIndex > 0 " .
+                    "GROUP BY AttendanceTypeIndex "
+                );
+                $nquery->execute(['student_username' => $student_username,
+                                  'dtermindex' => $cRow['TermIndex'],
+                                  'yearindex' => $yearindex]);
 
-                    if ($nrow = & $nres->fetchRow(DB_FETCHMODE_ASSOC)) {
-                        $scorestr = $nrow['Input'];
-                        $score = $nrow['Display'];
-                    } else {
-                        $scorestr = "";
-                        $score = "-";
-                    }
+                while ($dRow = $nquery->fetch()) {
+                    if ($dRow['AttendanceTypeIndex'] == $ATT_ABSENT)
+                        $absent = $dRow['Count'];
+                    if ($dRow['AttendanceTypeIndex'] == $ATT_LATE)
+                        $late = $dRow['Count'];
+                    if ($dRow['AttendanceTypeIndex'] == $ATT_SUSPENDED)
+                        $suspended = $dRow['Count'];
                 }
-            } elseif ($effort_type == $CLASS_EFFORT_TYPE_CALC) {
-                if ($cRow['Effort'] == - 1) {
-                    $score = "-";
-                } else {
-                    $scorestr = round($cRow['Effort']);
-                    if ($scorestr < 60) {
-                        $color = "#CC0000";
-                    } elseif ($scorestr < 75) {
-                        $color = "#666600";
-                    } elseif ($scorestr < 90) {
-                        $color = "#000000";
-                    } else {
-                        $color = "#339900";
-                    }
-                    $score = "<span style='color: $color'>$scorestr%</span>";
-                }
-                if ($cRow['ClassEffort'] == - 1) {
-                    $score = "<b>$score</b>";
-                } else {
-                    $class_term_effort = round($cRow['ClassEffort']);
-                    $cls_ovl_effort += $class_term_effort * $term_weight;
-                    $cls_ovl_effort_max += 100 * $term_weight;
-
-                    $score = "<b>$score</b> ($class_term_effort)";
-                }
-                if ($cRow['Effort'] != - 1) {
-                    $term_effort = round($cRow['Effort']);
-                    $ovl_effort += $term_effort * $term_weight;
-                    $ovl_effort_max += 100 * $term_weight;
-                }
+                $score = $absent + $suspended;
+                $score = "<b>$score</b>";
             } else {
                 $score = "-";
             }
@@ -1552,329 +1658,214 @@ if ($effort_type != $CLASS_EFFORT_TYPE_NONE) {
                 $score = str_replace("</b>", "", $score);
             }
 
-            if (($effort_type == $CLASS_EFFORT_TYPE_INDEX or
-                 $effort_type == $CLASS_EFFORT_TYPE_PERCENT) and
-                 ! $student_info['ReportDone'] and
+            if (($absence_type == $ABSENCE_TYPE_NUM) and ! $student_info['ReportDone'] and
                  $termindex == $cRow['TermIndex']) {
-                echo "               <td><input type='text' name='effort' " .
-                 "id='effort' value='$scorestr' size='4' onChange='recalc_effort();'> = <label name='e' id='eavg' for='effort'>$score</label></td>\n";
+                echo "               <td><input type='text' name='absences' " .
+                 "id='absences' value='$scorestr' size='4' onChange='recalc_absences();'> = <label name='ab' id='abavg' for='absences'>$score</label></td>\n";
             } else {
                 echo "               <td>$score</td>\n";
             }
         }
-    }
 
-    if ($cls_ovl_effort_max > 0) {
-        $scorestr = round($cls_ovl_effort * 100 / $cls_ovl_effort_max);
-        $cls_ovl_effort = " ($scorestr)";
-    } else {
-        $cls_ovl_effort = "";
-    }
-
-    if ($ovl_effort_max > 0) {
-        $scorestr = round($ovl_effort * 100 / $ovl_effort_max);
-        $ovl_effort = "$scorestr";
-
-        if ($scorestr < 60) {
-            $color = "#CC0000";
-        } elseif ($scorestr < 75) {
-            $color = "#666600";
-        } elseif ($scorestr < 90) {
-            $color = "#000000";
-        } else {
-            $color = "#339900";
+        $abs_colcount = $colcount + 1;
+        if ($abs_colcount > 0) {
+            echo "               <td colspan='$abs_colcount'>&nbsp;</td>\n";
         }
-        $ovl_effort = "<i><span style='color: $color'>$scorestr%</span></i>";
-    } else {
-        $ovl_effort = "-";
+        echo "            </tr>\n";
     }
-    echo "               <td>$ovl_effort$cls_ovl_effort</td>";
-    if ($colcount > 0) {
-        echo "               <td colspan='$colcount'>&nbsp;</td>\n";
     }
-    echo "            </tr>\n";
-}
+    echo "         </table>\n"; // End of table
 
-if ($absence_type != $ABSENCE_TYPE_NONE) {
-    $query = "SELECT term.TermNumber, term.TermIndex, classlist.Absences FROM " .
-         " (term INNER JOIN term AS depterm " .
-         "       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
-         "       AND depterm.TermIndex = $termindex" .
-         "       AND term.TermNumber <= depterm.TermNumber) " . " INNER JOIN " .
-         " (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
-         "       ON  classlist.Username = '$student_username' " .
-         "       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
-         "       AND class.YearIndex = $yearindex) " .
-         " ON term.TermIndex = classterm.TermIndex " . "ORDER BY term.TermNumber";
-    $cRes = &   $db->query($query);
-    if (DB::isError($cRes))
-        die($cRes->getDebugInfo()); // Check for errors in query
+    if (! $show_only) {
+    echo "         <table class='transparent' align='center' width=600px>\n";
 
-    $alt_count += 1;
+    if ($ct_comment_type != $COMMENT_TYPE_NONE) {
+        $query = $pdb->prepare(
+            "SELECT term.TermName, term.TermIndex, classlist.CTComment FROM " .
+            " (term INNER JOIN term AS depterm " .
+            "       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+            "       AND depterm.TermIndex = :termindex" .
+            "       AND term.TermNumber <= depterm.TermNumber) " .
+            " INNER JOIN " .
+            " (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
+            "       ON  classlist.Username = :student_username " .
+            "       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+            "       AND class.YearIndex = :yearindex) " .
+            " ON term.TermIndex = classterm.TermIndex " .
+            "ORDER BY term.TermNumber"
+        );
+        $query->execute(['student_username' => $student_username,
+                         'termindex' => $termindex,
+                         'yearindex' => $yearindex]);
 
-    if ($alt_count % 2 == 0) {
-        $alt = " class='alt'";
-    } else {
-        $alt = " class='std'";
-    }
+        while ($cRow = $query->fetch()) {
+            /* No point in showing a row if there's no comment for old terms */
+            if ((is_null($cRow['CTComment']) or $cRow['CTComment'] == "") and
+                 $cRow['TermIndex'] != $termindex)
+                continue;
 
-    echo "            <tr$alt id='row_absences']}'>\n";
-    echo "               <td nowrap colspan='2'>Absences</td>\n";
-
-    while ( $cRow = & $cRes->fetchrow(DB_FETCHMODE_ASSOC) ) {
-        if ($absence_type == $ABSENCE_TYPE_NUM) {
-            if (isset($_POST["absences"]) and $termindex == $cRow['TermIndex']) {
-                $scorestr = $_POST["absences"];
-                if (strval(intval($scorestr)) != $scorestr) {
-                    $score = "-";
-                } elseif (intval($scorestr) < 0) {
-                    $score = "0";
-                } else {
-                    $score = "$scorestr";
-                }
+            echo "            <tr>\n";
+            echo "               <td colspan='2'><b>${cRow['TermName']} - Class Teacher's comment:</b><br>\n";
+            if (isset($_POST["ct_comment"]) and $cRow['TermIndex'] == $termindex) {
+                $commentstr = htmlspecialchars($_POST["ct_comment"], ENT_QUOTES);
             } else {
-                if ($cRow['Absences'] == - 1) {
-                    $scorestr = "";
-                    $score = "-";
-                } else {
-                    $scorestr = round($cRow['Absences']);
-                    $score = "$scorestr";
-                }
+                $commentstr = htmlspecialchars($cRow['CTComment'], ENT_QUOTES);
             }
-            if ($score != "-") {
-                $term_absence = round(intval($score));
+            if (($ct_comment_type == $COMMENT_TYPE_MANDATORY or
+                 $ct_comment_type == $COMMENT_TYPE_OPTIONAL) and
+                 ! $student_info['ReportDone'] and ! $student_info['CTCommentDone'] and
+                 $cRow['TermIndex'] == $termindex) {
+                echo "               <textarea name='ct_comment' " .
+                 "id='ct_comment' rows='5' cols='80' " .
+                 "onChange='recalc_comment(&quot;ct&quot;);'>$commentstr</textarea>\n";
+            } else {
+                echo "               $commentstr\n";
             }
-        } elseif ($absence_type == $ABSENCE_TYPE_CALC) {
-            $absent = 0;
-            $late = 0;
-            $suspended = 0;
+            echo "               </td>\n";
+            echo "            </tr>\n";
+        }
+    }
+    if ($hod_comment_type != $COMMENT_TYPE_NONE) {
+        $query = $pdb->prepare(
+            "SELECT term.TermName, term.TermIndex, classlist.HODComment FROM " .
+            " (term INNER JOIN term AS depterm " .
+            "       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+            "       AND depterm.TermIndex = :termindex" .
+            "       AND term.TermNumber <= depterm.TermNumber) " .
+            " INNER JOIN " .
+            " (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
+            "       ON  classlist.Username = :student_username " .
+            "       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+            "       AND class.YearIndex = :yearindex) " .
+            " ON term.TermIndex = classterm.TermIndex " .
+            "ORDER BY term.TermNumber"
+        );
+        $query->execute(['student_username' => $student_username,
+                         'termindex' => $termindex,
+                         'yearindex' => $yearindex]);
 
-            $nquery = "SELECT AttendanceTypeIndex, COUNT(AttendanceIndex) AS Count " .
-                     "       FROM attendance INNER JOIN subject USING (SubjectIndex) " .
-                     "       INNER JOIN period USING (PeriodIndex) " .
-                     "WHERE  attendance.Username = '$student_username' " .
-                     "AND    subject.YearIndex = $yearindex " .
-                     "AND    subject.TermIndex = ${cRow['TermIndex']} " .
-                     "AND    period.Period = 1 " .
-                     "AND    attendance.AttendanceTypeIndex > 0 " .
-                     "GROUP BY AttendanceTypeIndex ";
-            $dRes = &   $db->query($nquery);
-            if (DB::isError($dRes))
-                die($dRes->getDebugInfo()); // Check for errors in query
-            while ( $dRow = & $dRes->fetchrow(DB_FETCHMODE_ASSOC) ) {
-                if ($dRow['AttendanceTypeIndex'] == $ATT_ABSENT)
-                    $absent = $dRow['Count'];
-                if ($dRow['AttendanceTypeIndex'] == $ATT_LATE)
-                    $late = $dRow['Count'];
-                if ($dRow['AttendanceTypeIndex'] == $ATT_SUSPENDED)
-                    $suspended = $dRow['Count'];
+        while ($cRow = $query->fetch()) {
+            /* No point in showing a row if there's no comment for old terms */
+            if ((is_null($cRow['HODComment']) or $cRow['HODComment'] == "") and
+                 $cRow['TermIndex'] != $termindex)
+                continue;
+
+            echo "            <tr>\n";
+            echo "               <td colspan='2'><b>${cRow['TermName']} - Head of Department's comment:</b><br>\n";
+            if (isset($_POST["hod_comment"]) and $cRow['TermIndex'] == $termindex) {
+                $commentstr = htmlspecialchars($_POST["hod_comment"], ENT_QUOTES);
+            } else {
+                $commentstr = htmlspecialchars($cRow['HODComment'], ENT_QUOTES);
             }
-            $score = $absent + $suspended;
-            $score = "<b>$score</b>";
-        } else {
-            $score = "-";
-        }
-        if ($cRow['TermIndex'] != $termindex) {
-            $score = str_replace("<b>", "", $score);
-            $score = str_replace("</b>", "", $score);
-        }
-
-        if (($absence_type == $ABSENCE_TYPE_NUM) and ! $student_info['ReportDone'] and
-             $termindex == $cRow['TermIndex']) {
-            echo "               <td><input type='text' name='absences' " .
-             "id='absences' value='$scorestr' size='4' onChange='recalc_absences();'> = <label name='ab' id='abavg' for='absences'>$score</label></td>\n";
-        } else {
-            echo "               <td>$score</td>\n";
+            if (($hod_comment_type == $COMMENT_TYPE_MANDATORY or
+                 $hod_comment_type == $COMMENT_TYPE_OPTIONAL) and
+                 ! $student_info['ReportDone'] and ! $student_info['HODCommentDone'] and
+                 $cRow['TermIndex'] == $termindex) {
+                echo "               <textarea name='hod_comment' " .
+                 "id='hod_comment' rows='5' cols='80' " .
+                 "onChange='recalc_comment(&quot;hod&quot;);'>$commentstr</textarea>\n";
+            } else {
+                echo "               $commentstr\n";
+            }
+            echo "               </td>\n";
+            echo "            </tr>\n";
         }
     }
+    if ($pr_comment_type != $COMMENT_TYPE_NONE) {
+        $query = $pdb->prepare(
+            "SELECT term.TermName, term.TermIndex, classlist.PrincipalComment FROM " .
+            " (term INNER JOIN term AS depterm " .
+            "       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
+            "       AND depterm.TermIndex = :termindex" .
+            "       AND term.TermNumber <= depterm.TermNumber) " .
+            " INNER JOIN " .
+            " (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
+            "       ON  classlist.Username = :student_username " .
+            "       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
+            "       AND class.YearIndex = :yearindex) " .
+            " ON term.TermIndex = classterm.TermIndex " .
+            "ORDER BY term.TermNumber"
+        );
+        $query->execute(['student_username' => $student_username,
+                         'termindex' => $termindex,
+                         'yearindex' => $yearindex]);
 
-    $abs_colcount = $colcount + 1;
-    if ($abs_colcount > 0) {
-        echo "               <td colspan='$abs_colcount'>&nbsp;</td>\n";
+        while ($cRow = $query->fetch()) {
+            /* No point in showing a row if there's no comment for old terms */
+            if ((is_null($cRow['PrincipalComment']) or
+                 $cRow['PrincipalComment'] == "") and
+                 $cRow['TermIndex'] != $termindex)
+                continue;
+
+            echo "            <tr>\n";
+            echo "               <td colspan='2'><b>${cRow['TermName']} - Principal's comment:</b><br>\n";
+            if (isset($_POST["pr_comment"]) and $cRow['TermIndex'] == $termindex) {
+                $commentstr = htmlspecialchars($_POST["pr_comment"], ENT_QUOTES);
+            } else {
+                $commentstr = htmlspecialchars($cRow['PrincipalComment'],
+                                            ENT_QUOTES);
+            }
+            if (($pr_comment_type == $COMMENT_TYPE_MANDATORY or
+                 $pr_comment_type == $COMMENT_TYPE_OPTIONAL) and
+                 ! $student_info['ReportDone'] and
+                 ! $student_info['PrincipalCommentDone'] and
+                 $cRow['TermIndex'] == $termindex) {
+                echo "               <textarea name='pr_comment' " .
+                 "id='pr_comment' rows='5' cols='80' " .
+                 "onChange='recalc_comment(&quot;pr&quot;);'>$commentstr</textarea>\n";
+            } else {
+                echo "               $commentstr\n";
+            }
+            echo "               </td>\n";
+            echo "            </tr>\n";
+        }
     }
-    echo "            </tr>\n";
-}
-}
-echo "         </table>\n"; // End of table
-
-if (! $show_only) {
-echo "         <table class='transparent' align='center' width=600px>\n";
-
-if ($ct_comment_type != $COMMENT_TYPE_NONE) {
-    $query = "SELECT term.TermName, term.TermIndex, classlist.CTComment FROM " .
-         " (term INNER JOIN term AS depterm " .
-         "       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
-         "       AND depterm.TermIndex = $termindex" .
-         "       AND term.TermNumber <= depterm.TermNumber) " . " INNER JOIN " .
-         " (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
-         "       ON  classlist.Username = '$student_username' " .
-         "       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
-         "       AND class.YearIndex = $yearindex) " .
-         " ON term.TermIndex = classterm.TermIndex " . "ORDER BY term.TermNumber";
-    $cRes = &   $db->query($query);
-    if (DB::isError($cRes))
-        die($cRes->getDebugInfo()); // Check for errors in query
-
-    while ( $cRow = & $cRes->fetchrow(DB_FETCHMODE_ASSOC) ) {
-        /* No point in showing a row if there's no comment for old terms */
-        if ((is_null($cRow['CTComment']) or $cRow['CTComment'] == "") and
-             $cRow['TermIndex'] != $termindex)
-            continue;
-
-        echo "            <tr>\n";
-        echo "               <td colspan='2'><b>${cRow['TermName']} - Class Teacher's comment:</b><br>\n";
-        if (isset($_POST["ct_comment"]) and $cRow['TermIndex'] == $termindex) {
-            $commentstr = htmlspecialchars($_POST["ct_comment"], ENT_QUOTES);
-        } else {
-            $commentstr = htmlspecialchars($cRow['CTComment'], ENT_QUOTES);
-        }
-        if (($ct_comment_type == $COMMENT_TYPE_MANDATORY or
-             $ct_comment_type == $COMMENT_TYPE_OPTIONAL) and
-             ! $student_info['ReportDone'] and ! $student_info['CTCommentDone'] and
-             $cRow['TermIndex'] == $termindex) {
-            echo "               <textarea name='ct_comment' " .
-             "id='ct_comment' rows='5' cols='80' " .
-             "onChange='recalc_comment(&quot;ct&quot;);'>$commentstr</textarea>\n";
-        } else {
-            echo "               $commentstr\n";
-        }
-        echo "               </td>\n";
-        echo "            </tr>\n";
+    echo "         </table>\n";
     }
-}
-if ($hod_comment_type != $COMMENT_TYPE_NONE) {
-    $query = "SELECT term.TermName, term.TermIndex, classlist.HODComment FROM " .
-         " (term INNER JOIN term AS depterm " .
-         "       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
-         "       AND depterm.TermIndex = $termindex" .
-         "       AND term.TermNumber <= depterm.TermNumber) " . " INNER JOIN " .
-         " (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
-         "       ON  classlist.Username = '$student_username' " .
-         "       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
-         "       AND class.YearIndex = $yearindex) " .
-         " ON term.TermIndex = classterm.TermIndex " . "ORDER BY term.TermNumber";
-    $cRes = &   $db->query($query);
-    if (DB::isError($cRes))
-        die($cRes->getDebugInfo()); // Check for errors in query
-
-    while ( $cRow = & $cRes->fetchrow(DB_FETCHMODE_ASSOC) ) {
-        /* No point in showing a row if there's no comment for old terms */
-        if ((is_null($cRow['HODComment']) or $cRow['HODComment'] == "") and
-             $cRow['TermIndex'] != $termindex)
-            continue;
-
-        echo "            <tr>\n";
-        echo "               <td colspan='2'><b>${cRow['TermName']} - Head of Department's comment:</b><br>\n";
-        if (isset($_POST["hod_comment"]) and $cRow['TermIndex'] == $termindex) {
-            $commentstr = htmlspecialchars($_POST["hod_comment"], ENT_QUOTES);
-        } else {
-            $commentstr = htmlspecialchars($cRow['HODComment'], ENT_QUOTES);
-        }
-        if (($hod_comment_type == $COMMENT_TYPE_MANDATORY or
-             $hod_comment_type == $COMMENT_TYPE_OPTIONAL) and
-             ! $student_info['ReportDone'] and ! $student_info['HODCommentDone'] and
-             $cRow['TermIndex'] == $termindex) {
-            echo "               <textarea name='hod_comment' " .
-             "id='hod_comment' rows='5' cols='80' " .
-             "onChange='recalc_comment(&quot;hod&quot;);'>$commentstr</textarea>\n";
-        } else {
-            echo "               $commentstr\n";
-        }
-        echo "               </td>\n";
-        echo "            </tr>\n";
+    if ($can_do_report and ! $show_only) {
+    echo "         <p></p>\n";
+    echo "         <p align='center'>\n";
+    if ($prev_uname != "") {
+        echo "            <input type='hidden' name='studentprev' value='$prev_uname'>\n";
+        echo "            <input type='submit' name='student_$prev_uname' value='&lt;&lt;'>&nbsp; \n";
     }
-}
-if ($pr_comment_type != $COMMENT_TYPE_NONE) {
-    $query = "SELECT term.TermName, term.TermIndex, classlist.PrincipalComment FROM " .
-         " (term INNER JOIN term AS depterm " .
-         "       ON  term.DepartmentIndex = depterm.DepartmentIndex" .
-         "       AND depterm.TermIndex = $termindex" .
-         "       AND term.TermNumber <= depterm.TermNumber) " . " INNER JOIN " .
-         " (classlist INNER JOIN (classterm INNER JOIN class USING (ClassIndex)) " .
-         "       ON  classlist.Username = '$student_username' " .
-         "       AND classlist.ClassTermIndex = classterm.ClassTermIndex " .
-         "       AND class.YearIndex = $yearindex) " .
-         " ON term.TermIndex = classterm.TermIndex " . "ORDER BY term.TermNumber";
-    $cRes = &   $db->query($query);
-    if (DB::isError($cRes))
-        die($cRes->getDebugInfo()); // Check for errors in query
-
-    while ( $cRow = & $cRes->fetchrow(DB_FETCHMODE_ASSOC) ) {
-        /* No point in showing a row if there's no comment for old terms */
-        if ((is_null($cRow['PrincipalComment']) or
-             $cRow['PrincipalComment'] == "") and
-             $cRow['TermIndex'] != $termindex)
-            continue;
-
-        echo "            <tr>\n";
-        echo "               <td colspan='2'><b>${cRow['TermName']} - Principal's comment:</b><br>\n";
-        if (isset($_POST["pr_comment"]) and $cRow['TermIndex'] == $termindex) {
-            $commentstr = htmlspecialchars($_POST["pr_comment"], ENT_QUOTES);
-        } else {
-            $commentstr = htmlspecialchars($cRow['PrincipalComment'],
-                                        ENT_QUOTES);
-        }
-        if (($pr_comment_type == $COMMENT_TYPE_MANDATORY or
-             $pr_comment_type == $COMMENT_TYPE_OPTIONAL) and
-             ! $student_info['ReportDone'] and
-             ! $student_info['PrincipalCommentDone'] and
-             $cRow['TermIndex'] == $termindex) {
-            echo "               <textarea name='pr_comment' " .
-             "id='pr_comment' rows='5' cols='80' " .
-             "onChange='recalc_comment(&quot;pr&quot;);'>$commentstr</textarea>\n";
-        } else {
-            echo "               $commentstr\n";
-        }
-        echo "               </td>\n";
-        echo "            </tr>\n";
+    if (! $student_info['ReportDone']) {
+        echo "            <input type='submit' name='action' value='Update'>&nbsp; \n";
     }
-}
-echo "         </table>\n";
-}
-if ($can_do_report and ! $show_only) {
-echo "         <p></p>\n";
-echo "         <p align='center'>\n";
-if ($prev_uname != "") {
-    echo "            <input type='hidden' name='studentprev' value='$prev_uname'>\n";
-    echo "            <input type='submit' name='student_$prev_uname' value='&lt;&lt;'>&nbsp; \n";
-}
-if (! $student_info['ReportDone']) {
-    echo "            <input type='submit' name='action' value='Update'>&nbsp; \n";
-}
-if ((($is_hod and $hod_comment_type != $COMMENT_TYPE_NONE and
-     ! $student_info['HODCommentDone']) or ($is_principal and
-     $pr_comment_type != $COMMENT_TYPE_NONE and
-     ! $student_info['PrincipalCommentDone']) or ($is_ct and
-     $ct_comment_type != $COMMENT_TYPE_NONE and ! $student_info['CTCommentDone'])) and
-     ! $student_info['ReportDone']) {
-    echo "            <input type='submit' name='action' value='Finished with comments'>&nbsp; \n";
-}
-if (($student_info['CTCommentDone'] or
-     ($student_info['HODCommentDone'] and
-     ($is_admin or $is_hod or $is_principal or $is_proofreader)) or
-     ($student_info['PrincipalCommentDone'] and
-     ($is_admin or $is_principal or $is_proofreader))) and
-     ! $student_info['ReportDone']) {
-    echo "            <input type='submit' name='action' value='Edit comments'>&nbsp; \n";
-}
-if (($is_hod or $is_principal or $is_admin) and ! $student_info['ReportDone']) {
-    echo "            <input type='submit' name='action' value='Close report'>&nbsp; \n";
-}
-if ($student_info['ReportDone'] and ($is_admin or $is_principal)) {
-    echo "            <input type='submit' name='action' value='Open report'>&nbsp; \n";
-}
-if ($is_proofreader) {
-    echo "            <input type='submit' name='action' value='Done with report'>&nbsp; \n";
-}
-echo "            <input type='submit' name='action' value='Cancel'>\n";
-if ($next_uname != "") {
-    echo "            <input type='submit' name='student_$next_uname' value='&gt;&gt;'>&nbsp; \n";
-    echo "            <input type='hidden' name='studentnext' value='$next_uname'>\n";
-}
+    if ((($is_hod and $hod_comment_type != $COMMENT_TYPE_NONE and
+         ! $student_info['HODCommentDone']) or ($is_principal and
+         $pr_comment_type != $COMMENT_TYPE_NONE and
+         ! $student_info['PrincipalCommentDone']) or ($is_ct and
+         $ct_comment_type != $COMMENT_TYPE_NONE and ! $student_info['CTCommentDone'])) and
+         ! $student_info['ReportDone']) {
+        echo "            <input type='submit' name='action' value='Finished with comments'>&nbsp; \n";
+    }
+    if (($student_info['CTCommentDone'] or
+         ($student_info['HODCommentDone'] and
+         ($is_admin or $is_hod or $is_principal or $is_proofreader)) or
+         ($student_info['PrincipalCommentDone'] and
+         ($is_admin or $is_principal or $is_proofreader))) and
+         ! $student_info['ReportDone']) {
+        echo "            <input type='submit' name='action' value='Edit comments'>&nbsp; \n";
+    }
+    if (($is_hod or $is_principal or $is_admin) and ! $student_info['ReportDone']) {
+        echo "            <input type='submit' name='action' value='Close report'>&nbsp; \n";
+    }
+    if ($student_info['ReportDone'] and ($is_admin or $is_principal)) {
+        echo "            <input type='submit' name='action' value='Open report'>&nbsp; \n";
+    }
+    if ($is_proofreader) {
+        echo "            <input type='submit' name='action' value='Done with report'>&nbsp; \n";
+    }
+    echo "            <input type='submit' name='action' value='Cancel'>\n";
+    if ($next_uname != "") {
+        echo "            <input type='submit' name='student_$next_uname' value='&gt;&gt;'>&nbsp; \n";
+        echo "            <input type='hidden' name='studentnext' value='$next_uname'>\n";
+    }
 
-echo "         </p>\n";
-echo "       </form>\n";
+    echo "         </p>\n";
+    echo "       </form>\n";
 }
 
 include "footer.php";
-?>
+
