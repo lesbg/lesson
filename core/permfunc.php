@@ -291,6 +291,26 @@ function check_hod_classterm($username, $classterm_index) {
     }
 }
 
+/* Check whether user is the head of department for a subject */
+function check_hod_subject($username, $subject_index) {
+    global $pdb;
+
+    $query = $pdb->prepare(
+        "SELECT hod.Username FROM hod, term, subject " .
+        "WHERE hod.Username         = :username " .
+        "AND   hod.DepartmentIndex  = term.DepartmentIndex " .
+        "AND   term.TermIndex       = subject.TermIndex " .
+        "AND   subject.SubjectIndex = :subject_index"
+    );
+    $query->execute(['username' => $username,
+                     'subject_index' => $subject_index]);
+    if ($query->fetch()) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 /* Check whether user is a counselor */
 function check_counselor($username) {
     global $pdb;
