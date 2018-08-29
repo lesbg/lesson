@@ -26,7 +26,7 @@ $is_ct = false;
 if(isset($student_username) and $student_username != "")
     $is_ct = check_class_teacher_student($username, $student_username, $yearindex, $termindex);
 
-if (!$is_ct and !$is_teacher and !$is_admin and !$is_hod and !$is_principal) {    /* Print error message */
+if (!$is_ct and !$is_teacher and !$is_admin and !$is_hod and !$is_principal) {
     include "header.php"; // Show header
 
     echo "      <p>You do not have permission to access this page</p>\n";

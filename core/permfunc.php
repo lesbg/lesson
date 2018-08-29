@@ -326,3 +326,20 @@ function check_counselor($username) {
         return false;
     }
 }
+
+/* Check whether user is a member of a group */
+function check_group($group, $username) {
+    global $pdb;
+
+    $query = $pdb->prepare(
+        "SELECT Username FROM groupgenmem " .
+        "WHERE Username=:username AND GroupID=:group"
+    );
+    $query->execute(['username' => $username,
+                     'group' => $group]);
+    if ($query->fetch()) {
+        return true;
+    } else {
+        return false;
+    }
+}
