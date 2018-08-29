@@ -37,39 +37,49 @@ if ($_POST["action"] == "Ok") { // If ok was pressed, try to change password
 
     $good_pw = False;
 
-    /* Check whether old MD5 password is correct */
-    $query = $pdb->prepare(
-        "SELECT Username FROM user " .
-        "WHERE Username = :username " .
-        "AND   $pass_str = MD5(:old_pw)"
-    );
-    $query->execute(['old_pw' => $_POST['old'], 'username' => $username]);
-    $row = $query->fetch();
-    if ($row) {
+    $ldap = ldap_connect($LDAP_URI) or die("Unable to connect to $LDAP_URI");
+    ldap_set_option($ldap, LDAP_OPT_PROTOCOL_VERSION, 3);
+    ldap_set_option($ldap, LDAP_OPT_REFERRALS, 0);
+    ldap_start_tls($ldap) or die("Unable to use TLS when connecting to $LDAP_URI");
+    $bind = @ldap_bind($ldap, "${LDAP_RDN}$username,${LDAP_SEARCH}", $_POST['old']);
+
+    $good_pw = False;
+
+    if ($bind) {
         $good_pw = True;
     }
 
+    /* Check whether old MD5 password is correct */
+    if (!$good_pw) {
+        $query = $pdb->prepare(
+            "SELECT Username FROM user " .
+            "WHERE Username = :username " .
+            "AND   $pass_str = MD5(:old_pw)"
+        );
+        $query->execute(['old_pw' => $_POST['old'], 'username' => $username]);
+        $row = $query->fetch();
+        if ($row) {
+            $good_pw = True;
+        }
+    }
+
     /* Check whether old password_hash password is correct */
-    $query = $pdb->prepare(
-        "SELECT $pass_str FROM user " .
-        "WHERE Username = :username "
-    );
-    $query->execute(['username' => $username]);
-    $row = $query->fetch();
-    if ($row && password_verify($_POST['old'], $row[$pass_str])) {
-        $good_pw = True;
+    if(!$good_pw) {
+        $query = $pdb->prepare(
+            "SELECT $pass_str FROM user " .
+            "WHERE Username = :username "
+        );
+        $query->execute(['username' => $username]);
+        $row = $query->fetch();
+        if ($row && password_verify($_POST['old'], $row[$pass_str])) {
+            $good_pw = True;
+        }
     }
 
     if($good_pw) {
         if (strlen($_POST["new"]) >= 6) {
             if ($_POST["new"] == $_POST["confirmnew"]) {
-                $phash = password_hash($_POST['new'], PASSWORD_DEFAULT, ['cost' => "15"]);
-                $pdb->prepare(
-                    "UPDATE user SET $pass_str = :phash " .
-                    "WHERE Username = :username"
-                )->execute(['phash' => $phash, 'username' => $username]);
-                if (DB::isError($res))
-                    die($res->getDebugInfo()); // Check for errors in query
+                change_pwd($username, $_POST['new']);
                 if($pass_str == "Password") {
                     $pdb->prepare(
                         "UPDATE user SET OriginalPassword=NULL " .
@@ -81,7 +91,7 @@ if ($_POST["action"] == "Ok") { // If ok was pressed, try to change password
                 unset($_SESSION['samepass2']);
                 unset($_SESSION['samepass3']);
                 log_event($LOG_LEVEL_ADMIN, "user/dochangepassword.php",
-                        $LOG_USER, "Changed password $password_number.");
+                        $LOG_USER, "Changed LDAP password.");
             } else {
                 echo "failed!</p>\n";
                 echo "      <p align='center'>The new password didn't match the confirm new password!</p>\n";
