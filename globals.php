@@ -21,6 +21,10 @@ $PDO_DSN = "mysql:host=example.com;dbname=lesson;charset=utf8"; // DSN to connec
 $PDO_USER = "user";
 $PDO_PWD = "password";
 
+$LDAP_URI = "ldap://ldap.example.com";
+$LDAP_SEARCH = "cn=users,dc=example,dc=com";
+$LDAP_RDN = "uid=";
+
 $LOG_LEVEL = $LOG_LEVEL_TEACHER; // Set log level. See core/constants.php for more details
 $LOGS_PER_PAGE = 100; // Number of logs to show per page
 $LOCAL_HOSTS = ".example.local"; // Domain of local hosts

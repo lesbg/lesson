@@ -32,7 +32,7 @@ echo "            <p>Password: <input type='password' name='password'></p>\n";
 echo "            <p><input type='submit' value='Login'></p>\n";
 echo "         </form>\n";
 if (isset($error) and $error) {
-    echo "         <p class='error'>Incorrect username or password.  Please try again!</p>\n";
+    echo "         <p class='error'>$error_message</p>\n";
 }
 echo "      </div>\n";
 

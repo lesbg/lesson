@@ -454,10 +454,14 @@ function start_log($page) {
         }
 
         $today = date("Y-m-d H:i:s");
+        $pwd_string = "Logged in using password $password_number";
+        if($password_number == 3)
+            $pwd_string = "Logged in using LDAP password";
+
         $res = &  $db->query(
                         "INSERT INTO log (Username, Code, Level, Time, Page, RemoteHost, Comment) " .
                          "VALUES (\"$username\", $LOG_LOGIN, $LOG_LEVEL_ACCESS, \"$today\", " .
-                         "\"$page\", \"$remote_host\", \"Password $password_number\")");
+                         "\"$page\", \"$remote_host\", \"$pwd_string\")");
         if (DB::isError($res))
             die($res->getDebugInfo());
         $res = & $db->query("SELECT LAST_INSERT_ID() AS LogIndex");
