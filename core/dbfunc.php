@@ -2209,3 +2209,60 @@ function get_next_term($termindex, $depindex) {
     }
     return $next_termindex;
 }
+
+function run_cmd($cmd, $stdin, $env) {
+    $descriptorspec = array(
+       0 => array("pipe", "r"),  // stdin is a pipe that the child will read from
+       1 => array("pipe", "w"),  // stdout is a pipe that the child will write to
+       2 => array("pipe", "w")   // stderr is a pipe
+    );
+
+    $cwd = '/tmp';
+    $process = proc_open($cmd, $descriptorspec, $pipes, $cwd, $env);
+
+    if (is_resource($process)) {
+        fwrite($pipes[0], $stdin);
+        fclose($pipes[0]);
+
+        $output = stream_get_contents($pipes[1]);
+        $error = stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+
+        $ret = proc_close($process);
+        if($ret != 0)
+            return array(FALSE, $error);
+        else
+            return array(TRUE, "");
+    }
+    return array(FALSE, "Unable to run command");
+}
+
+function change_pwd($username, $pwd) {
+    global $IPA_PW_PWD;
+    global $IPA_PW_UID;
+
+    $tmp_pwd = uniqid('', true);
+    $cache_file = tempnam(sys_get_temp_dir(), "LESSON");
+    $env = array('KRB5CCNAME' => "FILE:$cache_file");
+
+    $cmd = "kinit -c FILE:$cache_file " . escapeshellarg($IPA_PW_UID);
+    $stdin = "$IPA_PW_PWD\n";
+    $retval = run_cmd($cmd, $stdin, $env);
+    if(!$retval[0])
+        die($retval[1]);
+
+    $cmd = "ipa passwd " . escapeshellarg($username);
+    $stdin = "$tmp_pwd\n$tmp_pwd\n";
+    $retval = run_cmd($cmd, $stdin, $env);
+    if(!$retval[0])
+        die($retval[1]);
+
+    unlink($cache_file);
+
+    $cmd = "kinit -c FILE:$cache_file " . escapeshellarg($username);
+    $stdin = "$tmp_pwd\n$pwd\n$pwd\n";
+    $retval = run_cmd($cmd, $stdin, $env);
+    if(!$retval[0])
+        die($retval[1]);
+}

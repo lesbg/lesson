@@ -25,6 +25,9 @@ $LDAP_URI = "ldap://ldap.example.com";
 $LDAP_SEARCH = "cn=users,dc=example,dc=com";
 $LDAP_RDN = "uid=";
 
+$IPA_PW_UID = "pwserver";
+$IPA_PW_PWD = "password";
+
 $LOG_LEVEL = $LOG_LEVEL_TEACHER; // Set log level. See core/constants.php for more details
 $LOGS_PER_PAGE = 100; // Number of logs to show per page
 $LOCAL_HOSTS = ".example.local"; // Domain of local hosts

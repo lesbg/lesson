@@ -56,32 +56,21 @@ if ($bind) {
     $good_pw = True;
     $_SESSION['password_number'] = 3;
 } else {
-    echo "Unable to bind";
-    if(password_verify($_POST['password'], $row['Password'])) {
+    if(password_verify($_POST['password'], $row['Password']) or
+       password_verify($_POST['password'], $row['Password2']) or
+       md5($_POST['password']) == $row['Password'] or
+       md5($_POST['password']) == $row['Password2']) {
         $good_pw = True;
-        $_SESSION['password_number'] = 1;
-    } elseif(password_verify($_POST['password'], $row['Password2'])) {
-        $good_pw = True;
-        $_SESSION['password_number'] = 2;
-    } elseif(md5($_POST['password']) == $row['Password'] or md5($_POST['password']) == $row['Password2']) {
-        $good_pw = True;
-        if(md5($_POST['password']) == $row['Password']) {
-            $_SESSION['password_number'] = 1;
-            $pnum = "primary";
-            $pval = "Password";
-        } else {
-            $_SESSION['password_number'] = 2;
-            $pnum = "secondary";
-            $pval = "Password2";
-        }
-        $phash = password_hash($_POST['password'], PASSWORD_DEFAULT, ['cost' => "15"]);
+        change_pwd($username, $_POST['password']);
+        $_SESSION['password_number'] = 3;
         $pdb->prepare(
-            "UPDATE user SET $pval=:phash WHERE Username=:username"
-        )->execute(['phash' => $phash, 'username' => $username]);
+            "UPDATE user SET Password=NULL, Password2=NULL " .
+            "WHERE Username=:username"
+        )->execute(['username' => $username]);
 
         log_event($LOG_LEVEL_ACCESS, "user/login_action.php",
                     $LOG_LOGIN,
-                    "Converted $pnum password from MD5 to salted Blowfish.",
+                    "Set LDAP password from LESSON password.",
                     0);
     }
 }
