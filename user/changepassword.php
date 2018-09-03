@@ -31,18 +31,8 @@ if ($row) {
         echo "      <p align='center' class='error'>You cannot choose your username as a password!</p>\n";
     }
     if (isset($samepass) and $samepass) {
-        if (isset($_SESSION['samepass3']) and $_SESSION['samepass3']) {
-            echo "      <p align='center' class='error'>You must change your password now.</p>\n";
-        } else {
-            echo "      <p align='center' class='error'>Your password is the same as your username!  This is very insecure.  Please change it to something different now.</p>\n";
-        }
-        if(isset($_SESSION['samepass2']) and $_SESSION['samepass2']) {
-            $pass = "p$username";
-        } elseif (isset($_SESSION['samepass3']) and $_SESSION['samepass3']) {
-            $pass = $row['OriginalPassword'];
-        } else {
-            $pass = $username;
-        }
+        echo "      <p align='center' class='error'>Your password has expired.  You must change your password now.</p>\n";
+        $pass = $_POST['password'];
     } else {
         $pass = "";
     }

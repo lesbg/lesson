@@ -51,18 +51,18 @@ if ($is_admin) {
         if(isset($_POST['password']) and strlen($_POST['password']) > 0 and $_POST['password'] != "!!") {
             if($_POST['password'] == 'username')
                 $_POST['password'] = $_POST['uname'];
-            $phash = "'" . password_hash($_POST['password'], PASSWORD_DEFAULT, []) . "'";
             $passwd = "'" . safe($_POST['password']) . "'";
+            $origpwd = $_POST['password'];
         } else {
-            $phash = "NULL";
             $passwd = "NULL";
+            $origpwd = "!!";
         }
 
-        $query = "INSERT INTO user (Username, FirstName, Surname, Gender, DOB, House, Password, OriginalPassword, " .
+        $query = "INSERT INTO user (Username, FirstName, Surname, Gender, DOB, House, OriginalPassword, " .
                  "                  Permissions, Title, DateType, DateSeparator, " .
                  "                  DepartmentIndex) " .
                  "VALUES ('{$_POST['uname']}', '{$_POST['fname']}', '{$_POST['sname']}', " .
-                 "        '{$_POST['gender']}', {$_POST['DOB']}, {$_POST['house']}, $phash, " .
+                 "        '{$_POST['gender']}', {$_POST['DOB']}, {$_POST['house']}, " .
                  "        $passwd, " .
                  "        {$_POST['perms']}, {$_POST['title']}, " .
                  "        {$_POST['datetype']}, {$_POST['datesep']}, " .
@@ -71,6 +71,7 @@ if ($is_admin) {
         if (DB::isError($aRes))
             die($aRes->getDebugInfo()); // Check for errors in query
         $uname = $_POST['uname'];
+        add_user($uname, $_POST['fname'], $_POST['sname'], $origpwd);
 
         if(!isset($_POST['show_family']) || $_POST['show_family'] != '1') {
             /* Remove any family codes we've been removed from */
@@ -204,4 +205,3 @@ if ($is_admin) {
     echo "</p>\n      <p>You do not have permission to add a user.</p>\n      <p>";
     $error = true;
 }
-?>

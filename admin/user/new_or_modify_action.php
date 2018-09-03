@@ -57,8 +57,6 @@ if (isset($_POST['newpass']) and !is_null($_POST['newpass'])) {
         } else {
             $origpwd = "username";
         }
-    } elseif ($_POST['newpass'] == "Disable user login") {
-        $origpwd = "!!";
     } else {
         while(strlen($origpwd) > 13) {
             $origpwd = generate_password(2, $words);
@@ -68,14 +66,14 @@ if (isset($_POST['newpass']) and !is_null($_POST['newpass'])) {
     if(isset($_GET['key'])) {
         $uname = safe(dbfuncInt2String($_GET['key']));
         if($origpwd != "!!") {
-            $phash = "'" . password_hash($origpwd, PASSWORD_DEFAULT, []) . "'";
             $wrorigpwd = "'$origpwd'";
+            change_pwd_priv($uname, $origpwd);
         } else {
-            $phash = "NULL";
             $wrorigpwd = "NULL";
+            change_pwd_priv($uname, "!!");
         }
 
-        $query = "UPDATE user SET Password=$phash, OriginalPassword=$wrorigpwd WHERE Username='$uname'";
+        $query = "UPDATE user SET OriginalPassword=$wrorigpwd WHERE Username='$uname'";
         $aRes = & $db->query($query);
         if (DB::isError($aRes))
             die($aRes->getDebugInfo()); // Check for errors in query

@@ -79,7 +79,8 @@ if ($_POST["action"] == "Ok") { // If ok was pressed, try to change password
     if($good_pw) {
         if (strlen($_POST["new"]) >= 6) {
             if ($_POST["new"] == $_POST["confirmnew"]) {
-                change_pwd($username, $_POST['new']);
+                if(!change_own_pwd($username, $_POST['old'], $_POST['new']))
+                    die();
                 if($pass_str == "Password") {
                     $pdb->prepare(
                         "UPDATE user SET OriginalPassword=NULL " .
@@ -90,6 +91,7 @@ if ($_POST["action"] == "Ok") { // If ok was pressed, try to change password
                 unset($_SESSION['samepass']);
                 unset($_SESSION['samepass2']);
                 unset($_SESSION['samepass3']);
+                unset($_POST['password']);
                 log_event($LOG_LEVEL_ADMIN, "user/dochangepassword.php",
                         $LOG_USER, "Changed LDAP password.");
             } else {

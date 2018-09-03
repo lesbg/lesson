@@ -54,6 +54,10 @@ $good_pw = False;
 
 if ($bind) {
     $good_pw = True;
+    if(check_pwd_expired($username, $_POST['password'])) {
+        $_SESSION['samepass'] = True;
+        $change_pw = True;
+    }
     $_SESSION['password_number'] = 3;
 } else {
     if(password_verify($_POST['password'], $row['Password']) or
@@ -61,7 +65,7 @@ if ($bind) {
        md5($_POST['password']) == $row['Password'] or
        md5($_POST['password']) == $row['Password2']) {
         $good_pw = True;
-        change_pwd($username, $_POST['password']);
+        change_own_pwd_priv($username, $_POST['password']);
         $_SESSION['password_number'] = 3;
         $pdb->prepare(
             "UPDATE user SET Password=NULL, Password2=NULL " .
@@ -123,4 +127,6 @@ if($_POST['password'] == $row['OriginalPassword']) {
 }
 
 $_SESSION['username'] = safe($_POST['username']);
-unset($_POST['password']);
+
+if(!$change_pw)
+    unset($_POST['password']);

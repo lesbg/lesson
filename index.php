@@ -176,7 +176,7 @@ if (isset($_SESSION['samepass']) and $_SESSION['samepass']) {
     $samepass = true;
     if($location != "user/dochangepassword.php") {
         log_event($LOG_LEVEL_ACCESS, "index.php", $LOG_USER,
-                  "Forcing user to change their password because it is the same as their username.");
+                  "Forcing user to change their password because it has expired.");
         $location = "user/changepassword.php";
     }
 }

@@ -310,7 +310,7 @@ if ($is_admin) {
     }
     echo "            </tr>\n";
     echo "            <tr>\n";
-    echo "               <td colspan='3'><input type='submit' name='newpass' value='Generate new password'> <input type='submit' name='newpass' value='Set password to username'> <input type='submit' name='newpass' value='Disable user login'></td>\n";
+    echo "               <td colspan='3'><input type='submit' name='newpass' value='Generate new password'> <input type='submit' name='newpass' value='Set password to username'></td>\n";
     echo "            </tr>\n";
     echo "            <tr><td colspan='3'>&nbsp;</td></tr>\n";
     $chcm = "";
