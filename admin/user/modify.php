@@ -297,7 +297,7 @@ if ($is_admin) {
         echo "<input type='hidden' name='password' value='$origpwd' />";
     }
     echo "</td>\n";
-    if(!is_null($pwd) and $origpwd != '!!') {
+    if($origpwd != '!!') {
         if(is_null($origpwd)) {
             echo "               <td colspan='2'><span name='passwd'><em>Unknown because it was changed</em></span></td>\n";
         } elseif($origpwd == "username") {
