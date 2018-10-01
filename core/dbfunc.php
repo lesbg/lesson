@@ -2238,6 +2238,24 @@ function run_cmd($cmd, $stdin, $env) {
     return array(FALSE, "Unable to run command");
 }
 
+function check_own_pwd($username, $pwd) {
+    $cache_file = tempnam(sys_get_temp_dir(), "LESSON");
+    $env = array('KRB5CCNAME' => "FILE:$cache_file");
+
+    $cmd = "kinit -c FILE:$cache_file " . escapeshellarg($username);
+    $stdin = "$pwd\n";
+    $retval = run_cmd($cmd, $stdin, $env);
+    unlink($cache_file);
+    if(!$retval[0]) {
+        if(strpos($retval[1], "expired") !== False) {
+            return 2;
+        } else {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 function change_pwd_priv($username, $pwd) {
     global $IPA_PW_PWD;
     global $IPA_PW_UID;
@@ -2262,13 +2280,7 @@ function change_pwd_priv($username, $pwd) {
 function change_own_pwd_priv($username, $pwd) {
     $tmp_pwd = uniqid('', true);
     change_pwd_priv($username, $tmp_pwd);
-
-    $cmd = "kinit -c FILE:$cache_file " . escapeshellarg($username);
-    $stdin = "$tmp_pwd\n$pwd\n$pwd\n";
-    $retval = run_cmd($cmd, $stdin, $env);
-    unlink($cache_file);
-    if(!$retval[0])
-        die($retval[1]);
+    change_own_pwd($username, $tmp_pwd, $pwd);
 }
 
 function check_pwd_expired($username, $pwd) {
@@ -2294,14 +2306,12 @@ function change_own_pwd($username, $oldpwd, $newpwd) {
     if(!$retval[0]) {
         if(strpos($retval[1], "expired") !== False) {
             $cmd = "kinit -c FILE:$cache_file " . escapeshellarg($username);
-            $stdin = "$oldpwd\n$newpwd\n$newpwd\n";
+            $stdin = "$oldpwd\n$tmp_pwd\n$tmp_pwd\n";
             $retval = run_cmd($cmd, $stdin, $env);
-            unlink($cache_file);
             if(!$retval[0]) {
+                unlink($cache_file);
                 die($retval[1]);
                 return False;
-            } else {
-                return True;
             }
         } else {
             return False;
