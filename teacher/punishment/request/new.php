@@ -18,7 +18,7 @@ $link = "index.php?location=" .
          "&amp;key=" . $_GET['key'] . "&amp;keyname=" . $_GET['keyname'] .
          "&amp;next=" . $_GET['next'];
 
-$is_teacher = check_teacher_year($currentyear);
+$is_teacher = check_teacher_year($username, $currentyear);
 $perm = get_punishment_permissions($username);
 
 include "core/settermandyear.php";

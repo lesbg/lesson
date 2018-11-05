@@ -31,7 +31,7 @@ if ($row = $query->fetch()) {
     $student = "Unknown student";
 }
 
-$is_teacher = check_teacher_year($currentyear);
+$is_teacher = check_teacher_year($username, $currentyear);
 
 $title = "Request for punishment removal";
 

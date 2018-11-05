@@ -12,7 +12,7 @@ $student_username = dbfuncInt2String($_GET['key']);
 $student = dbfuncInt2String($_GET['keyname']);
 $link = dbfuncInt2String($_GET['next']);
 
-$is_teacher = check_teacher_year($currentyear);
+$is_teacher = check_teacher_year($username, $currentyear);
 $perm = get_punishment_permissions($username);
 
 include "core/settermandyear.php";

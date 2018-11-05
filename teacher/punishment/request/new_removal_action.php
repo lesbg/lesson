@@ -26,7 +26,7 @@ if ($row = $query->fetch()) {
     $student = "Unknown student";
 }
 
-$is_teacher = check_teacher_year($currentyear);
+$is_teacher = check_teacher_year($username, $currentyear);
 
 if (!$is_admin and !$is_teacher) {
     /* Log unauthorized access attempt */
