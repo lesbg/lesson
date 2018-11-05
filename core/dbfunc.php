@@ -2306,7 +2306,7 @@ function change_own_pwd($username, $oldpwd, $newpwd) {
     if(!$retval[0]) {
         if(strpos($retval[1], "expired") !== False) {
             $cmd = "kinit -c FILE:$cache_file " . escapeshellarg($username);
-            $stdin = "$oldpwd\n$tmp_pwd\n$tmp_pwd\n";
+            $stdin = "$oldpwd\n$newpwd\n$newpwd\n";
             $retval = run_cmd($cmd, $stdin, $env);
             if(!$retval[0]) {
                 unlink($cache_file);
@@ -2319,7 +2319,7 @@ function change_own_pwd($username, $oldpwd, $newpwd) {
     }
 
     $cmd = "ipa passwd";
-    $stdin = "$oldpwd\n$newpwd\n$newpwd\n";
+    $stdin = "$newpwd\n$newpwd\n$newpwd\n";
     $retval = run_cmd($cmd, $stdin, $env);
     unlink($cache_file);
     if(!$retval[0])
