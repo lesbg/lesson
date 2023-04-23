@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/family/new_action.php (c) 2015-2017 Jonathan Dieter
+ * admin/family/new_action.php (c) 2015-2017, 2019 Jonathan Dieter
  *
  * Run query to insert a new family code into the database.
  * ***************************************************************
@@ -47,8 +47,9 @@ if ($is_admin) {
         $error = true;
     } else {
         /* Add new user */
-        $query = "INSERT INTO family (FamilyCode, FamilyName, House) " .
-                 "VALUES ('$fcode', '{$_POST['fname']}', {$_POST['house']})";
+        $query = "INSERT INTO family (FamilyCode, FamilyName, Town, RegistrationNumber, Address, House) " .
+                 "VALUES ('$fcode', '{$_POST['fname']}', {$_POST['town']}, " .
+                 "        {$_POST['regnum']}, {$_POST['address']}, {$_POST['house']})";
         $aRes = & $db->query($query);
         if (DB::isError($aRes))
             die($aRes->getDebugInfo()); // Check for errors in query

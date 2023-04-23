@@ -18,7 +18,8 @@ if ($is_admin) {
     /* Modify user */
     $query = "UPDATE user SET FirstName = '{$_POST['fname']}', " .
              "Surname = '{$_POST['sname']}', " .
-             "Gender = '{$_POST['gender']}', " .
+	     "placeofbirth = '{$_POST['placeofbirth']}', " .
+	     "Gender = '{$_POST['gender']}', " .
              "PhoneNumber = '{$_POST['phone']}', " . "DOB = {$_POST['DOB']}, " .
              "House = {$_POST['house']}, " .
              "Permissions = {$_POST['perms']}, " . "Title = {$_POST['title']}, " .

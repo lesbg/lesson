@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/family/modify_action.php (c) 2015-2017 Jonathan Dieter
+ * admin/family/modify_action.php (c) 2015-2017, 2019 Jonathan Dieter
  *
  * Run query to modify a family code in the database.
  * ***************************************************************
@@ -18,8 +18,12 @@ $fullname = dbfuncInt2String($_GET['keyname']);
 if ($is_admin) {
 
     /* Modify user */
-    $query = "UPDATE family SET FamilyName = '{$_POST['fname']}', House = {$_POST['house']} " .
-             " WHERE FamilyCode = '$fcode_db'";
+    $query = "UPDATE family SET FamilyName = '{$_POST['fname']}', " .
+             "                  Town = {$_POST['town']}, " .
+             "                  RegistrationNumber = {$_POST['regnum']}, " .
+             "                  Address = {$_POST['address']}, " .
+             "                  House = {$_POST['house']} " .
+             "WHERE FamilyCode = '$fcode_db'";
     $aRes = & $db->query($query);
     if (DB::isError($aRes))
         die($aRes->getDebugInfo()); // Check for errors in query

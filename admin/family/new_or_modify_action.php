@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/family/new_or_modify_action.php (c) 2015-2017 Jonathan Dieter
+ * admin/family/new_or_modify_action.php (c) 2015-2017, 2019 Jonathan Dieter
  *
  * Show common page information for changing or adding a new
  * family code and call appropriate second page.
@@ -78,6 +78,29 @@ if ($_POST["action"] == "Save" || $_POST["action"] == "Update") { // If update o
         } else {
             $_POST['house'] = "'{$_POST['house']}'";
         }
+    }
+
+    $_POST['town'] = trim($_POST['town']);
+    if (! isset($_POST['town']) || $_POST['town'] == "") { // Set town to null if not set
+        $_POST['town'] = 'NULL';
+    } else {
+        $_POST['town'] = safe($_POST['town']);
+        $_POST['town'] = "'{$_POST['town']}'";
+    }
+
+    $_POST['regnum'] = trim($_POST['regnum']);
+    if (! isset($_POST['regnum']) || $_POST['regnum'] == "") { // Set registration number to null if not set
+        $_POST['regnum'] = 'NULL';
+    } else {
+        $_POST['regnum'] = intval($_POST['regnum']);
+    }
+
+    $_POST['address'] = trim($_POST['address']);
+    if (! isset($_POST['address']) || $_POST['address'] == "") { // Set address to null if not set
+        $_POST['address'] = 'NULL';
+    } else {
+        $_POST['address'] = safe($_POST['address']);
+        $_POST['address'] = "'{$_POST['address']}'";
     }
 
     if (isset($_POST['remove_uname']) && count($_POST['remove_uname']) > 0) {

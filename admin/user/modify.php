@@ -98,7 +98,7 @@ if ($is_admin) {
         $origpwd = NULL;
 
     if($modify) {
-        $query =    "SELECT Username, FirstName, Surname, Gender, DOB, House, Permissions, user.DepartmentIndex, " .
+        $query =    "SELECT Username, FirstName, Surname, placeofbirth, Gender, DOB, House, Permissions, user.DepartmentIndex, " .
                     "       Title, DateType, DateSeparator, Password, OriginalPassword, PhoneNumber " .
                     "FROM user " .
                     "WHERE Username = '$uname' ";
@@ -110,7 +110,8 @@ if ($is_admin) {
             $_SESSION['post']['uname'] = $uname;
             if(!isset($_SESSION['post']['fname'])) $_SESSION['post']['fname'] = $row['FirstName'];
             if(!isset($_SESSION['post']['sname'])) $_SESSION['post']['sname'] = $row['Surname'];
-            if(!isset($_SESSION['post']['gender'])) $_SESSION['post']['gender'] = $row['Gender'];
+	    if(!isset($_SESSION['post']['placeofbirth'])) $_SESSION['post']['placeofbirth'] = $row['placeofbirth'];
+	    if(!isset($_SESSION['post']['gender'])) $_SESSION['post']['gender'] = $row['Gender'];
             if(!isset($_SESSION['post']['DOB'])) $_SESSION['post']['DOB'] = $row['DOB'];
             if(!isset($_SESSION['post']['house'])) $_SESSION['post']['house'] = $row['House'];
             if(!isset($_SESSION['post']['perms'])) $_SESSION['post']['perms'] = $row['Permissions'];
@@ -289,6 +290,10 @@ if ($is_admin) {
     echo "            <tr>\n";
     echo "               <td colspan='1'><b>Surname:</b></td>\n";
     echo "               <td colspan='2'><input type='text' name='sname' size=35 {$pval['sname']}></td>\n";
+    echo "            </tr>\n";
+    echo "            <tr>\n";
+    echo "               <td colspan='1'><b>Place Of Birth:</b></td>\n";
+    echo "               <td colspan='2'><input type='text' name='placeofbirth' size=35 {$pval['placeofbirth']}></td>\n";
     echo "            </tr>\n";
     echo "            <tr><td colspan='3'>&nbsp;</td></tr>\n";
     echo "            <tr>\n";

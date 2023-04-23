@@ -133,6 +133,14 @@ if ($_POST["action"] == "Save" || $_POST["action"] == "Update") { // If update o
         $_POST['sname'] = safe($_POST['sname']);
     }
 
+    $_POST['placeofbirth'] = trim($_POST['placeofbirth']);
+    if (! isset($_POST['placeofbirth']) || $_POST['placeofbirth'] == "") { // Make sure a surname was written.
+        echo "<p>You need to write a place of birth.  Press \"Back\" to fix this.</p>\n";
+        $error = true;
+    } else {
+        $_POST['placeofbirth'] = safe($_POST['placeofbirth']);
+    }
+
     if (isset($_POST['phone']) && count($_POST['phone']) > 0) {
         foreach($_POST['phone'] as $i => $phone) {
             $_POST['phone'][$i][0] = intval($phone[0]);

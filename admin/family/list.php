@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/family/list.php (c) 2015-2017 Jonathan Dieter
+ * admin/family/list.php (c) 2015-2017, 2019 Jonathan Dieter
  *
  * List all family codes
  * ***************************************************************
@@ -131,7 +131,8 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
                     "        GROUP_CONCAT(phone.Comment ORDER BY phone.SortOrder SEPARATOR '#*#*'), " .
                     "        '#*#*', 1) AS Comment " .
                     "FROM " .
-                    "   (SELECT family.FamilyCode, family.FamilyName, house.HouseName, MAX(groupgenmem.Username) AS ActiveStudents FROM " .
+                    "   (SELECT family.FamilyCode, family.FamilyName, family.RegistrationNumber, family.Town, " .
+                    "           house.HouseName, MAX(groupgenmem.Username) AS ActiveStudents FROM " .
                     "       family LEFT OUTER JOIN " .
                     "            (familylist AS familylist2 INNER JOIN user AS user2 USING (Username)) USING (FamilyCode) " .
                     "              LEFT OUTER JOIN house ON family.House=house.House " .
@@ -179,6 +180,8 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
         echo "            <th>&nbsp;</th>\n";
         echo "            <th>Family Code $fcodeAsc $fcodeDec</th>\n";
         echo "            <th>Family Name $fnameAsc $fnameDec</th>\n";
+        echo "            <th>Town</th>\n";
+        echo "            <th>Registration Number</th>\n";
         echo "            <th>House</th>\n";
         echo "            <th>Guardians</th>\n";
         echo "            <th>Students</th>\n";
@@ -241,14 +244,23 @@ if ($is_admin or $is_counselor) { // Make sure user has permission to view and
                 } else {
                     $house = "<em>None</em>";
                 }
+                if(!is_null($row['RegistrationNumber'])) {
+                    $regnum = htmlspecialchars($row['RegistrationNumber']);
+                } else {
+                    $regnum = "<em>None</em>";
+                }
+                if(!is_null($row['Town'])) {
+                    $town = htmlspecialchars($row['Town']);
+                } else {
+                    $town = "<em>None</em>";
+                }
                 $row['FamilyCode'] = safe($row['FamilyCode']);
                 echo "            <td nowrap='nowrap'>$editbutton $removebutton</td>\n";
                 echo "            <td>$fcode</td>\n";
                 echo "            <td>$fname</td>\n";
+                echo "            <td>$town</td>\n";
+                echo "            <td>$regnum</td>\n";
                 echo "            <td>$house</td>\n";
-                if($row['Guardian'] == 0) {
-                    echo "            <td>&nbsp;</td>\n";
-                }
             }
             if($row['Guardian'] != $prev_guardian && !is_null($row['Guardian'])) {
                 $prev_guardian = $row['Guardian'];

@@ -1,7 +1,7 @@
 <?php
 /**
  * ***************************************************************
- * admin/family/modify.php (c) 2015-2017 Jonathan Dieter
+ * admin/family/modify.php (c) 2015-2017, 2019 Jonathan Dieter
  *
  * Show fields to fill in for changing a family's information
  * ***************************************************************
@@ -56,7 +56,7 @@ if ($is_admin) {
 
     if ($modify) {
         $res = &  $db->query(
-                        "SELECT FamilyCode, FamilyName, House FROM family " .
+                        "SELECT FamilyCode, FamilyName, Town, RegistrationNumber, Address, House FROM family " .
                          "WHERE FamilyCode = '$fcodem'");
         if (DB::isError($res))
             die($res->getDebugInfo()); // Check for errors in query
@@ -66,6 +66,15 @@ if ($is_admin) {
             if(!isset($_SESSION['post_family']['fname'])) $_SESSION['post_family']['fname'] = $row['FamilyName'];
             if(!isset($_SESSION['post_family']['house']) and !is_null($row['House'])) {
                 $_SESSION['post_family']['house'] = $row['House'];
+            }
+            if(!isset($_SESSION['post_family']['town']) and !is_null($row['Town'])) {
+                $_SESSION['post_family']['town'] = $row['Town'];
+            }
+            if(!isset($_SESSION['post_family']['regnum']) and !is_null($row['RegistrationNumber'])) {
+                $_SESSION['post_family']['regnum'] = $row['RegistrationNumber'];
+            }
+            if(!isset($_SESSION['post_family']['address']) and !is_null($row['Address'])) {
+                $_SESSION['post_family']['address'] = $row['Address'];
             }
 
             if($show_users) {
@@ -107,6 +116,13 @@ if ($is_admin) {
     }
 
     $fname = htmlspecialchars($_SESSION['post_family']['fname'], ENT_QUOTES);
+    $town = htmlspecialchars($_SESSION['post_family']['town'], ENT_QUOTES);
+    if(!is_null($_SESSION['post_family']['regnum'])) {
+        $regnum = intval($_SESSION['post_family']['regnum']);
+    } else {
+        $regnum = NULL;
+    }
+    $address = htmlspecialchars($_SESSION['post_family']['address'], ENT_QUOTES);
 
     echo "      <form action='$link' method='post'>\n"; // Form method
     echo "         <p align='center'>\n";
@@ -139,6 +155,24 @@ if ($is_admin) {
     echo "            </tr>\n";
     echo "            <tr>\n";
     echo "               <td colspan='3'><input type='text' name='fname' value='$fname' size=35></td>\n";
+    echo "            </tr>\n";
+    echo "            <tr>\n";
+    echo "               <td colspan='3'><b>Town:</b></td>\n";
+    echo "            </tr>\n";
+    echo "            <tr>\n";
+    echo "               <td colspan='3'><input type='text' name='town' value='$town' size=35></td>\n";
+    echo "            </tr>\n";
+    echo "            <tr>\n";
+    echo "               <td colspan='3'><b>Registration number:</b></td>\n";
+    echo "            </tr>\n";
+    echo "            <tr>\n";
+    echo "               <td colspan='3'><input type='text' name='regnum' value='$regnum' size=35></td>\n";
+    echo "            </tr>\n";
+    echo "            <tr>\n";
+    echo "               <td colspan='3'><b>Address:</b></td>\n";
+    echo "            </tr>\n";
+    echo "            <tr>\n";
+    echo "               <td colspan='3'><textarea name='address' cols='35' rows='5'>$address</textarea></td>\n";
     echo "            </tr>\n";
     echo "            <tr>\n";
     echo "               <td colspan='3'><b>House:</b></td>\n";
