@@ -448,8 +448,12 @@ function start_log($page) {
         }
         if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
             if ($_SERVER['HTTP_X_FORWARDED_FOR'] != "unknown" and
-                 isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-                $remote_host = "{$_SERVER['HTTP_X_FORWARDED_FOR']} through $remote_host";
+                isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+                if ($remote_host == "10.88.0.1") {
+                    $remote_host = $_SERVER['HTTP_X_FORWARDED_FOR'];
+                } else {
+                    $remote_host = "{$_SERVER['HTTP_X_FORWARDED_FOR']} through $remote_host";
+                }
             }
         }
 
@@ -507,8 +511,12 @@ function log_event($log_level, $page, $code = NULL, $comment = NULL, $set_log_in
         }
         if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
             if ($_SERVER['HTTP_X_FORWARDED_FOR'] != "unknown" &&
-                 isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-                $remote_host = "{$_SERVER['HTTP_X_FORWARDED_FOR']} through $remote_host";
+                isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+                if ($remote_host == "10.88.0.1") {
+                    $remote_host = $_SERVER['HTTP_X_FORWARDED_FOR'];
+                } else {
+                    $remote_host = "{$_SERVER['HTTP_X_FORWARDED_FOR']} through $remote_host";
+                }
             }
         }
 
