@@ -7,6 +7,7 @@ RUN apt-get -y install libldap2-dev && docker-php-ext-install pdo_mysql pdo mysq
 RUN pear install DB
 RUN echo "TLS_REQCERT never" > /var/www/.ldaprc && echo "[libdefaults]\n	default_realm = LOCAL.LESBG.COM" > /etc/krb5.conf
 
+COPY php.ini /usr/local/etc/php/php.ini
 
 COPY entrypoint.sh /
 RUN chmod 0755 /entrypoint.sh
